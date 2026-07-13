@@ -187,7 +187,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 .login-eyebrow { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink3); margin-bottom:0.7rem; }
 .login-card h2 { font-family:'DM Serif Display',serif; font-size:1.9rem; font-weight:400; line-height:1.15; margin-bottom:0.4rem; }
 .login-card h2 em { font-style:italic; color:var(--accent); }
-.login-sub { font-size:12.5px; color:var(--ink2); margin-bottom:1.6rem; }
+.login-sub { font-size:12.5px; color:var(--ink2); margin-bottom:0.6rem; }
 .login-input { width:100%; font-family:'DM Mono',monospace; font-size:14px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); text-align:center; outline:none; letter-spacing:0.06em; }
 .login-input:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(45,74,62,0.15); }
 .login-btn { width:100%; margin-top:10px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; padding:10px; border-radius:8px; border:none; background:var(--accent); color:#fff; cursor:pointer; transition:opacity .15s; }
@@ -342,7 +342,6 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <p><strong>¿Cómo se calcula el % de cancelación?</strong> Clases canceladas divididas por las programadas, dentro del período y los filtros que elijas.</p>
       <p><strong>Motivos que no se cuentan por defecto:</strong> Feriado, Vacaciones y Cambio operativo — son movimientos de calendario, no cancelaciones reales. Si querés incluirlos, están en el filtro de Motivos.</p>
       <p><strong>Horas académicas:</strong> se muestran solo donde el dato está cargado en el sistema; siempre te indicamos qué porcentaje de cobertura tiene.</p>
-      <p><strong>Actualización:</strong> los datos provenientes del sistema pueden demorar hasta una hora en actualizarse. Ojo: refrescar la página (o el botón Actualizar) es otra cosa — trae lo último que el sistema ya tiene, pero no acelera esa demora.</p>
       <p>Cualquier duda, puedes contactar a <strong>@Data</strong> :)</p>
     </div>
   </div>
@@ -710,10 +709,12 @@ function renderSemanal(base){
           color: ctx => choca(ctx) ? '#fff' : (document.documentElement.getAttribute('data-theme')==='dark' ? '#F5A588' : css('--coral')),
           font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
       { type:'line', label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels:{ align:'top', offset:5, color:css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
+        datalabels:{ align:'top', offset:5, color: document.documentElement.getAttribute('data-theme')==='dark' ? '#E9F7EF' : css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
-                tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${fmtN(c.parsed.y)}`}} },
+                tooltip:{callbacks:{
+                  title: items => { const s = labels[items[0].dataIndex]; const d1 = new Date(s+'T00:00:00'); const d2 = new Date(d1.getTime()+6*86400000); const f = d => d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); return `Semana del ${f(d1)} al ${f(d2)}`; },
+                  label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${fmtN(c.parsed.y)}`}} },
       scales:{ x:{ticks:{color:css('--ink3'),font:{size:9.5},maxRotation:0},grid:{display:false}},
                y:{position:'left',ticks:{color:css('--ink3'),font:{size:9.5}},grid:{color:css('--border2')}},
                y2:{position:'right',min:0,max:100,ticks:{color:css('--ink3'),font:{size:9.5},callback:v=>v+'%'},grid:{display:false}} } },
