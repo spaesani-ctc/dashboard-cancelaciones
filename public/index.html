@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cancelaciones — CTC</title>
+<title>Dashboard de Cancelaciones</title>
 <link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="42" width="7" height="14" rx="1.5" fill="%230D1259"/><rect x="16" y="37" width="7" height="19" rx="1.5" fill="%231237A5"/><rect x="26" y="33" width="7" height="23" rx="1.5" fill="%230D1259"/><rect x="36" y="38" width="7" height="18" rx="1.5" fill="%236366F1"/><rect x="46" y="30" width="7" height="26" rx="1.5" fill="%23699BF7"/><rect x="56" y="22" width="7" height="34" rx="1.5" fill="%23A5A8F0"/><polyline points="8,34 20,27 30,24 38,27 49,19 60,8" fill="none" stroke="%234356C9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="34" r="3" fill="%231237A5"/><circle cx="20" cy="27" r="3" fill="%231237A5"/><circle cx="30" cy="24" r="3" fill="%234356C9"/><circle cx="38" cy="27" r="3" fill="%236366F1"/><circle cx="49" cy="19" r="3" fill="%23851AF7" opacity="0.7"/><path d="M60 8 L52 9.5 L57.5 15 Z" fill="%23A5A8F0"/></svg>'>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <style>
 :root {
   --bg: #F5F3EE; --surface: #FDFCFA; --surface2: #ECEAE4;
@@ -97,7 +98,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 
 /* ===== TABLAS ===== */
 table.t { width:100%; border-collapse:collapse; font-size:11px; }
-table.t th { font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); text-align:left; padding:3px 7px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:2; white-space:nowrap; }
+table.t th { cursor:pointer; user-select:none; font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); text-align:left; padding:3px 7px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:2; white-space:nowrap; }
 table.t td { padding:3px 7px; border-bottom:1px solid var(--border2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
 table.t tbody tr:nth-child(even) { background:var(--surface2); }
 table.t td.num, table.t th.num { text-align:right; font-variant-numeric:tabular-nums; }
@@ -234,7 +235,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <!-- VISTA RESUMEN -->
   <div class="grid" id="vistaResumen">
     <div class="panel" id="pSemanal">
-      <div class="p-head"><span class="p-title">Evolución semanal</span><span class="p-sub" id="semanalSub">canceladas + % cancelación</span></div>
+      <div class="p-head"><span class="p-title">Evolución semanal</span><span class="p-sub" id="semanalSub">Sesiones canceladas y % de cancelación</span></div>
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
     <div class="panel" id="pMotivos">
@@ -509,19 +510,29 @@ function renderKPIs(base, canc){
 function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
 
 function renderSemanal(base){
-  document.getElementById('semanalSub').textContent = (enHoras()?'horas canceladas':'canceladas') + ' + % cancelación';
+  document.getElementById('semanalSub').textContent = enHoras()
+    ? 'Horas programadas, canceladas y % de cancelación'
+    : 'Sesiones programadas, canceladas y % de cancelación';
   const sem = {};
   for(const r of base){ (sem[r.semana] ??= {p:0,c:0}); sem[r.semana].p += val(r); if(esCancelada(r)) sem[r.semana].c += val(r); }
   const labels = Object.keys(sem).sort();
   const fmt = s => { const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); };
+  const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
+  const muted = document.documentElement.getAttribute('data-theme')==='dark' ? 'rgba(240,237,230,0.22)' : 'rgba(26,25,22,0.16)';
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
-      { type:'bar', label:enHoras()?'Horas canceladas':'Canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y' },
-      { type:'line', label:'% cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2' } ]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}}, tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${fmtU(c.parsed.y)}`}} },
+      { type:'bar', label:enHoras()?'Horas programadas':'Sesiones programadas', data:labels.map(s=>sem[s].p), backgroundColor:muted, borderRadius:3, yAxisID:'y',
+        datalabels:{ anchor:'end', align:'end', offset:-2, color:css('--ink3'), font:{family:'DM Sans',size:8}, formatter:v=>v?fmtN(v):'' } },
+      { type:'bar', label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
+        datalabels:{ anchor:'end', align:'end', offset:-2, color:css('--coral'), font:{family:'DM Sans',size:8,weight:600}, formatter:v=>v?fmtN(v):'' } },
+      { type:'line', label:'% cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+        datalabels:{ align:'top', offset:5, color:css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
+    options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
+      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
+                tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${fmtN(c.parsed.y)}`}} },
       scales:{ x:{ticks:{color:css('--ink3'),font:{size:9.5},maxRotation:0},grid:{display:false}},
                y:{position:'left',ticks:{color:css('--ink3'),font:{size:9.5}},grid:{color:css('--border2')}},
-               y2:{position:'right',ticks:{color:css('--ink3'),font:{size:9.5},callback:v=>v+'%'},grid:{display:false}} } } });
+               y2:{position:'right',ticks:{color:css('--ink3'),font:{size:9.5},callback:v=>v+'%'},grid:{display:false}} } },
+    plugins:[ChartDataLabels] });
 }
 
 function renderMotivos(canc){
@@ -529,14 +540,20 @@ function renderMotivos(canc){
   for(const r of canc){ const k = r.motivo||'Sin especificar'; m[k]=(m[k]||0)+val(r); }
   const orden = Object.entries(m).sort((a,b)=>b[1]-a[1]);
   const top = orden.slice(0,9);
+  const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
   mkChart('chMotivos', { type:'bar', data:{ labels:top.map(x=>x[0].length>30?x[0].slice(0,28)+'…':x[0]),
-    datasets:[{ data:top.map(x=>x[1]), backgroundColor:css('--accent'), borderRadius:3 }] },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+fmtU(c.parsed.x)}}},
-      scales:{ x:{ticks:{color:css('--ink3'),font:{size:9.5}},grid:{color:css('--border2')}}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } } });
+    datasets:[{ data:top.map(x=>x[1]), backgroundColor:css('--accent'), borderRadius:3,
+      datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>fmtN(v) } }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:34}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+fmtU(c.parsed.x)}}},
+      scales:{ x:{ticks:{color:css('--ink3'),font:{size:9.5}},grid:{color:css('--border2')}}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
+    plugins:[ChartDataLabels] });
   const total = orden.reduce((a,x)=>a+x[1],0)||1;
-  document.getElementById('tMotivos').innerHTML =
-    `<thead><tr><th>Motivo</th><th class="num">${enHoras()?'Horas':'Sesiones'}</th><th class="num">%</th></tr></thead><tbody>` +
-    orden.map(([k,v])=>`<tr><td style="max-width:260px" title="${k}">${k}</td><td class="num">${fmtU(v)}</td><td class="num">${(100*v/total).toFixed(1)}%</td></tr>`).join('') + '</tbody>';
+  renderTable('tMotivos', [
+    { k:'motivo', label:'Motivo', tip:'motivo' },
+    { k:'v', label:enHoras()?'Horas':'Sesiones', num:true, fmt:r=>fmtU(r.v) },
+    { k:'pct', label:'%', num:true, fmt:r=>r.pct.toFixed(1)+'%' },
+  ], orden.map(([k,v])=>({motivo:k, v, pct:100*v/total})));
 }
 
 function filaAgg(filas, clave, minProg){
@@ -545,10 +562,40 @@ function filaAgg(filas, clave, minProg){
   return Object.entries(g).filter(([,v])=>v.pSes>=minProg).map(([k,v])=>({k,...v,pct:v.p?100*v.c/v.p:0})).sort((a,b)=>b.pct-a.pct);
 }
 const colorPct = p => p>=20?css('--coral'):p>=10?css('--amber'):css('--teal');
+
+/* ==== tablas ordenables (click en encabezado) ==== */
+const SORT = {};
+function renderTable(id, cols, rows, totalHtml){
+  const s = SORT[id];
+  let data = [...rows];
+  if(s){
+    data.sort((a,b)=>{
+      const x=a[s.k], y=b[s.k];
+      const cmp = (typeof x==='number' && typeof y==='number') ? x-y : String(x??'').localeCompare(String(y??''), 'es');
+      return s.dir==='asc' ? cmp : -cmp;
+    });
+  }
+  const el = document.getElementById(id);
+  el.innerHTML =
+    '<thead><tr>' + cols.map(c=>`<th class="${c.num?'num ':''}${c.sep?'sep':''}" data-k="${c.k}" data-num="${c.num?1:0}">${c.label}${s&&s.k===c.k?(s.dir==='asc'?' ▲':' ▼'):''}</th>`).join('') + '</tr></thead>' +
+    '<tbody>' + data.map(r =>
+      '<tr>' + cols.map(c=>`<td class="${c.num?'num ':''}${c.sep?'sep':''}" ${c.tip?`title="${String(r[c.tip]??'').replace(/"/g,'&quot;')}"`:''} ${c.style?`style="${c.style(r)}"`:''}>${c.fmt?c.fmt(r):(r[c.k]??'')}</td>`).join('') + '</tr>'
+    ).join('') + (totalHtml||'') + '</tbody>';
+  el.querySelectorAll('th').forEach(th => th.onclick = () => {
+    const k = th.dataset.k;
+    const prev = SORT[id];
+    SORT[id] = { k, dir: prev && prev.k===k && prev.dir==='desc' ? 'asc' : 'desc' };
+    if(prev && prev.k===k && prev.dir==='asc') SORT[id] = null;
+    renderTable(id, cols, rows, totalHtml);
+  });
+}
 function tablaRank(id, arr, etiqueta){
-  document.getElementById(id).innerHTML =
-    `<thead><tr><th>${etiqueta}</th><th class="num">Prog.</th><th class="num">Canc.</th><th class="num">%</th></tr></thead><tbody>` +
-    arr.map(x=>`<tr><td title="${x.k}">${x.k}</td><td class="num">${fmtU(x.p)}</td><td class="num">${fmtU(x.c)}</td><td class="num" style="color:${colorPct(x.pct)};font-weight:600">${x.pct.toFixed(1)}%</td></tr>`).join('') + '</tbody>';
+  renderTable(id, [
+    { k:'k', label:etiqueta, tip:'k' },
+    { k:'p', label:'Prog.', num:true, fmt:r=>fmtU(r.p) },
+    { k:'c', label:'Canc.', num:true, fmt:r=>fmtU(r.c) },
+    { k:'pct', label:'%', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
+  ], arr);
 }
 function renderProyectos(base){ tablaRank('tProyectos', filaAgg(base,'proyecto',1), 'Proyecto'); }
 function renderRanking(base){
@@ -608,23 +655,24 @@ function renderSesiones(base){
   }
   const arr = Object.entries(g).map(([k,v])=>({k,...v,pctS:v.pS?100*v.cS/v.pS:0,pctH:v.pH?100*v.cH/v.pH:0})).sort((a,b)=>b.pS-a.pS);
   const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0});
-  const fila = x => `<tr><td title="${x.k}">${x.k}</td>
-    <td class="num sep">${nf.format(x.pS)}</td><td class="num dim">${nf.format(Math.round(x.pH))}</td>
-    <td class="num sep">${nf.format(x.dS)}</td><td class="num dim">${nf.format(Math.round(x.dH))}</td>
-    <td class="num sep">${nf.format(x.fS)}</td><td class="num dim">${nf.format(Math.round(x.fH))}</td>
-    <td class="num sep">${nf.format(x.cS)}</td><td class="num dim">${nf.format(Math.round(x.cH))}</td>
-    <td class="num sep" style="color:${colorPct(x.pctS)};font-weight:600">${x.pctS.toFixed(1)}%</td>
-    <td class="num" style="color:${colorPct(x.pctH)}">${x.pH?x.pctH.toFixed(1)+'%':'s/d'}</td></tr>`;
   const et = {proyecto:'Proyecto', ie:'Institución educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
-  document.getElementById('tSesiones').innerHTML =
-    `<thead><tr><th>${et}</th>
-      <th class="num sep">Prog. ses</th><th class="num">h</th>
-      <th class="num sep">Dictadas ses</th><th class="num">h</th>
-      <th class="num sep">Futuras ses</th><th class="num">h</th>
-      <th class="num sep">Canc. ses</th><th class="num">h</th>
-      <th class="num sep">% canc ses</th><th class="num">% canc h</th></tr></thead>
-    <tbody>` + arr.map(fila).join('') +
-    `<tr style="font-weight:600;border-top:2px solid var(--border)">${fila({k:'TOTAL',...T,pctS:T.pS?100*T.cS/T.pS:0,pctH:T.pH?100*T.cH/T.pH:0}).slice(4)}</tbody>`;
+  const cols = [
+    { k:'k', label:et, tip:'k' },
+    { k:'pS', label:'Prog. ses', num:true, sep:true, fmt:r=>nf.format(r.pS) },
+    { k:'pH', label:'h', num:true, fmt:r=>`<span class="dim">${nf.format(Math.round(r.pH))}</span>` },
+    { k:'dS', label:'Dictadas ses', num:true, sep:true, fmt:r=>nf.format(r.dS) },
+    { k:'dH', label:'h', num:true, fmt:r=>`<span class="dim">${nf.format(Math.round(r.dH))}</span>` },
+    { k:'fS', label:'Futuras ses', num:true, sep:true, fmt:r=>nf.format(r.fS) },
+    { k:'fH', label:'h', num:true, fmt:r=>`<span class="dim">${nf.format(Math.round(r.fH))}</span>` },
+    { k:'cS', label:'Canc. ses', num:true, sep:true, fmt:r=>nf.format(r.cS) },
+    { k:'cH', label:'h', num:true, fmt:r=>`<span class="dim">${nf.format(Math.round(r.cH))}</span>` },
+    { k:'pctS', label:'% canc ses', num:true, sep:true, fmt:r=>r.pctS.toFixed(1)+'%', style:r=>`color:${colorPct(r.pctS)};font-weight:600` },
+    { k:'pctH', label:'% canc h', num:true, fmt:r=>r.pH?r.pctH.toFixed(1)+'%':'s/d', style:r=>`color:${colorPct(r.pctH)}` },
+  ];
+  const totRow = {k:'TOTAL',...T,pctS:T.pS?100*T.cS/T.pS:0,pctH:T.pH?100*T.cH/T.pH:0};
+  const totalHtml = '<tr style="font-weight:600;border-top:2px solid var(--border)">' +
+    cols.map(c=>`<td class="${c.num?'num ':''}${c.sep?'sep':''}" ${c.style?`style="${c.style(totRow)}"`:''}>${c.fmt?c.fmt(totRow):(totRow[c.k]??'')}</td>`).join('') + '</tr>';
+  renderTable('tSesiones', cols, arr, totalHtml);
   document.getElementById('notaCobertura').textContent =
     `columnas "h" = horas académicas (academic_hours). Cobertura del dato en este alcance: ${tot?Math.round(100*(tot-sinHoras)/tot):0}% de las sesiones — donde falta, la sesión suma 0 h.`;
 }
