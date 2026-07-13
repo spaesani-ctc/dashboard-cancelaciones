@@ -32,6 +32,7 @@ SELECT
   rr.id AS room_id,
   rr.name AS salon,
   rs.state,
+  rs.is_paid_session,
   rs.cancellation_reason_id AS reason_id,
   CASE WHEN rs.state = 'false' THEN COALESCE(rc.name, 'Sin especificar') END AS motivo,
   rs.risk_cancellation AS riesgo,

@@ -72,7 +72,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 
 /* ===== LAYOUT ===== */
 .wrap { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 16px 8px; gap:10px; }
-.kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; flex-shrink:0; }
+.kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; flex-shrink:0; }
 .kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 14px; display:flex; flex-direction:column; justify-content:center; }
 .kpi-label { font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink3); }
 .kpi-value { font-family:'DM Serif Display',serif; font-size:1.6rem; line-height:1.15; color:var(--ink); }
@@ -163,6 +163,16 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 .f-icon { display:flex; align-items:center; padding:4px 7px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; }
 .f-icon:hover { background:var(--border); }
 
+/* ===== SKELETON de primera carga ===== */
+@keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+.cargando .p-body { min-height:40px; }
+.cargando .p-body::before { content:''; position:absolute; inset:2px; border-radius:8px; z-index:5;
+  background:linear-gradient(90deg, var(--surface2) 25%, var(--border) 40%, var(--surface2) 60%);
+  background-size:200% 100%; animation:shimmer 1.4s ease-in-out infinite; }
+.cargando .kpi-value { color:transparent; border-radius:6px;
+  background:linear-gradient(90deg, var(--surface2) 25%, var(--border) 40%, var(--surface2) 60%);
+  background-size:200% 100%; animation:shimmer 1.4s ease-in-out infinite; }
+
 /* ===== TOAST DE CARGA (no bloquea, como el informe) ===== */
 @keyframes proyPulse { 0%,100%{box-shadow:0 12px 40px rgba(29,107,62,0.40)} 50%{box-shadow:0 14px 54px rgba(29,107,62,0.72)} }
 #toastLoading { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(12px) scale(0.96); z-index:1100; opacity:0; pointer-events:none; transition:opacity .22s ease, transform .22s cubic-bezier(.2,.9,.3,1.4); }
@@ -193,7 +203,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 }
 </style>
 </head>
-<body>
+<body class="cargando">
 
 <div class="topbar">
   <div class="brand">
@@ -253,6 +263,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="kpi"><div class="kpi-label">Dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
     <div class="kpi"><div class="kpi-label">Canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
     <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
+    <div class="kpi"><div class="kpi-label">Canc. pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
     <div class="kpi"><div class="kpi-label">Salones afectados</div><div class="kpi-value" id="kSalones">—</div><div class="kpi-sub" id="kSalonesSub"></div></div>
   </div>
 
@@ -428,6 +439,7 @@ async function cargar(force=false){
     ROWS = j.rows;
     document.getElementById('metaUpdated').textContent = `Actualizado ${new Date(j.updated_at).toLocaleString('es-AR')}`;
     if(MOTIVOS_EXCL===null) MOTIVOS_EXCL = defaultExcl();
+    document.body.classList.remove('cargando');
     poblarFiltros(); render();
     hideLoad(); hideToast(); primeraCarga = false;
   } catch(e){ hideToast(); showLoad('Error al cargar', e.message); }
@@ -567,7 +579,13 @@ function poblarFiltros(){
       (typeof a==='number' && typeof b==='number') ? a-b : String(a).localeCompare(String(b)));
   };
   opciones('fCanal', 'Canal', uniqDe('canal','canal'), F.canal);
-  opciones('fGrado', 'Grado', uniqDe('grado','grado'), F.grado);
+  opciones('fGrado', 'Grado', uniqDe('grado','grado').sort((a,b)=>{
+    const na = parseInt(a), nb = parseInt(b);
+    if(!isNaN(na) && !isNaN(nb)) return nb - na;
+    if(!isNaN(na)) return -1;
+    if(!isNaN(nb)) return 1;
+    return String(a).localeCompare(String(b));
+  }), F.grado);
   for(const c of COMBOS) mkCombo(c, uniqDe(c.k, c.campo));
   mkComboMotivos();
 }
@@ -625,6 +643,10 @@ function renderKPIs(base, canc){
   const pctHrs = sProg.hrs ? 100*sCanc.hrs/sProg.hrs : 0;
   document.getElementById('kPct').textContent = (enHoras()?pctHrs:pctSes).toFixed(1)+'%';
   document.getElementById('kPctSub').textContent = enHoras() ? `en sesiones: ${pctSes.toFixed(1)}%` : `en horas acad.: ${sProg.hrs?pctHrs.toFixed(1)+'%':'s/d'}`;
+  const pagadas = canc.filter(r=>String(r.is_paid_session)==='true');
+  const sPag = sumas(pagadas);
+  document.getElementById('kPagadas').textContent = principal(sPag);
+  document.getElementById('kPagadasSub').textContent = canc.length ? `${(100*pagadas.length/canc.length).toFixed(1)}% de las canceladas` : '—';
   document.getElementById('kSalones').textContent = nf.format(new Set(canc.map(r=>r.room_id)).size);
   const cob = canc.length ? Math.round(100*sCanc.hc/canc.length) : 0;
   document.getElementById('kSalonesSub').textContent = `de ${nf.format(new Set(base.map(r=>r.room_id)).size)} · cobertura h: ${cob}%`;
@@ -642,7 +664,7 @@ function renderSemanal(base){
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
       { type:'bar', label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
-        datalabels:{ display:pocas, anchor:'center', align:'center', color:'#fff', font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
+        datalabels:{ display:pocas, anchor:'end', align:'end', offset:-2, color:css('--coral'), font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
       { type:'line', label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
         datalabels:{ align:'top', offset:5, color:css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
