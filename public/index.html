@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cancelaciones — CTC</title>
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="42" width="7" height="14" rx="1.5" fill="%230D1259"/><rect x="16" y="37" width="7" height="19" rx="1.5" fill="%231237A5"/><rect x="26" y="33" width="7" height="23" rx="1.5" fill="%230D1259"/><rect x="36" y="38" width="7" height="18" rx="1.5" fill="%236366F1"/><rect x="46" y="30" width="7" height="26" rx="1.5" fill="%23699BF7"/><rect x="56" y="22" width="7" height="34" rx="1.5" fill="%23A5A8F0"/><polyline points="8,34 20,27 30,24 38,27 49,19 60,8" fill="none" stroke="%234356C9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="34" r="3" fill="%231237A5"/><circle cx="20" cy="27" r="3" fill="%231237A5"/><circle cx="30" cy="24" r="3" fill="%234356C9"/><circle cx="38" cy="27" r="3" fill="%236366F1"/><circle cx="49" cy="19" r="3" fill="%23851AF7" opacity="0.7"/><path d="M60 8 L52 9.5 L57.5 15 Z" fill="%23A5A8F0"/></svg>'>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -29,7 +30,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 
 /* ===== TOPBAR ===== */
 .topbar { background:var(--accent); color:#fff; padding:7px 16px; display:flex; align-items:center; gap:14px; flex-shrink:0; }
-.brand { display:flex; align-items:baseline; gap:10px; white-space:nowrap; }
+.brand { display:flex; align-items:center; gap:9px; white-space:nowrap; }
 .brand-eyebrow { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.55); }
 .brand h1 { font-family:'DM Serif Display',serif; font-size:1.2rem; font-weight:400; line-height:1; }
 .brand h1 em { font-style:italic; color:rgba(255,255,255,0.65); }
@@ -38,7 +39,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .tab:hover { color:#fff; background:rgba(255,255,255,0.08); }
 .tab.active { background:rgba(255,255,255,0.14); color:#fff; font-weight:600; border-color:rgba(255,255,255,0.2); }
 .top-meta { font-family:'DM Mono',monospace; font-size:10px; color:rgba(255,255,255,0.5); white-space:nowrap; margin-left:auto; }
-.top-right { display:flex; gap:6px; align-items:center; }
+.top-right { margin-left:auto; display:flex; gap:6px; align-items:center; }
 .tb-btn { display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.08); cursor:pointer; color:#fff; font-family:'DM Sans',sans-serif; font-size:11.5px; font-weight:500; white-space:nowrap; transition:background .15s; }
 .tb-btn:hover { background:rgba(255,255,255,0.18); }
 
@@ -168,14 +169,22 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 
 <div class="topbar">
   <div class="brand">
-    <span class="brand-eyebrow">Data · CTC</span>
+    <svg class="logo" width="22" height="22" viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" aria-hidden="true">
+      <rect x="8" y="8" width="84" height="84" rx="16"/>
+      <circle cx="24" cy="23" r="3.5" fill="#fff" stroke="none"/>
+      <circle cx="36" cy="23" r="3.5" fill="#fff" stroke="none"/>
+      <circle cx="48" cy="23" r="3.5" fill="#fff" stroke="none"/>
+      <path d="M25 52 a11 11 0 0 1 22 0"/>
+      <path d="M62 47 h16 M78 40 v14"/>
+      <path d="M38 65 a11 11 0 0 0 22 0"/>
+      <rect x="64" y="61" width="7" height="7" fill="#fff" stroke="none"/>
+    </svg>
     <h1>Dashboard de <em>Cancelaciones</em></h1>
   </div>
   <div class="tabs" id="vistas">
     <button class="tab active" data-v="resumen">Resumen</button>
     <button class="tab" data-v="sesiones">Sesiones y horas</button>
   </div>
-  <span class="top-meta" id="metaRango">—</span>
   <div class="top-right">
     <button class="tb-btn" id="btnRefresh">↻ Actualizar</button>
     <button class="tb-btn" id="btnTheme">🌙</button>
@@ -271,11 +280,10 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 </div>
 
 <div class="statusbar">
-  <span><span class="dot"></span>SSOT Cancelaciones · Metabase/Athena</span>
-  <span id="metaUpdated">—</span>
-  <button id="btnDetalle">ver detalle de canceladas</button>
-  <button id="btnCSV">exportar CSV</button>
-  <button id="btnMet">metodología</button>
+  <span><span class="dot"></span><span id="metaUpdated">—</span></span>
+  <button id="btnDetalle">Ver detalle de canceladas</button>
+  <button id="btnCSV">Exportar CSV</button>
+  <button id="btnMet">Metodología</button>
 </div>
 
 <!-- MODAL DETALLE -->
@@ -380,8 +388,7 @@ async function cargar(force=false){
     const j = await r.json();
     if(!j.ok) throw new Error(j.error);
     ROWS = j.rows;
-    document.getElementById('metaRango').textContent = `${j.from} → ${j.to} · ${nf.format(j.n)} sesiones`;
-    document.getElementById('metaUpdated').textContent = `actualizado ${new Date(j.updated_at).toLocaleString('es-AR')}`;
+    document.getElementById('metaUpdated').textContent = `Actualizado ${new Date(j.updated_at).toLocaleString('es-AR')}`;
     poblarFiltros(); render(); hideLoad();
   } catch(e){ showLoad('Error al cargar', e.message); }
 }
