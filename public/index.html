@@ -168,12 +168,15 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 /* ===== SKELETON de primera carga ===== */
 @keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
 .cargando .p-body { min-height:40px; }
-.cargando .p-body::before { content:''; position:absolute; inset:2px; border-radius:8px; z-index:5;
-  background:linear-gradient(90deg, var(--surface2) 25%, var(--border) 40%, var(--surface2) 60%);
-  background-size:200% 100%; animation:shimmer 1.4s ease-in-out infinite; }
-.cargando .kpi-value { color:transparent; border-radius:6px;
-  background:linear-gradient(90deg, var(--surface2) 25%, var(--border) 40%, var(--surface2) 60%);
-  background-size:200% 100%; animation:shimmer 1.4s ease-in-out infinite; }
+.cargando .p-body::before { content:''; position:absolute; inset:0; border-radius:8px; z-index:5;
+  background:linear-gradient(100deg, var(--surface2) 32%, var(--border) 46%, var(--ink4) 50%, var(--border) 54%, var(--surface2) 68%);
+  background-size:220% 100%; animation:shimmer 1.3s ease-in-out infinite; }
+.cargando .p-body > * { visibility:hidden; }
+.cargando .kpi-value { color:transparent !important; border-radius:6px; display:block; width:70%; min-height:1.55rem;
+  background:linear-gradient(100deg, var(--surface2) 32%, var(--border) 46%, var(--ink4) 50%, var(--border) 54%, var(--surface2) 68%);
+  background-size:220% 100%; animation:shimmer 1.3s ease-in-out infinite; }
+.cargando .kpi-sub { color:transparent; border-radius:4px; width:50%; min-height:11px; background:var(--surface2); }
+.cargando .kpi-sub::after { content:'·'; visibility:hidden; }
 
 /* ===== TOAST DE CARGA (no bloquea, como el informe) ===== */
 @keyframes proyPulse { 0%,100%{box-shadow:0 12px 40px rgba(29,107,62,0.40)} 50%{box-shadow:0 14px 54px rgba(29,107,62,0.72)} }
@@ -442,7 +445,7 @@ const showToast = t => { document.getElementById('toastText').textContent = t; t
 const hideToast = () => toast.classList.remove('show');
 let primeraCarga = true;
 async function cargar(force=false){
-  if(primeraCarga) showLoad('Cargando datos…','Consultando Metabase…');
+  if(primeraCarga) showLoad('Refrescando datos…','Actualizando métricas…');
   else showToast(force?'Refrescando datos…':'Actualizando período…');
   try {
     const r = await fetch(`/api/data?from=${fDesde.value}&to=${fHasta.value}${force?'&t='+Date.now():''}`, { headers: { 'x-dash-key': localStorage.getItem('dashKey')||'' } });
