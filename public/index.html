@@ -903,13 +903,13 @@ function renderDetalle(){
   const pagina = filas.slice(detallePag*porPag,(detallePag+1)*porPag);
   document.getElementById('detN').textContent = `${nf.format(filas.length)} sesiones`;
   const cols = [
-    ['fecha','Fecha'],['proyecto','Proyecto'],['ie','IE'],['salon','Salón'],['grado','Grado'],
-    ['motivo','Motivo'],['profesor','Profesor'],['academic_hours','h acad.'],['make_up_class','Recup.'],['cancellation_at','Cancelada el']
+    ['fecha','Fecha de la sesión'],['cancellation_at','Cancelada el'],['proyecto','Proyecto'],['ie','IE'],['salon','Salón'],['grado','Grado'],
+    ['motivo','Motivo'],['profesor','Profesor'],['make_up_class','Clase de recuperación'],['academic_hours','Horas académicas']
   ];
   const el = document.getElementById('tDetalle');
   el.innerHTML =
     '<thead><tr>' + cols.map(([k,l])=>`<th data-k="${k}">${l}${s.k===k?(s.dir==='asc'?' ▲':' ▼'):''}</th>`).join('') + '</tr></thead><tbody>' +
-    pagina.map(r=>`<tr><td>${r.fecha}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td class="num">${r.academic_hours??'—'}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td></tr>`).join('') + '</tbody>';
+    pagina.map(r=>`<tr><td>${r.fecha}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td><td class="num">${r.academic_hours??'—'}</td></tr>`).join('') + '</tbody>';
   el.querySelectorAll('th').forEach(th => th.onclick = () => {
     const k = th.dataset.k;
     const prev = SORT['tDetalle'];
