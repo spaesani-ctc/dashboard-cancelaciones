@@ -140,6 +140,22 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 [data-theme="dark"] #loadingOverlay .loading-spin { color:var(--teal); }
 #loadingOverlay .loading-sub { color:var(--ink3); font-size:12px; font-weight:400; }
 
+/* ===== LOGIN ===== */
+#login { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; background:var(--bg); }
+.login-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2.6rem 2.8rem; width:min(400px,92vw); box-shadow:0 20px 60px rgba(0,0,0,0.10); text-align:center; }
+.login-eyebrow { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink3); margin-bottom:0.7rem; }
+.login-card h2 { font-family:'DM Serif Display',serif; font-size:1.9rem; font-weight:400; line-height:1.15; margin-bottom:0.4rem; }
+.login-card h2 em { font-style:italic; color:var(--accent); }
+.login-sub { font-size:12.5px; color:var(--ink2); margin-bottom:1.6rem; }
+.login-input { width:100%; font-family:'DM Mono',monospace; font-size:14px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); text-align:center; outline:none; letter-spacing:0.06em; }
+.login-input:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(45,74,62,0.15); }
+.login-btn { width:100%; margin-top:10px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; padding:10px; border-radius:8px; border:none; background:var(--accent); color:#fff; cursor:pointer; transition:opacity .15s; }
+.login-btn:hover { opacity:.92; }
+.login-err { font-size:11.5px; color:var(--coral); margin-top:10px; min-height:16px; }
+.login-help { font-size:11px; color:var(--ink3); margin-top:1.4rem; line-height:1.6; border-top:1px solid var(--border); padding-top:1rem; }
+@keyframes shake { 10%,90%{transform:translateX(-2px)} 20%,80%{transform:translateX(3px)} 30%,50%,70%{transform:translateX(-5px)} 40%,60%{transform:translateX(5px)} }
+.login-card.shake { animation: shake .45s; }
+
 @media (max-width:1100px) {
   body { overflow:auto; }
   .kpis { grid-template-columns:repeat(2,1fr); }
@@ -285,6 +301,19 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   </div>
 </div>
 
+<!-- LOGIN -->
+<div id="login" style="display:none">
+  <div class="login-card" id="loginCard">
+    <div class="login-eyebrow">Data · Crack the Code</div>
+    <h2>Dashboard de <em>Cancelaciones</em></h2>
+    <div class="login-sub">Ingresá la contraseña del equipo para acceder</div>
+    <input type="password" class="login-input" id="loginPass" placeholder="contraseña" autocomplete="current-password">
+    <button class="login-btn" id="loginBtn">Entrar</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-help">¿No recordás la contraseña?<br>Escribile a <strong>DATA</strong> por Discord y te la pasamos.</div>
+  </div>
+</div>
+
 <!-- LOADING OVERLAY -->
 <div id="loadingOverlay" class="show" role="status" aria-live="polite">
   <div class="loading-pill">
@@ -347,7 +376,7 @@ document.getElementById('periodoApply').onclick = () => {
 async function cargar(force=false){
   showLoad(force?'Refrescando datos…':'Cargando datos…','Consultando Metabase…');
   try {
-    const r = await fetch(`/api/data?from=${fDesde.value}&to=${fHasta.value}${force?'&t='+Date.now():''}`);
+    const r = await fetch(`/api/data?from=${fDesde.value}&to=${fHasta.value}${force?'&t='+Date.now():''}`, { headers: { 'x-dash-key': localStorage.getItem('dashKey')||'' } });
     const j = await r.json();
     if(!j.ok) throw new Error(j.error);
     ROWS = j.rows;
@@ -624,7 +653,31 @@ document.getElementById('btnCSV').onclick = () => {
   a.click();
 };
 
-cargar();
+/* ============ login ============ */
+const PASS_OK = () => localStorage.getItem('dashKey') === 'teamdataforever';
+function intentarLogin(){
+  const v = document.getElementById('loginPass').value;
+  if(v === 'teamdataforever'){
+    localStorage.setItem('dashKey', v);
+    document.getElementById('login').style.display = 'none';
+    cargar();
+  } else {
+    const card = document.getElementById('loginCard');
+    document.getElementById('loginErr').textContent = 'Contraseña incorrecta';
+    card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+    document.getElementById('loginPass').select();
+  }
+}
+document.getElementById('loginBtn').onclick = intentarLogin;
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') intentarLogin(); });
+
+if(PASS_OK()){
+  cargar();
+} else {
+  hideLoad();
+  document.getElementById('login').style.display = 'flex';
+  setTimeout(()=>document.getElementById('loginPass').focus(), 50);
+}
 </script>
 </body>
 </html>

@@ -77,6 +77,12 @@ export default async function handler(req, res) {
   const apiKey = process.env.METABASE_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'METABASE_API_KEY not configured' });
 
+  // Acceso protegido: misma clave que el login del front (configurable por env)
+  const PASS = process.env.DASH_PASSWORD || 'teamdataforever';
+  if ((req.headers['x-dash-key'] || req.query?.key) !== PASS) {
+    return res.status(401).json({ ok: false, error: 'No autorizado' });
+  }
+
   // Default: últimas 12 semanas
   const hoy = new Date().toISOString().slice(0, 10);
   const hace12 = new Date(Date.now() - 12 * 7 * 86400000).toISOString().slice(0, 10);
