@@ -47,7 +47,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 /* ===== FILTERBAR ===== */
 .filterbar { background:var(--surface); border-bottom:1px solid var(--border); padding:6px 16px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex-shrink:0; }
 .f-select { font-family:'DM Sans',sans-serif; font-size:11.5px; padding:4px 7px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); max-width:150px; cursor:pointer; }
-.f-select.active-f { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.f-select.active-f { font-weight:600; }
 .scope { display:flex; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:2px; flex-shrink:0; }
 .scope-btn { font-family:'DM Sans',sans-serif; font-size:10.5px; font-weight:500; padding:2px 8px; border:none; background:transparent; color:var(--ink2); border-radius:5px; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
 .scope-btn:hover { color:var(--ink); }
@@ -146,7 +146,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 .combo { position:relative; }
 .combo-btn { display:flex; align-items:center; gap:6px; font-family:'DM Sans',sans-serif; font-size:11.5px; font-weight:500; padding:4px 9px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); cursor:pointer; white-space:nowrap; max-width:190px; }
 .combo-btn:hover { background:var(--border); }
-.combo-btn.active-f { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.combo-btn.active-f { font-weight:600; }
 .combo-btn .cv { overflow:hidden; text-overflow:ellipsis; }
 .combo-pop { position:absolute; top:calc(100% + 6px); left:0; z-index:500; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 12px 36px rgba(0,0,0,0.16); padding:6px; display:none; min-width:250px; }
 .combo-pop.show { display:block; }
@@ -640,15 +640,11 @@ function renderSemanal(base){
   const pocas = labels.length <= 15;
   const fmt = s => { const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); };
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
-  const muted = document.documentElement.getAttribute('data-theme')==='dark' ? 'rgba(240,237,230,0.22)' : 'rgba(26,25,22,0.16)';
-  const datasets = [];
-  if(showProg) datasets.push({ type:'bar', label:enHoras()?'Horas programadas':'Sesiones programadas', data:labels.map(s=>sem[s].p), backgroundColor:muted, borderRadius:3, yAxisID:'y',
-    datalabels:{ display:pocas, anchor:'end', align:'end', offset:-2, color:css('--ink3'), font:{family:'DM Sans',size:8}, formatter:v=>v?fmtN(v):'' } });
-  datasets.push({ type:'bar', label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
-    datalabels:{ display:pocas, anchor:'end', align:'end', offset:-2, color:css('--coral'), font:{family:'DM Sans',size:8,weight:600}, formatter:v=>v?fmtN(v):'' } });
-  datasets.push({ type:'line', label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-    datalabels:{ display:(ctx)=>labels.length<=20 || ctx.dataIndex%2===0, align:'top', offset:5, color:css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } });
-  mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets },
+  mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
+      { type:'bar', label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
+        datalabels:{ display:pocas, anchor:'center', align:'center', color:'#fff', font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
+      { type:'line', label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+        datalabels:{ align:'top', offset:5, color:css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
                 tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${fmtN(c.parsed.y)}`}} },
