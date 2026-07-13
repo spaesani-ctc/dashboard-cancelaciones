@@ -685,14 +685,30 @@ document.getElementById('btnDetalle').onclick = () => { detallePag=0; renderDeta
 
 function renderDetalle(){
   const porPag = 22;
-  const filas = [...(window._canc||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const s = SORT['tDetalle'] || { k:'fecha', dir:'desc' };
+  const filas = [...(window._canc||[])].sort((a,b)=>{
+    const x=a[s.k], y=b[s.k];
+    const cmp = (typeof x==='number' && typeof y==='number') ? x-y : String(x??'').localeCompare(String(y??''), 'es');
+    return s.dir==='asc' ? cmp : -cmp;
+  });
   const pags = Math.max(1, Math.ceil(filas.length/porPag));
   detallePag = Math.min(detallePag, pags-1);
   const pagina = filas.slice(detallePag*porPag,(detallePag+1)*porPag);
   document.getElementById('detN').textContent = `${nf.format(filas.length)} sesiones`;
-  document.getElementById('tDetalle').innerHTML =
-    `<thead><tr><th>Fecha</th><th>Proyecto</th><th>IE</th><th>Salón</th><th>Grado</th><th>Motivo</th><th>Profesor</th><th>h acad.</th><th>Recup.</th><th>Cancelada el</th></tr></thead><tbody>` +
+  const cols = [
+    ['fecha','Fecha'],['proyecto','Proyecto'],['ie','IE'],['salon','Salón'],['grado','Grado'],
+    ['motivo','Motivo'],['profesor','Profesor'],['academic_hours','h acad.'],['make_up_class','Recup.'],['cancellation_at','Cancelada el']
+  ];
+  const el = document.getElementById('tDetalle');
+  el.innerHTML =
+    '<thead><tr>' + cols.map(([k,l])=>`<th data-k="${k}">${l}${s.k===k?(s.dir==='asc'?' ▲':' ▼'):''}</th>`).join('') + '</tr></thead><tbody>' +
     pagina.map(r=>`<tr><td>${r.fecha}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td class="num">${r.academic_hours??'—'}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td></tr>`).join('') + '</tbody>';
+  el.querySelectorAll('th').forEach(th => th.onclick = () => {
+    const k = th.dataset.k;
+    const prev = SORT['tDetalle'];
+    SORT['tDetalle'] = { k, dir: prev && prev.k===k && prev.dir==='desc' ? 'asc' : 'desc' };
+    detallePag = 0; renderDetalle();
+  });
   document.getElementById('pagDetalle').innerHTML =
     `pág. ${detallePag+1}/${pags} <button onclick="detallePag=Math.max(0,detallePag-1);renderDetalle()">‹</button> <button onclick="detallePag=Math.min(${pags-1},detallePag+1);renderDetalle()">›</button>`;
 }
