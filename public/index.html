@@ -218,7 +218,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   </div>
   <select class="f-select" id="fCanal"><option value="">Canal</option></select>
   <select class="f-select" id="fProyecto"><option value="">Proyecto</option></select>
-  <select class="f-select" id="fIE"><option value="">IE</option></select>
+  <select class="f-select" id="fIE"><option value="">Institución Educativa</option></select>
   <select class="f-select" id="fGrado"><option value="">Grado</option></select>
   <select class="f-select" id="fSalon"><option value="">Salón</option></select>
   <select class="f-select" id="fMotivo"><option value="">Motivo</option></select>
@@ -235,29 +235,28 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="kpi"><div class="kpi-label">Dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
     <div class="kpi"><div class="kpi-label">Canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
     <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Salones afectados</div><div class="kpi-value amber" id="kSalones">—</div><div class="kpi-sub" id="kSalonesSub"></div></div>
+    <div class="kpi"><div class="kpi-label">Salones afectados</div><div class="kpi-value" id="kSalones">—</div><div class="kpi-sub" id="kSalonesSub"></div></div>
   </div>
 
   <!-- VISTA RESUMEN -->
   <div class="grid" id="vistaResumen">
     <div class="panel" id="pSemanal">
-      <div class="p-head"><span class="p-title">Evolución semanal</span><span class="p-sub" id="semanalSub">Sesiones canceladas y % de cancelación</span>
-        <div class="p-tabs"><button class="p-tab active" id="togProg" title="Mostrar/ocultar la serie de programadas">Programadas ✓</button></div></div>
+      <div class="p-head"><span class="p-title">Evolución semanal</span><span class="p-sub" id="semanalSub">Sesiones canceladas y % de cancelación</span></div>
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
     <div class="panel" id="pMotivos">
-      <div class="p-head"><span class="p-title">Motivos</span><span class="p-sub">todos los motivos del alcance</span>
+      <div class="p-head"><span class="p-title">Motivos</span><span class="p-sub" id="motivosSub">Sesiones canceladas por motivo registrado</span>
         <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div>
       </div>
       <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
       <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
     </div>
     <div class="panel" id="pHeatmap">
-      <div class="p-head"><span class="p-title">Día × hora</span><span class="p-sub">canceladas</span></div>
+      <div class="p-head"><span class="p-title">Día × hora</span><span class="p-sub" id="heatmapSub">Concentración de cancelaciones por día y hora</span></div>
       <div class="p-body"><div class="hm" id="heatmap"></div></div>
     </div>
     <div class="panel" id="pProyectos">
-      <div class="p-head"><span class="p-title">Proyectos</span><span class="p-sub">por % cancelación</span></div>
+      <div class="p-head"><span class="p-title">Proyectos</span><span class="p-sub">Ordenado por % de cancelación</span></div>
       <div class="p-body scroll"><table class="t" id="tProyectos"></table></div>
     </div>
     <div class="panel" id="pRanking">
@@ -455,26 +454,32 @@ document.getElementById('btnLimpiar').onclick = () => {
   document.querySelectorAll('.f-select').forEach(s=>s.classList.remove('active-f'));
   poblarFiltros(); render();
 };
-function opciones(sel, valores, etiqueta, actual){
+function opciones(sel, etiqueta, valores, actual, todos){
   const s = document.getElementById(sel);
-  s.innerHTML = `<option value="">${etiqueta}</option>` + valores.map(v=>`<option ${String(v)===actual?'selected':''} value="${String(v).replace(/"/g,'&quot;')}">${v}</option>`).join('');
+  s.innerHTML = `<option value="" hidden>${etiqueta}</option><option value="">${todos||'Todos'}</option>` +
+    valores.map(v=>`<option ${String(v)===actual?'selected':''} value="${String(v).replace(/"/g,'&quot;')}">${v}</option>`).join('');
+  if(!actual) s.selectedIndex = 0;   // cerrado muestra el nombre del filtro
 }
 function poblarFiltros(){
-  const sub = ROWS.filter(r => pasaFiltros(r));
-  const uniq = k => [...new Set(sub.map(r=>r[k]).filter(v=>v!=null && v!==''))].sort((a,b)=>String(a).localeCompare(String(b)));
-  opciones('fCanal', uniq('canal'), 'Canal', F.canal);
-  opciones('fProyecto', uniq('proyecto'), 'Proyecto', F.proyecto);
-  opciones('fIE', uniq('ie'), 'IE', F.ie);
-  opciones('fGrado', uniq('grado'), 'Grado', F.grado);
-  opciones('fSalon', uniq('salon'), 'Salón', F.salon);
-  opciones('fMotivo', [...new Set(sub.filter(r=>r.motivo).map(r=>r.motivo))].sort(), 'Motivo', F.motivo);
+  // cada select se puebla con el subconjunto que dejan LOS DEMÁS filtros (sin aplicarse a sí mismo)
+  const uniqDe = (omitir, campo) => {
+    const sub = ROWS.filter(r => pasaFiltros(r, omitir));
+    return [...new Set(sub.map(r=>r[campo]).filter(v=>v!=null && v!==''))].sort((a,b)=>String(a).localeCompare(String(b)));
+  };
+  opciones('fCanal', 'Canal', uniqDe('canal','canal'), F.canal);
+  opciones('fProyecto', 'Proyecto', uniqDe('proyecto','proyecto'), F.proyecto);
+  opciones('fIE', 'Institución Educativa', uniqDe('ie','ie'), F.ie, 'Todas');
+  opciones('fGrado', 'Grado', uniqDe('grado','grado'), F.grado);
+  opciones('fSalon', 'Salón', uniqDe('salon','salon'), F.salon);
+  const subM = ROWS.filter(r => pasaFiltros(r));
+  opciones('fMotivo', 'Motivo', [...new Set(subM.filter(r=>r.motivo).map(r=>r.motivo))].sort(), F.motivo);
 }
-function pasaFiltros(r){
-  if(F.canal && r.canal!==F.canal) return false;
-  if(F.proyecto && r.proyecto!==F.proyecto) return false;
-  if(F.ie && r.ie!==F.ie) return false;
-  if(F.grado && String(r.grado)!==F.grado) return false;
-  if(F.salon && r.salon!==F.salon) return false;
+function pasaFiltros(r, omitir){
+  if(omitir!=='canal' && F.canal && r.canal!==F.canal) return false;
+  if(omitir!=='proyecto' && F.proyecto && r.proyecto!==F.proyecto) return false;
+  if(omitir!=='ie' && F.ie && r.ie!==F.ie) return false;
+  if(omitir!=='grado' && F.grado && String(r.grado)!==F.grado) return false;
+  if(omitir!=='salon' && F.salon && r.salon!==F.salon) return false;
   return true;
 }
 function esCancelada(r){
@@ -530,17 +535,11 @@ function renderKPIs(base, canc){
 
 function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
 
-let showProg = true;
-document.getElementById('togProg').onclick = function(){
-  showProg = !showProg;
-  this.classList.toggle('active', showProg);
-  this.textContent = showProg ? 'Programadas ✓' : 'Programadas ✗';
-  renderSemanal(window._base||[]);
-};
+const showProg = true;
 function renderSemanal(base){
   document.getElementById('semanalSub').textContent = enHoras()
-    ? (showProg?'Horas programadas, canceladas y % de cancelación':'Horas canceladas y % de cancelación')
-    : (showProg?'Sesiones programadas, canceladas y % de cancelación':'Sesiones canceladas y % de cancelación');
+    ? 'Horas académicas programadas vs canceladas, semana a semana'
+    : 'Sesiones programadas vs canceladas, semana a semana';
   const sem = {};
   for(const r of base){ (sem[r.semana] ??= {p:0,c:0}); sem[r.semana].p += val(r); if(esCancelada(r)) sem[r.semana].c += val(r); }
   const labels = Object.keys(sem).sort();
@@ -553,7 +552,7 @@ function renderSemanal(base){
     datalabels:{ display:pocas, anchor:'end', align:'end', offset:-2, color:css('--ink3'), font:{family:'DM Sans',size:8}, formatter:v=>v?fmtN(v):'' } });
   datasets.push({ type:'bar', label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
     datalabels:{ display:pocas, anchor:'end', align:'end', offset:-2, color:css('--coral'), font:{family:'DM Sans',size:8,weight:600}, formatter:v=>v?fmtN(v):'' } });
-  datasets.push({ type:'line', label:'% cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+  datasets.push({ type:'line', label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
     datalabels:{ display:(ctx)=>labels.length<=20 || ctx.dataIndex%2===0, align:'top', offset:5, color:css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } });
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets },
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
@@ -566,6 +565,7 @@ function renderSemanal(base){
 }
 
 function renderMotivos(canc){
+  document.getElementById('motivosSub').textContent = enHoras() ? 'Horas académicas canceladas por motivo registrado' : 'Sesiones canceladas por motivo registrado';
   const m = {};
   for(const r of canc){ const k = r.motivo||'Sin especificar'; m[k]=(m[k]||0)+val(r); }
   const orden = Object.entries(m).sort((a,b)=>b[1]-a[1]);
@@ -586,7 +586,7 @@ function renderMotivos(canc){
   renderTable('tMotivos', [
     { k:'motivo', label:'Motivo', tip:'motivo' },
     { k:'v', label:enHoras()?'Horas':'Sesiones', num:true, fmt:r=>fmtU(r.v) },
-    { k:'pct', label:'%', num:true, fmt:r=>r.pct.toFixed(1)+'%' },
+    { k:'pct', label:'% del total', num:true, fmt:r=>r.pct.toFixed(1)+'%' },
   ], orden.map(([k,v])=>({motivo:k, v, pct:100*v/total})));
 }
 
@@ -628,7 +628,7 @@ function tablaRank(id, arr, etiqueta){
     { k:'k', label:etiqueta, tip:'k' },
     { k:'p', label:'Prog.', num:true, fmt:r=>fmtU(r.p) },
     { k:'c', label:'Canc.', num:true, fmt:r=>fmtU(r.c) },
-    { k:'pct', label:'%', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
+    { k:'pct', label:'% Canc.', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
   ], arr);
 }
 function renderProyectos(base){ tablaRank('tProyectos', filaAgg(base,'proyecto',1), 'Proyecto'); }
@@ -650,9 +650,10 @@ document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
 });
 
 function renderHeatmap(canc){
+  document.getElementById('heatmapSub').textContent = enHoras() ? 'Concentración de horas académicas canceladas por día y hora' : 'Concentración de sesiones canceladas por día y hora';
   const horas = [...new Set(canc.map(r=>r.hora).filter(h=>h && h>='05' && h<='22'))].sort();
   const m = {};
-  for(const r of canc){ m[r.dia+'|'+r.hora]=(m[r.dia+'|'+r.hora]||0)+1; }
+  for(const r of canc){ m[r.dia+'|'+r.hora]=(m[r.dia+'|'+r.hora]||0)+val(r); }
   const max = Math.max(1,...Object.values(m));
   const el = document.getElementById('heatmap');
   el.style.gridTemplateColumns = `34px repeat(${horas.length||1},1fr)`;
@@ -662,8 +663,9 @@ function renderHeatmap(canc){
     html += `<div class="hm-lab">${DIAS_ES[d]}</div>`;
     for(const h of horas){
       const v = m[d+'|'+h]||0, a = v/max;
+      const vTxt = v ? (enHoras() ? nf.format(Math.round(v)) : nf.format(v)) : '';
       const bg = v===0?'var(--surface2)':`rgba(216,90,48,${(0.12+0.75*a).toFixed(2)})`;
-      html += `<div class="hm-cell" style="background:${bg};color:${a>0.55?'#fff':'var(--ink)'}" title="${DIAS_ES[d]} ${h}h: ${v}">${v||''}</div>`;
+      html += `<div class="hm-cell" style="background:${bg};color:${a>0.55?'#fff':'var(--ink)'}" title="${DIAS_ES[d]} ${h}h: ${fmtU(v)}">${vTxt}</div>`;
     }
   }
   el.innerHTML = html;
