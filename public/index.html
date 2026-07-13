@@ -142,6 +142,27 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 [data-theme="dark"] #loadingOverlay .loading-spin { color:var(--teal); }
 #loadingOverlay .loading-sub { color:var(--ink3); font-size:12px; font-weight:400; }
 
+/* ===== COMBOS con buscador ===== */
+.combo { position:relative; }
+.combo-btn { display:flex; align-items:center; gap:6px; font-family:'DM Sans',sans-serif; font-size:11.5px; font-weight:500; padding:4px 9px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); cursor:pointer; white-space:nowrap; max-width:190px; }
+.combo-btn:hover { background:var(--border); }
+.combo-btn.active-f { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.combo-btn .cv { overflow:hidden; text-overflow:ellipsis; }
+.combo-pop { position:absolute; top:calc(100% + 6px); left:0; z-index:500; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 12px 36px rgba(0,0,0,0.16); padding:6px; display:none; min-width:250px; }
+.combo-pop.show { display:block; }
+.combo-search { width:100%; font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 9px; border-radius:7px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); outline:none; margin-bottom:5px; }
+.combo-list { max-height:260px; overflow:auto; }
+.combo-item { display:flex; align-items:center; gap:7px; width:100%; text-align:left; font-family:'DM Sans',sans-serif; font-size:12px; padding:5px 9px; border:none; background:transparent; color:var(--ink2); border-radius:6px; cursor:pointer; }
+.combo-item:hover { background:var(--surface2); color:var(--ink); }
+.combo-item.sel { font-weight:600; color:var(--ink); background:var(--surface2); }
+.combo-item input[type=checkbox] { accent-color:var(--accent); }
+.combo-item.excluido { color:var(--coral); text-decoration:line-through; }
+.combo-acciones { display:flex; gap:10px; padding:4px 9px 6px; border-bottom:1px solid var(--border); margin-bottom:4px; }
+.combo-acciones button { font-size:10.5px; color:var(--ink3); background:none; border:none; cursor:pointer; text-decoration:underline dotted; }
+.combo-acciones button:hover { color:var(--ink); }
+.f-icon { display:flex; align-items:center; padding:4px 7px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; }
+.f-icon:hover { background:var(--border); }
+
 /* ===== TOAST DE CARGA (no bloquea, como el informe) ===== */
 @keyframes proyPulse { 0%,100%{box-shadow:0 12px 40px rgba(29,107,62,0.40)} 50%{box-shadow:0 14px 54px rgba(29,107,62,0.72)} }
 #toastLoading { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(12px) scale(0.96); z-index:1100; opacity:0; pointer-events:none; transition:opacity .22s ease, transform .22s cubic-bezier(.2,.9,.3,1.4); }
@@ -216,17 +237,14 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <button class="scope-btn active" data-u="ses">Sesiones</button>
     <button class="scope-btn" data-u="hrs">Horas acad.</button>
   </div>
-  <select class="f-select" id="fCanal"><option value="">Canal</option></select>
-  <select class="f-select" id="fProyecto"><option value="">Proyecto</option></select>
-  <select class="f-select" id="fIE"><option value="">Institución Educativa</option></select>
-  <select class="f-select" id="fGrado"><option value="">Grado</option></select>
-  <select class="f-select" id="fSalon"><option value="">Salón</option></select>
-  <select class="f-select" id="fMotivo"><option value="">Motivo</option></select>
-  <div class="scope" id="scope333435" title="33 Cambio operativo BO · 34 Feriado · 35 Vacaciones">
-    <button class="scope-btn active" data-v="excl">Sin 33/34/35</button>
-    <button class="scope-btn" data-v="incl">Con 33/34/35</button>
-  </div>
-  <button class="f-clear" id="btnLimpiar">limpiar filtros</button>
+  <select class="f-select" id="fCanal"><option value="" hidden>Canal</option></select>
+  <div class="combo" id="cbProyecto"></div>
+  <div class="combo" id="cbIe"></div>
+  <select class="f-select" id="fGrado"><option value="" hidden>Grado</option></select>
+  <div class="combo" id="cbRoomId"></div>
+  <div class="combo" id="cbSalon"></div>
+  <div class="combo" id="cbMotivos"></div>
+  <button class="f-icon" id="btnLimpiar" title="Limpiar filtros"><svg width="15" height="15" viewBox="0 0 100 100"><path d="M8 10 h84 v16 L60 60 v30 l-20 -12 V60 L8 26 z" fill="%23FFC107" style="fill:#FFC107"/><path d="M8 10 h84 v16 h-84 z" fill="#FF9800"/><circle cx="72" cy="72" r="22" fill="#F0505A"/><path d="M63 63 L81 81 M81 63 L63 81" stroke="#fff" stroke-width="8" stroke-linecap="round"/></svg></button>
 </div>
 
 <div class="wrap">
@@ -241,22 +259,22 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <!-- VISTA RESUMEN -->
   <div class="grid" id="vistaResumen">
     <div class="panel" id="pSemanal">
-      <div class="p-head"><span class="p-title">Evolución semanal</span><span class="p-sub" id="semanalSub">Sesiones canceladas y % de cancelación</span></div>
+      <div class="p-head"><span class="p-title">Evolución semanal</span></div>
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
     <div class="panel" id="pMotivos">
-      <div class="p-head"><span class="p-title">Motivos</span><span class="p-sub" id="motivosSub">Sesiones canceladas por motivo registrado</span>
+      <div class="p-head"><span class="p-title">Motivos</span>
         <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div>
       </div>
       <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
       <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
     </div>
     <div class="panel" id="pHeatmap">
-      <div class="p-head"><span class="p-title">Día × hora</span><span class="p-sub" id="heatmapSub">Concentración de cancelaciones por día y hora</span></div>
+      <div class="p-head"><span class="p-title">Cancelaciones por día y hora</span></div>
       <div class="p-body"><div class="hm" id="heatmap"></div></div>
     </div>
     <div class="panel" id="pProyectos">
-      <div class="p-head"><span class="p-title">Proyectos</span><span class="p-sub">Ordenado por % de cancelación</span></div>
+      <div class="p-head"><span class="p-title">Proyectos</span></div>
       <div class="p-body scroll"><table class="t" id="tProyectos"></table></div>
     </div>
     <div class="panel" id="pRanking">
@@ -409,6 +427,7 @@ async function cargar(force=false){
     if(!j.ok) throw new Error(j.error);
     ROWS = j.rows;
     document.getElementById('metaUpdated').textContent = `Actualizado ${new Date(j.updated_at).toLocaleString('es-AR')}`;
+    if(MOTIVOS_EXCL===null) MOTIVOS_EXCL = defaultExcl();
     poblarFiltros(); render();
     hideLoad(); hideToast(); primeraCarga = false;
   } catch(e){ hideToast(); showLoad('Error al cargar', e.message); }
@@ -438,58 +457,136 @@ const val = r => enHoras() ? (r.academic_hours||0) : 1;
 const fmtU = v => enHoras() ? nf.format(Math.round(v))+' h' : nf.format(v);
 
 /* ============ filtros ============ */
-const F = { canal:'', proyecto:'', ie:'', grado:'', salon:'', motivo:'', m333435:'excl' };
-const selIds = { fCanal:'canal', fProyecto:'proyecto', fIE:'ie', fGrado:'grado', fSalon:'salon', fMotivo:'motivo' };
-for(const [id,k] of Object.entries(selIds)){
-  document.getElementById(id).onchange = e => { F[k]=e.target.value; e.target.classList.toggle('active-f', !!e.target.value); if(k!=='motivo') poblarFiltros(); render(); };
+const F = { canal:'', proyecto:'', ie:'', grado:'', salon:'', roomId:'' };
+let MOTIVOS_EXCL = null;                 // Set de nombres de motivo excluidos
+const DEFAULT_EXCL_IDS = [33, 34, 35];   // Cambio operativo BO · Feriado · Vacaciones
+function defaultExcl(){
+  const s = new Set();
+  for(const r of ROWS) if(r.state==='false' && DEFAULT_EXCL_IDS.includes(r.reason_id) && r.motivo) s.add(r.motivo);
+  return s;
 }
-document.getElementById('scope333435').addEventListener('click', e => {
-  if(!e.target.dataset.v) return;
-  document.querySelectorAll('#scope333435 .scope-btn').forEach(b=>b.classList.remove('active'));
-  e.target.classList.add('active');
-  F.m333435 = e.target.dataset.v; render();
-});
+
+/* selects nativos (canal, grado) */
+for(const [id,k] of Object.entries({ fCanal:'canal', fGrado:'grado' })){
+  document.getElementById(id).onchange = e => { F[k]=e.target.value; e.target.classList.toggle('active-f', !!e.target.value); poblarFiltros(); render(); };
+}
+function opciones(sel, etiqueta, valores, actual){
+  const s = document.getElementById(sel);
+  s.innerHTML = `<option value="" hidden>${etiqueta}</option><option value="">Todos</option>` +
+    valores.map(v=>`<option ${String(v)===actual?'selected':''} value="${String(v).replace(/"/g,'&quot;')}">${v}</option>`).join('');
+  if(!actual) s.selectedIndex = 0;
+}
+
+/* combos con buscador (proyecto, IE, id salón, salón) */
+const COMBOS = [
+  { id:'cbProyecto', k:'proyecto', campo:'proyecto', label:'Proyecto', todos:'Todos' },
+  { id:'cbIe', k:'ie', campo:'ie', label:'Institución Educativa', todos:'Todas' },
+  { id:'cbRoomId', k:'roomId', campo:'room_id', label:'ID Salón', todos:'Todos' },
+  { id:'cbSalon', k:'salon', campo:'salon', label:'Salón', todos:'Todos' },
+];
+function mkCombo(cfg, valores){
+  const el = document.getElementById(cfg.id);
+  const activo = F[cfg.k] !== '';
+  el.innerHTML = `
+    <button class="combo-btn ${activo?'active-f':''}"><span class="cv">${activo?F[cfg.k]:cfg.label}</span> <span style="opacity:.5">▾</span></button>
+    <div class="combo-pop">
+      <input class="combo-search" placeholder="Buscar…">
+      <div class="combo-list"></div>
+    </div>`;
+  const btn = el.querySelector('.combo-btn'), popC = el.querySelector('.combo-pop'),
+        search = el.querySelector('.combo-search'), list = el.querySelector('.combo-list');
+  const pinta = q => {
+    const ql = (q||'').toLowerCase();
+    const vs = valores.filter(v => String(v).toLowerCase().includes(ql)).slice(0, 400);
+    list.innerHTML = `<button class="combo-item ${!activo?'sel':''}" data-v="">${cfg.todos}</button>` +
+      vs.map(v=>`<button class="combo-item ${String(v)===F[cfg.k]?'sel':''}" data-v="${String(v).replace(/"/g,'&quot;')}">${v}</button>`).join('');
+    list.querySelectorAll('.combo-item').forEach(it => it.onclick = () => {
+      F[cfg.k] = it.dataset.v; cerrarPops(); poblarFiltros(); render();
+    });
+  };
+  btn.onclick = e => { e.stopPropagation(); const abierto = popC.classList.contains('show'); cerrarPops(); if(!abierto){ popC.classList.add('show'); pinta(''); search.value=''; search.focus(); } };
+  popC.onclick = e => e.stopPropagation();
+  search.oninput = () => pinta(search.value);
+}
+
+/* combo multi de motivos (con exclusión visible) */
+function mkComboMotivos(){
+  const el = document.getElementById('cbMotivos');
+  const nombres = [...new Set(ROWS.filter(r=>r.state==='false' && pasaFiltros(r)).map(r=>r.motivo||'Sin especificar'))].sort();
+  const nExcl = MOTIVOS_EXCL ? [...MOTIVOS_EXCL].filter(n=>nombres.includes(n)).length : 0;
+  el.innerHTML = `
+    <button class="combo-btn ${nExcl?'active-f':''}"><span class="cv">Motivos${nExcl?` (${nExcl} exc.)`:''}</span> <span style="opacity:.5">▾</span></button>
+    <div class="combo-pop" style="min-width:300px">
+      <input class="combo-search" placeholder="Buscar motivo…">
+      <div class="combo-acciones"><button data-a="todos">Incluir todos</button><button data-a="ninguno">Excluir todos</button><button data-a="default">Volver al default</button></div>
+      <div class="combo-list"></div>
+    </div>`;
+  const btn = el.querySelector('.combo-btn'), popC = el.querySelector('.combo-pop'),
+        search = el.querySelector('.combo-search'), list = el.querySelector('.combo-list');
+  const pinta = q => {
+    const ql = (q||'').toLowerCase();
+    list.innerHTML = nombres.filter(n=>n.toLowerCase().includes(ql)).map(n=>{
+      const exc = MOTIVOS_EXCL.has(n);
+      return `<label class="combo-item ${exc?'excluido':''}"><input type="checkbox" ${exc?'':'checked'} data-n="${n.replace(/"/g,'&quot;')}"> ${n}</label>`;
+    }).join('');
+    list.querySelectorAll('input[type=checkbox]').forEach(c => c.onchange = () => {
+      if(c.checked) MOTIVOS_EXCL.delete(c.dataset.n); else MOTIVOS_EXCL.add(c.dataset.n);
+      c.closest('.combo-item').classList.toggle('excluido', !c.checked);
+      btnLabel(); render();
+    });
+  };
+  const btnLabel = () => {
+    const nE = [...MOTIVOS_EXCL].filter(n=>nombres.includes(n)).length;
+    btn.querySelector('.cv').textContent = `Motivos${nE?` (${nE} exc.)`:''}`;
+    btn.classList.toggle('active-f', nE>0);
+  };
+  el.querySelectorAll('.combo-acciones button').forEach(b => b.onclick = () => {
+    if(b.dataset.a==='todos') nombres.forEach(n=>MOTIVOS_EXCL.delete(n));
+    if(b.dataset.a==='ninguno') nombres.forEach(n=>MOTIVOS_EXCL.add(n));
+    if(b.dataset.a==='default') MOTIVOS_EXCL = defaultExcl();
+    pinta(search.value); btnLabel(); render();
+  });
+  btn.onclick = e => { e.stopPropagation(); const abierto = popC.classList.contains('show'); cerrarPops(); if(!abierto){ popC.classList.add('show'); pinta(''); search.value=''; search.focus(); } };
+  popC.onclick = e => e.stopPropagation();
+  search.oninput = () => pinta(search.value);
+}
+function cerrarPops(){ document.querySelectorAll('.combo-pop.show, .periodo-pop.show').forEach(p=>p.classList.remove('show')); }
+document.addEventListener('click', cerrarPops);
+
 document.getElementById('btnLimpiar').onclick = () => {
-  Object.assign(F,{canal:'',proyecto:'',ie:'',grado:'',salon:'',motivo:''});
+  Object.assign(F,{canal:'',proyecto:'',ie:'',grado:'',salon:'',roomId:''});
+  MOTIVOS_EXCL = defaultExcl();
   document.querySelectorAll('.f-select').forEach(s=>s.classList.remove('active-f'));
   poblarFiltros(); render();
 };
-function opciones(sel, etiqueta, valores, actual, todos){
-  const s = document.getElementById(sel);
-  s.innerHTML = `<option value="" hidden>${etiqueta}</option><option value="">${todos||'Todos'}</option>` +
-    valores.map(v=>`<option ${String(v)===actual?'selected':''} value="${String(v).replace(/"/g,'&quot;')}">${v}</option>`).join('');
-  if(!actual) s.selectedIndex = 0;   // cerrado muestra el nombre del filtro
-}
+
 function poblarFiltros(){
-  // cada select se puebla con el subconjunto que dejan LOS DEMÁS filtros (sin aplicarse a sí mismo)
   const uniqDe = (omitir, campo) => {
     const sub = ROWS.filter(r => pasaFiltros(r, omitir));
-    return [...new Set(sub.map(r=>r[campo]).filter(v=>v!=null && v!==''))].sort((a,b)=>String(a).localeCompare(String(b)));
+    return [...new Set(sub.map(r=>r[campo]).filter(v=>v!=null && v!==''))].sort((a,b)=>
+      (typeof a==='number' && typeof b==='number') ? a-b : String(a).localeCompare(String(b)));
   };
   opciones('fCanal', 'Canal', uniqDe('canal','canal'), F.canal);
-  opciones('fProyecto', 'Proyecto', uniqDe('proyecto','proyecto'), F.proyecto);
-  opciones('fIE', 'Institución Educativa', uniqDe('ie','ie'), F.ie, 'Todas');
   opciones('fGrado', 'Grado', uniqDe('grado','grado'), F.grado);
-  opciones('fSalon', 'Salón', uniqDe('salon','salon'), F.salon);
-  const subM = ROWS.filter(r => pasaFiltros(r));
-  opciones('fMotivo', 'Motivo', [...new Set(subM.filter(r=>r.motivo).map(r=>r.motivo))].sort(), F.motivo);
+  for(const c of COMBOS) mkCombo(c, uniqDe(c.k, c.campo));
+  mkComboMotivos();
 }
 function pasaFiltros(r, omitir){
   if(omitir!=='canal' && F.canal && r.canal!==F.canal) return false;
   if(omitir!=='proyecto' && F.proyecto && r.proyecto!==F.proyecto) return false;
   if(omitir!=='ie' && F.ie && r.ie!==F.ie) return false;
   if(omitir!=='grado' && F.grado && String(r.grado)!==F.grado) return false;
+  if(omitir!=='roomId' && F.roomId && String(r.room_id)!==String(F.roomId)) return false;
   if(omitir!=='salon' && F.salon && r.salon!==F.salon) return false;
   return true;
 }
 function esCancelada(r){
   if(r.state!=='false') return false;
-  if(F.m333435==='excl' && [33,34,35].includes(r.reason_id)) return false;
-  if(F.motivo && r.motivo!==F.motivo) return false;
+  if(MOTIVOS_EXCL && MOTIVOS_EXCL.has(r.motivo||'Sin especificar')) return false;
   return true;
 }
 function esValida(r){
-  if(F.m333435==='excl' && r.state==='false' && [33,34,35].includes(r.reason_id)) return false;
+  if(r.state==='false' && MOTIVOS_EXCL && MOTIVOS_EXCL.has(r.motivo||'Sin especificar')) return false;
   return true;
 }
 const esDictada = r => r.state==='true' && r.fecha < HOY && r.reason_id==null;
@@ -523,7 +620,7 @@ function renderKPIs(base, canc){
   document.getElementById('kDict').textContent = principal(sDict);
   document.getElementById('kDictSub').textContent = secundario(sDict) + ` · futuras: ${nf.format(base.filter(esFutura).length)}`;
   document.getElementById('kCanc').textContent = principal(sCanc);
-  document.getElementById('kCancSub').textContent = secundario(sCanc) + (F.m333435==='excl' ? ' · sin 33/34/35' : ' · todos los motivos');
+  document.getElementById('kCancSub').textContent = secundario(sCanc) + (MOTIVOS_EXCL && MOTIVOS_EXCL.size ? ` · ${MOTIVOS_EXCL.size} motivos excluidos` : ' · todos los motivos');
   const pctSes = sProg.ses ? 100*sCanc.ses/sProg.ses : 0;
   const pctHrs = sProg.hrs ? 100*sCanc.hrs/sProg.hrs : 0;
   document.getElementById('kPct').textContent = (enHoras()?pctHrs:pctSes).toFixed(1)+'%';
@@ -537,9 +634,6 @@ function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new
 
 const showProg = true;
 function renderSemanal(base){
-  document.getElementById('semanalSub').textContent = enHoras()
-    ? 'Horas académicas programadas vs canceladas, semana a semana'
-    : 'Sesiones programadas vs canceladas, semana a semana';
   const sem = {};
   for(const r of base){ (sem[r.semana] ??= {p:0,c:0}); sem[r.semana].p += val(r); if(esCancelada(r)) sem[r.semana].c += val(r); }
   const labels = Object.keys(sem).sort();
@@ -565,7 +659,6 @@ function renderSemanal(base){
 }
 
 function renderMotivos(canc){
-  document.getElementById('motivosSub').textContent = enHoras() ? 'Horas académicas canceladas por motivo registrado' : 'Sesiones canceladas por motivo registrado';
   const m = {};
   for(const r of canc){ const k = r.motivo||'Sin especificar'; m[k]=(m[k]||0)+val(r); }
   const orden = Object.entries(m).sort((a,b)=>b[1]-a[1]);
@@ -650,7 +743,6 @@ document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
 });
 
 function renderHeatmap(canc){
-  document.getElementById('heatmapSub').textContent = enHoras() ? 'Concentración de horas académicas canceladas por día y hora' : 'Concentración de sesiones canceladas por día y hora';
   const horas = [...new Set(canc.map(r=>r.hora).filter(h=>h && h>='05' && h<='22'))].sort();
   const m = {};
   for(const r of canc){ m[r.dia+'|'+r.hora]=(m[r.dia+'|'+r.hora]||0)+val(r); }
