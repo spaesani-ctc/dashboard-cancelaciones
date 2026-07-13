@@ -226,7 +226,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <button class="tab" data-v="sesiones">Sesiones y horas</button>
   </div>
   <div class="top-right">
-    <button class="tb-btn" id="btnRefresh">↻ Actualizar</button>
+    <button class="tb-btn" id="btnRefresh"><svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform-origin:center"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Actualizar</button>
     <button class="tb-btn" id="btnTheme">🌙</button>
   </div>
 </div>
@@ -277,7 +277,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
     <div class="panel" id="pMotivos">
-      <div class="p-head"><span class="p-title">Motivos</span>
+      <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
         <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div>
       </div>
       <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
@@ -288,11 +288,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <div class="p-body"><div class="hm" id="heatmap"></div></div>
     </div>
     <div class="panel" id="pProyectos">
-      <div class="p-head"><span class="p-title">Proyectos</span></div>
+      <div class="p-head"><span class="p-title">Cancelaciones por Proyecto</span></div>
       <div class="p-body scroll"><table class="t" id="tProyectos"></table></div>
     </div>
     <div class="panel" id="pRanking">
-      <div class="p-head"><span class="p-title" id="rankTitle">Instituciones</span>
+      <div class="p-head"><span class="p-title" id="rankTitle">Cancelaciones por Institución</span>
         <div class="p-tabs"><button class="p-tab active" data-r="ie">IEs</button><button class="p-tab" data-r="prof">Profesores</button></div>
       </div>
       <div class="p-body scroll"><table class="t" id="tRanking"></table></div>
@@ -363,11 +363,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </svg>
     <div class="login-eyebrow">Data · Crack the Code</div>
     <h2>Dashboard de <em>Cancelaciones</em></h2>
-    <div class="login-sub">Ingresá la contraseña del equipo para acceder</div>
+    <div class="login-sub">Ingresá la contraseña</div>
     <input type="password" class="login-input" id="loginPass" placeholder="contraseña" autocomplete="current-password">
-    <button class="login-btn" id="loginBtn">Entrar</button>
+    <button class="login-btn" id="loginBtn">Acceder</button>
     <div class="login-err" id="loginErr"></div>
-    <div class="login-help">¿No recordás la contraseña?<br>Escribinos por Discord al equipo de <strong>Data</strong> ^^</div>
+    <div class="login-help">¿No recuerdas la contraseña?<br>Escribinos por Discord al equipo de <strong>Data</strong> :)</div>
   </div>
 </div>
 
@@ -457,7 +457,11 @@ async function cargar(force=false){
     hideLoad(); hideToast(); primeraCarga = false;
   } catch(e){ hideToast(); showLoad('Error al cargar', e.message); }
 }
-document.getElementById('btnRefresh').onclick = () => cargar(true);
+document.getElementById('btnRefresh').onclick = () => {
+  const ic = document.getElementById('refreshIcon');
+  ic.style.animation = 'spin 1s linear infinite';
+  cargar(true).finally(()=>{ ic.style.animation = ''; });
+};
 
 /* ============ vistas (tabs) ============ */
 document.getElementById('vistas').addEventListener('click', e => {
@@ -668,7 +672,9 @@ function renderKPIs(base, canc){
   document.getElementById('kPagadasL').textContent = enHoras() ? '% De horas canceladas pagadas' : '% De sesiones canceladas pagadas';
   const pctPag = enHoras() ? (sCanc.hrs ? 100*sPag.hrs/sCanc.hrs : 0) : (sCanc.ses ? 100*sPag.ses/sCanc.ses : 0);
   document.getElementById('kPagadas').textContent = (canc.length ? pctPag.toFixed(1) : '—') + (canc.length ? '%' : '');
-  document.getElementById('kPagadasSub').textContent = enHoras() ? `${nf.format(Math.round(sPag.hrs))} horas académicas pagadas` : `${nf.format(sPag.ses)} sesiones pagadas`;
+  const pctPagSes = sCanc.ses ? 100*sPag.ses/sCanc.ses : 0;
+  const pctPagHrs = sCanc.hrs ? 100*sPag.hrs/sCanc.hrs : 0;
+  document.getElementById('kPagadasSub').textContent = enHoras() ? `en sesiones: ${pctPagSes.toFixed(1)}%` : `en horas académicas: ${sCanc.hrs?pctPagHrs.toFixed(1)+'%':'s/d'}`;
   document.getElementById('kSalones').textContent = nf.format(new Set(canc.map(r=>r.room_id)).size);
   const cob = canc.length ? Math.round(100*sCanc.hc/canc.length) : 0;
   document.getElementById('kSalonesSub').textContent = `de ${nf.format(new Set(base.map(r=>r.room_id)).size)} con sesiones`;
@@ -686,12 +692,14 @@ function renderSemanal(base){
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
   const pcts = labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0);
   // si la etiqueta de % (línea) cae cerca del tope de la barra, la cantidad va DENTRO de la barra
+  // nominal DENTRO de la barra solo si el % está apenas por encima del tope;
+  // si el % cae dentro de la barra, el nominal va arriba (no se pisan)
   const choca = ctx => {
     try {
       const i = ctx.dataIndex;
       const yBar = ctx.chart.scales.y.getPixelForValue(ctx.dataset.data[i]);
       const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
-      return Math.abs(yBar - yPct) < 28;
+      return yPct < yBar && (yBar - yPct) < 28;
     } catch(e){ return false; }
   };
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
@@ -699,7 +707,7 @@ function renderSemanal(base){
         datalabels:{ display:pocas, anchor:'end',
           align: ctx => choca(ctx) ? 'start' : 'end',
           offset: ctx => choca(ctx) ? 2 : -2,
-          color: ctx => choca(ctx) ? '#fff' : css('--coral'),
+          color: ctx => choca(ctx) ? '#fff' : (document.documentElement.getAttribute('data-theme')==='dark' ? '#F5A588' : css('--coral')),
           font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
       { type:'line', label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
         datalabels:{ align:'top', offset:5, color:css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
@@ -781,7 +789,7 @@ function tablaRank(id, arr, etiqueta){
 function renderProyectos(base){ tablaRank('tProyectos', filaAgg(base,'proyecto',1), 'Proyecto'); }
 function renderRanking(base){
   const esIE = rankMode==='ie';
-  document.getElementById('rankTitle').textContent = esIE?'Instituciones':'Profesores';
+  document.getElementById('rankTitle').textContent = esIE?'Cancelaciones por Institución':'Cancelaciones por Profesor';
   const filas = esIE ? base : base.filter(r=>r.profesor && r.profesor!==', ');
   tablaRank('tRanking', filaAgg(filas, esIE?'ie':'profesor', esIE?20:10), esIE?'IE':'Profesor (sesión)');
 }
