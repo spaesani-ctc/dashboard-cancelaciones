@@ -102,6 +102,8 @@ table.t th { cursor:pointer; user-select:none; font-family:'DM Mono',monospace; 
 table.t td { padding:3px 7px; border-bottom:1px solid var(--border2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
 table.t tbody tr:nth-child(even) { background:var(--surface2); }
 table.t td.num, table.t th.num { text-align:right; font-variant-numeric:tabular-nums; }
+table.t thead tr:nth-child(2) th { top:22px; }
+table.t th.grp { text-align:center; border-bottom:none; }
 table.t th.sep, table.t td.sep { border-left:1px solid var(--border); }
 a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(--accent); }
 [data-theme="dark"] a.lk { color:var(--teal); border-color:var(--teal); }
@@ -230,6 +232,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 </div>
 
 <div class="filterbar">
+  <div class="scope" id="unidad" title="Unidad de medida de todo el dashboard" style="margin-right:10px; padding-right:0; border-right:none;">
+    <button class="scope-btn active" data-u="ses">Sesiones</button>
+    <button class="scope-btn" data-u="hrs">Horas académicas</button>
+  </div>
+  <span style="width:1px; align-self:stretch; background:var(--border); margin-right:6px;"></span>
   <div class="periodo">
     <button class="periodo-btn" id="periodoBtn"><span class="cal">📅</span> <span id="periodoLabel">Últimos 3 meses</span> <span style="opacity:.5">▾</span></button>
     <div class="periodo-pop" id="periodoPop">
@@ -242,10 +249,6 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
         <button class="periodo-apply" id="periodoApply">Aplicar</button>
       </div>
     </div>
-  </div>
-  <div class="scope" id="unidad" title="Unidad de medida de todo el dashboard">
-    <button class="scope-btn active" data-u="ses">Sesiones</button>
-    <button class="scope-btn" data-u="hrs">Horas acad.</button>
   </div>
   <select class="f-select" id="fCanal"><option value="" hidden>Canal</option></select>
   <div class="combo" id="cbProyecto"></div>
@@ -263,7 +266,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="kpi"><div class="kpi-label" id="kDictL">Sesiones dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
     <div class="kpi"><div class="kpi-label" id="kCancL">Sesiones canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
     <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Canceladas pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
+    <div class="kpi"><div class="kpi-label" id="kPagadasL">% De sesiones canceladas pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
     <div class="kpi"><div class="kpi-label">Salones afectados</div><div class="kpi-value" id="kSalones">—</div><div class="kpi-sub" id="kSalonesSub"></div></div>
   </div>
 
@@ -301,7 +304,6 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="panel">
       <div class="p-head">
         <span class="p-title">Sesiones y horas académicas</span>
-        <span class="p-sub">programadas · dictadas · futuras · canceladas</span>
         <div class="p-tabs" id="dimTabs">
           <button class="p-tab active" data-d="proyecto">Proyecto</button>
           <button class="p-tab" data-d="ie">IE</button>
@@ -336,11 +338,12 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <div class="modal-box" style="width:min(680px,94vw)">
     <div class="modal-head"><span class="modal-title">Metodología</span><button class="modal-close" data-close="mMet">✕</button></div>
     <div class="modal-body nota">
-      <p><strong>Fuente:</strong> SSOT de Cancelaciones sobre <code>room_roomsessions</code> (datalake, vía API de Metabase), a grano sesión con IE/grado a nivel salón (catálogo).</p>
-      <p><strong>Definiciones:</strong> <em>programada</em> = toda sesión del alcance · <em>dictada</em> = <code>state='true'</code>, fecha pasada y sin motivo de cancelación · <em>futura</em> = <code>state='true'</code> con fecha ≥ hoy · <em>cancelada</em> = <code>state='false'</code>. <strong>% cancelación</strong> = canceladas / programadas.</p>
-      <p><strong>Unidad Horas acad.:</strong> suma de <code>academic_hours</code> solo donde el campo está cargado; la cobertura del dato se indica en cada vista. Sin conversiones desde duración de reloj.</p>
-      <p>Los motivos <strong>33 (Cambio operativo BO), 34 (Feriado) y 35 (Vacaciones)</strong> se excluyen por defecto — convención del dashboard oficial; al excluirlos salen también del denominador. El switch los incluye.</p>
-      <p>Se excluyen las ventanas de paro 2024 (proyectos 19/14 y 47/48/56). El profesor mostrado es el de la sesión (contempla reemplazos). Datos con rezago de ETL, cache 5 min.</p>
+      <p><strong>¿Qué muestra este dashboard?</strong> Las clases canceladas: cuántas fueron, por qué motivo, en qué proyectos, instituciones y salones, y cuándo. Todo se puede ver en cantidad de sesiones o en horas académicas (el switch de arriba a la izquierda).</p>
+      <p><strong>¿Cómo se calcula el % de cancelación?</strong> Clases canceladas divididas por las programadas, dentro del período y los filtros que elijas.</p>
+      <p><strong>Motivos que no se cuentan por defecto:</strong> Feriado, Vacaciones y Cambio operativo — son movimientos de calendario, no cancelaciones reales. Si querés incluirlos, están en el filtro de Motivos.</p>
+      <p><strong>Horas académicas:</strong> se muestran solo donde el dato está cargado en el sistema; siempre te indicamos qué porcentaje de cobertura tiene.</p>
+      <p><strong>Actualización:</strong> los datos vienen del sistema con un poco de demora — no es tiempo real.</p>
+      <p>Cualquier duda, contactá a <strong>@Data</strong> ✨</p>
     </div>
   </div>
 </div>
@@ -348,13 +351,23 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 <!-- LOGIN -->
 <div id="login" style="display:none">
   <div class="login-card" id="loginCard">
+    <svg width="40" height="40" viewBox="0 0 100 100" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" aria-hidden="true" style="margin-bottom:0.9rem">
+      <rect x="8" y="8" width="84" height="84" rx="16"/>
+      <circle cx="24" cy="23" r="3.5" fill="var(--accent)" stroke="none"/>
+      <circle cx="36" cy="23" r="3.5" fill="var(--accent)" stroke="none"/>
+      <circle cx="48" cy="23" r="3.5" fill="var(--accent)" stroke="none"/>
+      <path d="M25 52 a11 11 0 0 1 22 0"/>
+      <path d="M62 47 h16 M78 40 v14"/>
+      <path d="M38 65 a11 11 0 0 0 22 0"/>
+      <rect x="64" y="61" width="7" height="7" fill="var(--accent)" stroke="none"/>
+    </svg>
     <div class="login-eyebrow">Data · Crack the Code</div>
     <h2>Dashboard de <em>Cancelaciones</em></h2>
     <div class="login-sub">Ingresá la contraseña del equipo para acceder</div>
     <input type="password" class="login-input" id="loginPass" placeholder="contraseña" autocomplete="current-password">
     <button class="login-btn" id="loginBtn">Entrar</button>
     <div class="login-err" id="loginErr"></div>
-    <div class="login-help">¿No recordás la contraseña?<br>Escribile a <strong>DATA</strong> por Discord y te la pasamos.</div>
+    <div class="login-help">¿No recordás la contraseña?<br>Escribinos por Discord al equipo de <strong>Data</strong> ^^</div>
   </div>
 </div>
 
@@ -454,6 +467,7 @@ document.getElementById('vistas').addEventListener('click', e => {
   VISTA = e.target.dataset.v;
   document.getElementById('vistaResumen').style.display = VISTA==='resumen'?'grid':'none';
   document.getElementById('vistaSesiones').style.display = VISTA==='sesiones'?'flex':'none';
+  document.querySelector('.kpis').style.display = VISTA==='resumen'?'grid':'none';
   if(ROWS.length) render();
 });
 
@@ -632,7 +646,7 @@ function renderKPIs(base, canc){
   const dict = base.filter(esDictada);
   const sProg = sumas(base), sDict = sumas(dict), sCanc = sumas(canc);
   const principal = s => enHoras() ? nf.format(Math.round(s.hrs))+' h' : nf.format(s.ses);
-  const secundario = s => enHoras() ? `${nf.format(s.ses)} sesiones` : `${nf.format(Math.round(s.hrs))} h acad.`;
+  const secundario = s => enHoras() ? `${nf.format(s.ses)} sesiones` : `${nf.format(Math.round(s.hrs))} horas académicas`;
   const u = enHoras() ? 'Horas' : 'Sesiones';
   document.getElementById('kProgL').textContent = u + ' programadas';
   document.getElementById('kDictL').textContent = u + ' dictadas';
@@ -646,16 +660,18 @@ function renderKPIs(base, canc){
   const pctSes = sProg.ses ? 100*sCanc.ses/sProg.ses : 0;
   const pctHrs = sProg.hrs ? 100*sCanc.hrs/sProg.hrs : 0;
   document.getElementById('kPct').textContent = (enHoras()?pctHrs:pctSes).toFixed(1)+'%';
-  document.getElementById('kPctSub').textContent = enHoras() ? `en sesiones: ${pctSes.toFixed(1)}%` : `en horas acad.: ${sProg.hrs?pctHrs.toFixed(1)+'%':'s/d'}`;
+  document.getElementById('kPctSub').textContent = enHoras() ? `en sesiones: ${pctSes.toFixed(1)}%` : `en horas académicas: ${sProg.hrs?pctHrs.toFixed(1)+'%':'s/d'}`;
   // pagada = is_paid_session 'paid_automatic' / 'paid_manual' (+ legacy 'True')
   const esPagada = v => /^paid/.test(String(v)) || String(v)==='True';
   const pagadas = canc.filter(r=>esPagada(r.is_paid_session));
   const sPag = sumas(pagadas);
-  document.getElementById('kPagadas').textContent = principal(sPag);
-  document.getElementById('kPagadasSub').textContent = canc.length ? `${(100*pagadas.length/canc.length).toFixed(1)}% de las canceladas` : '—';
+  document.getElementById('kPagadasL').textContent = enHoras() ? '% De horas canceladas pagadas' : '% De sesiones canceladas pagadas';
+  const pctPag = enHoras() ? (sCanc.hrs ? 100*sPag.hrs/sCanc.hrs : 0) : (sCanc.ses ? 100*sPag.ses/sCanc.ses : 0);
+  document.getElementById('kPagadas').textContent = (canc.length ? pctPag.toFixed(1) : '—') + (canc.length ? '%' : '');
+  document.getElementById('kPagadasSub').textContent = enHoras() ? `${nf.format(Math.round(sPag.hrs))} horas académicas pagadas` : `${nf.format(sPag.ses)} sesiones pagadas`;
   document.getElementById('kSalones').textContent = nf.format(new Set(canc.map(r=>r.room_id)).size);
   const cob = canc.length ? Math.round(100*sCanc.hc/canc.length) : 0;
-  document.getElementById('kSalonesSub').textContent = `de ${nf.format(new Set(base.map(r=>r.room_id)).size)} · cobertura h: ${cob}%`;
+  document.getElementById('kSalonesSub').textContent = `de ${nf.format(new Set(base.map(r=>r.room_id)).size)} con sesiones`;
 }
 
 function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
@@ -668,9 +684,23 @@ function renderSemanal(base){
   const pocas = labels.length <= 15;
   const fmt = s => { const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); };
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
+  const pcts = labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0);
+  // si la etiqueta de % (línea) cae cerca del tope de la barra, la cantidad va DENTRO de la barra
+  const choca = ctx => {
+    try {
+      const i = ctx.dataIndex;
+      const yBar = ctx.chart.scales.y.getPixelForValue(ctx.dataset.data[i]);
+      const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
+      return Math.abs(yBar - yPct) < 28;
+    } catch(e){ return false; }
+  };
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
       { type:'bar', label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
-        datalabels:{ display:pocas, anchor:'end', align:'end', offset:-2, color:css('--coral'), font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
+        datalabels:{ display:pocas, anchor:'end',
+          align: ctx => choca(ctx) ? 'start' : 'end',
+          offset: ctx => choca(ctx) ? 2 : -2,
+          color: ctx => choca(ctx) ? '#fff' : css('--coral'),
+          font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
       { type:'line', label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
         datalabels:{ align:'top', offset:5, color:css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
@@ -807,26 +837,39 @@ function renderSesiones(base){
   }
   const arr = Object.entries(g).map(([k,v])=>({k,...v,pctS:v.pS?100*v.cS/v.pS:0,pctH:v.pH?100*v.cH/v.pH:0})).sort((a,b)=>b.pS-a.pS);
   const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0});
-  const et = {proyecto:'Proyecto', ie:'Institución educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
-  const cols = [
-    { k:'k', label:et, tip:'k' },
-    { k:'pS', label:'Prog. ses', num:true, sep:true, fmt:r=>nf.format(r.pS) },
-    { k:'pH', label:'h', num:true, fmt:r=>`<span class="dim">${nf.format(Math.round(r.pH))}</span>` },
-    { k:'dS', label:'Dictadas ses', num:true, sep:true, fmt:r=>nf.format(r.dS) },
-    { k:'dH', label:'h', num:true, fmt:r=>`<span class="dim">${nf.format(Math.round(r.dH))}</span>` },
-    { k:'fS', label:'Futuras ses', num:true, sep:true, fmt:r=>nf.format(r.fS) },
-    { k:'fH', label:'h', num:true, fmt:r=>`<span class="dim">${nf.format(Math.round(r.fH))}</span>` },
-    { k:'cS', label:'Canc. ses', num:true, sep:true, fmt:r=>nf.format(r.cS) },
-    { k:'cH', label:'h', num:true, fmt:r=>`<span class="dim">${nf.format(Math.round(r.cH))}</span>` },
-    { k:'pctS', label:'% canc ses', num:true, sep:true, fmt:r=>r.pctS.toFixed(1)+'%', style:r=>`color:${colorPct(r.pctS)};font-weight:600` },
-    { k:'pctH', label:'% canc h', num:true, fmt:r=>r.pH?r.pctH.toFixed(1)+'%':'s/d', style:r=>`color:${colorPct(r.pctH)}` },
-  ];
+  const et = {proyecto:'Proyecto', ie:'Institución Educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
+  const s = SORT['tSesiones'];
+  if(s) arr.sort((a,b)=>{ const x=a[s.k], y=b[s.k]; const cmp = (typeof x==='number'&&typeof y==='number')?x-y:String(x??'').localeCompare(String(y??''),'es'); return s.dir==='asc'?cmp:-cmp; });
+  const flecha = k => s&&s.k===k ? (s.dir==='asc'?' ▲':' ▼') : '';
+  const celda = (r,bold) => `<tr${bold?' style="font-weight:600;border-top:2px solid var(--border)"':''}>
+    <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>
+    <td class="num sep">${nf.format(r.pS)}</td><td class="num dim">${nf.format(Math.round(r.pH))}</td>
+    <td class="num sep">${nf.format(r.dS)}</td><td class="num dim">${nf.format(Math.round(r.dH))}</td>
+    <td class="num sep">${nf.format(r.fS)}</td><td class="num dim">${nf.format(Math.round(r.fH))}</td>
+    <td class="num sep">${nf.format(r.cS)}</td><td class="num dim">${nf.format(Math.round(r.cH))}</td>
+    <td class="num sep" style="color:${colorPct(r.pctS)};font-weight:600">${r.pctS.toFixed(1)}%</td>
+    <td class="num" style="color:${colorPct(r.pctH)}">${r.pH?r.pctH.toFixed(1)+'%':'s/d'}</td></tr>`;
   const totRow = {k:'TOTAL',...T,pctS:T.pS?100*T.cS/T.pS:0,pctH:T.pH?100*T.cH/T.pH:0};
-  const totalHtml = '<tr style="font-weight:600;border-top:2px solid var(--border)">' +
-    cols.map(c=>`<td class="${c.num?'num ':''}${c.sep?'sep':''}" ${c.style?`style="${c.style(totRow)}"`:''}>${c.fmt?c.fmt(totRow):(totRow[c.k]??'')}</td>`).join('') + '</tr>';
-  renderTable('tSesiones', cols, arr, totalHtml);
+  const el = document.getElementById('tSesiones');
+  el.innerHTML = `<thead>
+    <tr><th rowspan="2" data-k="k">${et}${flecha('k')}</th>
+      <th class="grp sep" colspan="2">Programadas</th><th class="grp sep" colspan="2">Dictadas</th>
+      <th class="grp sep" colspan="2">Futuras</th><th class="grp sep" colspan="2">Canceladas</th>
+      <th class="grp sep" colspan="2">% De cancelación</th></tr>
+    <tr><th class="num sep" data-k="pS">Sesiones${flecha('pS')}</th><th class="num" data-k="pH">Horas${flecha('pH')}</th>
+        <th class="num sep" data-k="dS">Sesiones${flecha('dS')}</th><th class="num" data-k="dH">Horas${flecha('dH')}</th>
+        <th class="num sep" data-k="fS">Sesiones${flecha('fS')}</th><th class="num" data-k="fH">Horas${flecha('fH')}</th>
+        <th class="num sep" data-k="cS">Sesiones${flecha('cS')}</th><th class="num" data-k="cH">Horas${flecha('cH')}</th>
+        <th class="num sep" data-k="pctS">Sesiones${flecha('pctS')}</th><th class="num" data-k="pctH">Horas${flecha('pctH')}</th></tr>
+  </thead><tbody>` + arr.map(r=>celda(r)).join('') + celda(totRow, true) + '</tbody>';
+  el.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
+    const k = th.dataset.k, prev = SORT['tSesiones'];
+    SORT['tSesiones'] = { k, dir: prev && prev.k===k && prev.dir==='desc' ? 'asc' : 'desc' };
+    if(prev && prev.k===k && prev.dir==='asc') SORT['tSesiones'] = null;
+    renderSesiones(window._base||[]);
+  });
   document.getElementById('notaCobertura').textContent =
-    `columnas "h" = horas académicas (academic_hours). Cobertura del dato en este alcance: ${tot?Math.round(100*(tot-sinHoras)/tot):0}% de las sesiones — donde falta, la sesión suma 0 h.`;
+    `Las columnas "Horas" son horas académicas. El dato está cargado en el ${tot?Math.round(100*(tot-sinHoras)/tot):0}% de las sesiones de este alcance — donde falta, la sesión suma 0 horas.`;
 }
 
 /* ============ modales / detalle / csv ============ */
