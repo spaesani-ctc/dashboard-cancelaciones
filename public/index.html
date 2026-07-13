@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Cancelaciones — CTC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #F5F3EE; --surface: #FDFCFA; --surface2: #ECEAE4;
+  --ink: #1A1916; --ink2: #5A5750; --ink3: #9A9790; --ink4: #C5C3BC;
+  --border: #E0DDD6; --border2: rgba(26,25,22,0.06);
+  --accent: #2D4A3E; --accent2: #8B5E3C;
+  --purple: #534AB7; --teal: #1D9E75; --teal-l: #5DCAA5;
+  --coral: #D85A30; --coral-l: #F0997B; --amber: #BA7517;
+}
+[data-theme="dark"] {
+  --bg: #141412; --surface: #1E1D1B; --surface2: #282623;
+  --ink: #F0EDE6; --ink2: #B5B2AA; --ink3: #787570; --ink4: #4A4845;
+  --border: #2E2D2A; --border2: rgba(240,237,230,0.06);
+  --accent: #5A8A70; --accent2: #C4845A;
+  --purple: #8A84D4; --teal: #2DC48F; --teal-l: #1A8F68;
+  --coral: #E87050; --coral-l: #C04820; --amber: #D4901A;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+/* HEADER */
+.header { background: var(--accent); color: #fff; padding: 3.2rem 0 2.4rem; position: relative; overflow: hidden; }
+.header::before { content:''; position:absolute; top:-80px; right:-80px; width:400px; height:400px; border-radius:50%; background:rgba(255,255,255,0.04); }
+.header::after { content:''; position:absolute; bottom:-60px; left:10%; width:250px; height:250px; border-radius:50%; background:rgba(255,255,255,0.03); }
+.header-inner { max-width: 1200px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 1; }
+.header-eyebrow { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:0.8rem; }
+.header h1 { font-family:'DM Serif Display',serif; font-size:clamp(2rem,4.5vw,3.2rem); font-weight:400; line-height:1.1; margin-bottom:0.8rem; }
+.header h1 em { font-style: italic; color: rgba(255,255,255,0.65); }
+.header-meta { display:flex; gap:1.6rem; flex-wrap:wrap; }
+.header-meta-item { display:flex; align-items:center; gap:6px; font-size:13px; color:rgba(255,255,255,0.6); }
+.dot { width:6px; height:6px; border-radius:50%; background:var(--teal-l); display:inline-block; }
+
+/* NAV / FILTROS */
+.nav { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+.nav-inner { max-width: 1200px; margin: 0 auto; padding: 0.6rem 2rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.nav-btn { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; color:var(--ink2); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; white-space:nowrap; transition:background .15s,color .15s; }
+.nav-btn:hover { background: var(--border); color: var(--ink); }
+.f-select { font-family:'DM Sans',sans-serif; font-size:12px; padding:5px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); max-width:170px; cursor:pointer; }
+.f-date { font-family:'DM Mono',monospace; font-size:11.5px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); }
+.nav-scope { display:flex; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:2px; flex-shrink:0; }
+.scope-btn { font-family:'DM Sans',sans-serif; font-size:11.5px; font-weight:500; padding:3px 9px; border:none; background:transparent; color:var(--ink2); border-radius:5px; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
+.scope-btn:hover { color: var(--ink); }
+.scope-btn.active { background:var(--surface); color:var(--ink); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
+[data-theme="dark"] .scope-btn.active { background: var(--bg); }
+.nav-right { margin-left:auto; display:flex; gap:6px; align-items:center; }
+.f-label { font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink3); }
+
+/* MAIN */
+.main { max-width: 1200px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+.section { margin-bottom: 2.6rem; }
+.section-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink3); margin-bottom:0.5rem; }
+.section-title { font-family:'DM Serif Display',serif; font-size:1.7rem; font-weight:400; line-height:1.2; color:var(--ink); margin-bottom:0.4rem; }
+.section-desc { color:var(--ink2); font-size:13.5px; max-width:680px; margin-bottom:1.4rem; line-height:1.6; }
+.divider { border:none; border-top:1px solid var(--border); margin:2.2rem 0; }
+
+/* KPI */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+.kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.1rem 1.2rem; }
+.kpi-label { font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink3); margin-bottom:0.4rem; }
+.kpi-value { font-family:'DM Serif Display',serif; font-size:2.1rem; line-height:1; color:var(--ink); }
+.kpi-sub { font-size:11.5px; color:var(--ink3); margin-top:0.4rem; }
+.kpi-value.coral { color: var(--coral); }
+.kpi-value.teal { color: var(--teal); }
+.kpi-value.amber { color: var(--amber); }
+
+/* CARDS / CHARTS */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.4rem; }
+.chart-title { font-size:14px; font-weight:600; color:var(--ink); margin-bottom:2px; }
+.chart-sub { font-size:12px; color:var(--ink3); margin-bottom:1rem; }
+.chart-wrap { position:relative; height:300px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media (max-width: 860px) { .grid-2 { grid-template-columns:1fr; } }
+
+/* TABLAS */
+table.t { width:100%; border-collapse:collapse; font-size:12.5px; }
+table.t th { font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink3); text-align:left; padding:6px 10px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; white-space:nowrap; }
+table.t td { padding:6px 10px; border-bottom:1px solid var(--border2); white-space:nowrap; }
+table.t tbody tr:nth-child(even) { background: var(--surface2); }
+table.t td.num, table.t th.num { text-align:right; font-variant-numeric:tabular-nums; }
+.tbl-scroll { overflow:auto; max-height:420px; }
+.tbl-scroll table.t thead th { position:sticky; top:0; background:var(--surface); z-index:3; }
+a.lk { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent); }
+[data-theme="dark"] a.lk { color: var(--teal); border-color: var(--teal); }
+.badge { display:inline-block; font-size:10.5px; padding:1px 7px; border-radius:10px; background:var(--surface2); border:1px solid var(--border); color:var(--ink2); }
+
+/* HEATMAP */
+.hm { display:grid; gap:3px; font-size:10.5px; }
+.hm-cell { border-radius:4px; text-align:center; padding:6px 0; color:var(--ink); font-variant-numeric:tabular-nums; min-width:34px; }
+.hm-head { font-family:'DM Mono',monospace; font-size:9px; text-transform:uppercase; color:var(--ink3); text-align:center; }
+.hm-row-label { font-family:'DM Mono',monospace; font-size:9.5px; color:var(--ink3); display:flex; align-items:center; }
+
+/* NOTAS / FOOT */
+.nota { font-size:12px; color:var(--ink3); line-height:1.6; }
+.foot { border-top:1px solid var(--border); padding:2rem; text-align:center; }
+.loading { text-align:center; padding:4rem 0; color:var(--ink3); font-family:'DM Mono',monospace; font-size:12px; }
+.pag { display:flex; gap:6px; align-items:center; justify-content:flex-end; margin-top:0.6rem; font-size:12px; color:var(--ink3); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="header-eyebrow">Data · Crack the Code</div>
+    <h1>Dashboard de <em>Cancelaciones</em></h1>
+    <div class="header-meta">
+      <div class="header-meta-item"><span class="dot"></span> Fuente: SSOT Cancelaciones · Metabase/Athena</div>
+      <div class="header-meta-item" id="metaRango">—</div>
+      <div class="header-meta-item" id="metaUpdated">—</div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="f-label">Período</span>
+    <div class="nav-scope" id="presets">
+      <button class="scope-btn" data-w="4">4 sem</button>
+      <button class="scope-btn active" data-w="12">12 sem</button>
+      <button class="scope-btn" data-w="26">26 sem</button>
+      <button class="scope-btn" data-w="ytd">YTD</button>
+    </div>
+    <input type="date" class="f-date" id="fDesde"> <input type="date" class="f-date" id="fHasta">
+    <select class="f-select" id="fCanal"><option value="">Canal: todos</option></select>
+    <select class="f-select" id="fProyecto"><option value="">Proyecto: todos</option></select>
+    <select class="f-select" id="fIE"><option value="">IE: todas</option></select>
+    <select class="f-select" id="fGrado"><option value="">Grado: todos</option></select>
+    <select class="f-select" id="fSalon"><option value="">Salón: todos</option></select>
+    <select class="f-select" id="fMotivo"><option value="">Motivo: todos</option></select>
+    <div class="nav-scope" id="scope333435">
+      <button class="scope-btn active" data-v="excl">Sin 33/34/35</button>
+      <button class="scope-btn" data-v="incl">Con 33/34/35</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-btn" id="btnLimpiar">Limpiar</button>
+      <button class="nav-btn" id="btnRefresh">↻ Actualizar</button>
+      <button class="nav-btn" id="btnTheme">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="loading" id="loading">CARGANDO DATOS DESDE METABASE…</div>
+  <div id="contenido" style="display:none">
+
+    <section class="section" id="kpis">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-label">Sesiones programadas</div><div class="kpi-value" id="kProg">—</div><div class="kpi-sub" id="kProgSub"></div></div>
+        <div class="kpi"><div class="kpi-label">Canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
+        <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub">canceladas / programadas</div></div>
+        <div class="kpi"><div class="kpi-label">Salones afectados</div><div class="kpi-value amber" id="kSalones">—</div><div class="kpi-sub" id="kSalonesSub"></div></div>
+        <div class="kpi"><div class="kpi-label">Horas académicas canceladas</div><div class="kpi-value" id="kHoras">—</div><div class="kpi-sub" id="kHorasSub"></div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-label">01 · Evolución</div>
+      <div class="section-title">Cancelaciones por semana</div>
+      <div class="section-desc">Sesiones canceladas y % de cancelación semana a semana, en el alcance filtrado.</div>
+      <div class="card"><div class="chart-wrap" style="height:320px"><canvas id="chSemanal"></canvas></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-label">02 · Causas</div>
+      <div class="section-title">Motivos de cancelación</div>
+      <div class="grid-2">
+        <div class="card"><div class="chart-title">Distribución por motivo</div><div class="chart-sub">Sesiones canceladas según el motivo registrado</div><div class="chart-wrap" style="height:340px"><canvas id="chMotivos"></canvas></div></div>
+        <div class="card"><div class="chart-title">Detalle</div><div class="chart-sub">Con participación sobre el total cancelado</div><div class="tbl-scroll" style="max-height:340px"><table class="t" id="tMotivos"></table></div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-label">03 · Por proyecto</div>
+      <div class="section-title">Comparación entre proyectos</div>
+      <div class="card"><div class="tbl-scroll"><table class="t" id="tProyectos"></table></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-label">04 · Por institución</div>
+      <div class="section-title">Instituciones educativas</div>
+      <div class="section-desc">Ordenadas por % de cancelación (mínimo 20 sesiones programadas). La IE es la del catálogo, a nivel salón.</div>
+      <div class="card"><div class="tbl-scroll"><table class="t" id="tIEs"></table></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-label">05 · Patrón operativo</div>
+      <div class="section-title">Día × hora</div>
+      <div class="section-desc">Cantidad de cancelaciones según día de la semana y hora de la sesión.</div>
+      <div class="card" style="overflow-x:auto"><div id="heatmap"></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-label">06 · Profesores</div>
+      <div class="section-title">Cancelaciones por profesor</div>
+      <div class="section-desc">Profesor asignado a la sesión (contempla reemplazos). Mínimo 10 sesiones programadas.</div>
+      <div class="card"><div class="tbl-scroll"><table class="t" id="tProfes"></table></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-label">07 · Detalle</div>
+      <div class="section-title">Sesiones canceladas</div>
+      <div class="card">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:8px"><button class="nav-btn" id="btnCSV">⬇ Exportar CSV</button></div>
+        <div class="tbl-scroll" style="max-height:520px"><table class="t" id="tDetalle"></table></div>
+        <div class="pag" id="pagDetalle"></div>
+      </div>
+    </section>
+
+    <hr class="divider">
+    <section class="section">
+      <div class="section-label">Metodología</div>
+      <p class="nota">
+        <strong>Fuente:</strong> SSOT de Cancelaciones sobre <code>room_roomsessions</code> (datalake, vía API de Metabase), a grano sesión con IE/grado a nivel salón. ·
+        <strong>Cancelada</strong> = <code>state='false'</code>. <strong>% cancelación</strong> = canceladas / sesiones programadas del alcance. ·
+        Los motivos <strong>33 (Cambio operativo BO), 34 (Feriado) y 35 (Vacaciones)</strong> se excluyen por defecto — convención del dashboard oficial — y pueden incluirse con el switch del filtro. ·
+        <strong>Horas académicas:</strong> suma de <code>academic_hours</code> solo donde está cargado; se indica la cobertura. Sin conversiones desde duración de reloj. ·
+        Se excluyen las ventanas de paro 2024 (proyectos 19/14 y 47/48/56). · Datos con rezago de ETL (no tiempo real). Cache 5 min.
+      </p>
+    </section>
+  </div>
+</main>
+
+<footer class="foot"><span class="nota">Crack the Code · Data — Dashboard de Cancelaciones</span></footer>
+
+<script>
+/* ============ estado ============ */
+let ROWS = [];            // filas crudas (grano sesión)
+let charts = {};
+let detallePag = 0;
+const DIAS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DIAS_ES = {Monday:'Lun',Tuesday:'Mar',Wednesday:'Mié',Thursday:'Jue',Friday:'Vie',Saturday:'Sáb',Sunday:'Dom'};
+const nf = new Intl.NumberFormat('es-AR');
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ============ tema ============ */
+const themeBtn = document.getElementById('btnTheme');
+function setTheme(t){ document.documentElement.setAttribute('data-theme', t); localStorage.setItem('theme', t); themeBtn.textContent = t==='dark'?'☀️':'🌙'; if(ROWS.length) render(); }
+setTheme(localStorage.getItem('theme') || 'light');
+themeBtn.onclick = () => setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+
+/* ============ fechas / presets ============ */
+const fDesde = document.getElementById('fDesde'), fHasta = document.getElementById('fHasta');
+function iso(d){ return d.toISOString().slice(0,10); }
+function setPreset(w){
+  const hoy = new Date();
+  fHasta.value = iso(hoy);
+  fDesde.value = w==='ytd' ? hoy.getFullYear()+'-01-01' : iso(new Date(Date.now() - w*7*86400000));
+}
+setPreset(12);
+document.getElementById('presets').addEventListener('click', e => {
+  if(!e.target.dataset.w) return;
+  document.querySelectorAll('#presets .scope-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  setPreset(e.target.dataset.w==='ytd'?'ytd':+e.target.dataset.w);
+  cargar();
+});
+fDesde.onchange = fHasta.onchange = () => cargar();
+
+/* ============ carga ============ */
+async function cargar(force=false){
+  document.getElementById('loading').style.display='block';
+  document.getElementById('contenido').style.display='none';
+  try {
+    const r = await fetch(`/api/data?from=${fDesde.value}&to=${fHasta.value}${force?'&t='+Date.now():''}`);
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error);
+    ROWS = j.rows;
+    document.getElementById('metaRango').textContent = `Rango: ${j.from} → ${j.to} · ${nf.format(j.n)} sesiones`;
+    document.getElementById('metaUpdated').textContent = `Actualizado: ${new Date(j.updated_at).toLocaleString('es-AR')}`;
+    poblarFiltros();
+    render();
+    document.getElementById('loading').style.display='none';
+    document.getElementById('contenido').style.display='block';
+  } catch(e){
+    document.getElementById('loading').textContent = 'ERROR: ' + e.message;
+  }
+}
+document.getElementById('btnRefresh').onclick = () => cargar(true);
+
+/* ============ filtros ============ */
+const F = { canal:'', proyecto:'', ie:'', grado:'', salon:'', motivo:'', m333435:'excl' };
+const selIds = { fCanal:'canal', fProyecto:'proyecto', fIE:'ie', fGrado:'grado', fSalon:'salon', fMotivo:'motivo' };
+for(const [id,k] of Object.entries(selIds)){
+  document.getElementById(id).onchange = e => { F[k]=e.target.value; if(k!=='motivo') poblarFiltros(); render(); };
+}
+document.getElementById('scope333435').addEventListener('click', e => {
+  if(!e.target.dataset.v) return;
+  document.querySelectorAll('#scope333435 .scope-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  F.m333435 = e.target.dataset.v; render();
+});
+document.getElementById('btnLimpiar').onclick = () => {
+  Object.assign(F, {canal:'',proyecto:'',ie:'',grado:'',salon:'',motivo:''});
+  poblarFiltros(); render();
+};
+function opciones(sel, valores, etiqueta, actual){
+  const s = document.getElementById(sel);
+  s.innerHTML = `<option value="">${etiqueta}</option>` + valores.map(v=>`<option ${String(v)===actual?'selected':''} value="${String(v).replace(/"/g,'&quot;')}">${v}</option>`).join('');
+}
+function poblarFiltros(){
+  // opciones en cascada: cada select se puebla con el subconjunto que dejan los demás filtros
+  const sub = ROWS.filter(r => pasaFiltros(r, null));
+  const uniq = k => [...new Set(sub.map(r=>r[k]).filter(v=>v!=null && v!==''))].sort((a,b)=>String(a).localeCompare(String(b)));
+  opciones('fCanal', uniq('canal'), 'Canal: todos', F.canal);
+  opciones('fProyecto', uniq('proyecto'), 'Proyecto: todos', F.proyecto);
+  opciones('fIE', uniq('ie'), 'IE: todas', F.ie);
+  opciones('fGrado', uniq('grado'), 'Grado: todos', F.grado);
+  opciones('fSalon', [...new Set(sub.map(r=>r.salon))].sort(), 'Salón: todos', F.salon);
+  opciones('fMotivo', [...new Set(sub.filter(r=>r.motivo).map(r=>r.motivo))].sort(), 'Motivo: todos', F.motivo);
+}
+function pasaFiltros(r, omitir){
+  if(omitir!=='canal' && F.canal && r.canal!==F.canal) return false;
+  if(omitir!=='proyecto' && F.proyecto && r.proyecto!==F.proyecto) return false;
+  if(omitir!=='ie' && F.ie && r.ie!==F.ie) return false;
+  if(omitir!=='grado' && F.grado && String(r.grado)!==F.grado) return false;
+  if(omitir!=='salon' && F.salon && r.salon!==F.salon) return false;
+  return true;
+}
+function esCancelada(r){
+  if(r.state!=='false') return false;
+  if(F.m333435==='excl' && [33,34,35].includes(r.reason_id)) return false;
+  if(F.motivo && r.motivo!==F.motivo) return false;
+  return true;
+}
+// universo: si excluimos 33/34/35, esas sesiones salen también del denominador
+function esValida(r){
+  if(F.m333435==='excl' && r.state==='false' && [33,34,35].includes(r.reason_id)) return false;
+  return true;
+}
+
+/* ============ render ============ */
+function render(){
+  const base = ROWS.filter(r => pasaFiltros(r, null) && esValida(r));
+  const canc = base.filter(esCancelada);
+  renderKPIs(base, canc);
+  renderSemanal(base);
+  renderMotivos(canc);
+  renderProyectos(base);
+  renderIEs(base);
+  renderHeatmap(canc);
+  renderProfes(base);
+  detallePag = 0; renderDetalle(canc);
+}
+
+function renderKPIs(base, canc){
+  const prog = base.length;
+  document.getElementById('kProg').textContent = nf.format(prog);
+  document.getElementById('kProgSub').textContent = `${new Set(base.map(r=>r.project_id)).size} proyectos · ${new Set(base.map(r=>r.ie)).size} IEs`;
+  document.getElementById('kCanc').textContent = nf.format(canc.length);
+  document.getElementById('kCancSub').textContent = F.m333435==='excl' ? 'sin motivos 33/34/35' : 'todos los motivos';
+  document.getElementById('kPct').textContent = prog ? (100*canc.length/prog).toFixed(1)+'%' : '—';
+  const sal = new Set(canc.map(r=>r.room_id)).size;
+  document.getElementById('kSalones').textContent = nf.format(sal);
+  document.getElementById('kSalonesSub').textContent = `de ${nf.format(new Set(base.map(r=>r.room_id)).size)} con sesiones`;
+  const conHoras = canc.filter(r=>r.academic_hours!=null);
+  const horas = conHoras.reduce((a,r)=>a+r.academic_hours,0);
+  const cob = canc.length ? Math.round(100*conHoras.length/canc.length) : 0;
+  document.getElementById('kHoras').textContent = cob>0 ? nf.format(horas)+' h' : 's/d';
+  document.getElementById('kHorasSub').textContent = cob>0 ? `cobertura del dato: ${cob}% de las canceladas` : 'academic_hours sin cargar en este alcance';
+}
+
+function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
+
+function renderSemanal(base){
+  const sem = {};
+  for(const r of base){ (sem[r.semana] ??= {p:0,c:0}); sem[r.semana].p++; if(esCancelada(r)) sem[r.semana].c++; }
+  const labels = Object.keys(sem).sort();
+  const fmt = s => { const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); };
+  mkChart('chSemanal', { data: {
+      labels: labels.map(fmt),
+      datasets: [
+        { type:'bar', label:'Canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:4, yAxisID:'y' },
+        { type:'line', label:'% cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:3, yAxisID:'y2' },
+      ]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans'}}}, tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${nf.format(c.parsed.y)}`}} },
+      scales:{ x:{ticks:{color:css('--ink3')},grid:{display:false}},
+               y:{position:'left',ticks:{color:css('--ink3')},grid:{color:css('--border2')},title:{display:true,text:'canceladas',color:css('--ink3')}},
+               y2:{position:'right',ticks:{color:css('--ink3'),callback:v=>v+'%'},grid:{display:false},title:{display:true,text:'% cancelación',color:css('--ink3')}} } }
+  });
+}
+
+function renderMotivos(canc){
+  const m = {};
+  for(const r of canc){ m[r.motivo || 'Sin especificar'] = (m[r.motivo || 'Sin especificar']||0)+1; }
+  const orden = Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  const top = orden.slice(0,12);
+  mkChart('chMotivos', { type:'bar', data:{ labels: top.map(x=>x[0].length>38?x[0].slice(0,36)+'…':x[0]),
+    datasets:[{ data: top.map(x=>x[1]), backgroundColor:css('--accent'), borderRadius:4 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:css('--ink3')},grid:{color:css('--border2')}}, y:{ticks:{color:css('--ink2'),font:{size:11}},grid:{display:false}} } } });
+  const total = canc.length || 1;
+  document.getElementById('tMotivos').innerHTML =
+    `<thead><tr><th>Motivo</th><th class="num">Sesiones</th><th class="num">%</th></tr></thead><tbody>` +
+    orden.map(([k,v])=>`<tr><td style="white-space:normal">${k}</td><td class="num">${nf.format(v)}</td><td class="num">${(100*v/total).toFixed(1)}%</td></tr>`).join('') + '</tbody>';
+}
+
+function tablaAgregada(idTabla, filas, clave, etiqueta, minProg){
+  const g = {};
+  for(const r of filas){
+    const k = r[clave]; (g[k] ??= {p:0,c:0,h:0,hc:0});
+    g[k].p++;
+    if(esCancelada(r)){ g[k].c++; if(r.academic_hours!=null){ g[k].h+=r.academic_hours; g[k].hc++; } }
+  }
+  const arr = Object.entries(g).filter(([,v])=>v.p>=minProg).map(([k,v])=>({k, ...v, pct:v.p?100*v.c/v.p:0})).sort((a,b)=>b.pct-a.pct);
+  document.getElementById(idTabla).innerHTML =
+    `<thead><tr><th>${etiqueta}</th><th class="num">Programadas</th><th class="num">Canceladas</th><th class="num">% Cancelación</th><th class="num">Horas acad. canceladas</th></tr></thead><tbody>` +
+    arr.map(x=>`<tr><td style="white-space:normal">${x.k}</td><td class="num">${nf.format(x.p)}</td><td class="num">${nf.format(x.c)}</td><td class="num" style="color:${x.pct>=20?css('--coral'):x.pct>=10?css('--amber'):css('--teal')}">${x.pct.toFixed(1)}%</td><td class="num">${x.hc>0?nf.format(x.h)+' h':'s/d'}</td></tr>`).join('') + '</tbody>';
+}
+function renderProyectos(base){ tablaAgregada('tProyectos', base, 'proyecto', 'Proyecto', 1); }
+function renderIEs(base){ tablaAgregada('tIEs', base, 'ie', 'Institución educativa', 20); }
+
+function renderHeatmap(canc){
+  const horas = [...new Set(canc.map(r=>r.hora).filter(h=>h && h>='05' && h<='22'))].sort();
+  const m = {};
+  for(const r of canc){ m[r.dia+'|'+r.hora] = (m[r.dia+'|'+r.hora]||0)+1; }
+  const max = Math.max(1, ...Object.values(m));
+  const el = document.getElementById('heatmap');
+  el.className = 'hm';
+  el.style.gridTemplateColumns = `56px repeat(${horas.length}, 1fr)`;
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  let html = `<div></div>` + horas.map(h=>`<div class="hm-head">${h}h</div>`).join('');
+  for(const d of DIAS){
+    html += `<div class="hm-row-label">${DIAS_ES[d]}</div>`;
+    for(const h of horas){
+      const v = m[d+'|'+h]||0;
+      const a = v/max;
+      const bg = v===0 ? 'var(--surface2)' : `rgba(216,90,48,${(0.12+0.75*a).toFixed(2)})`;
+      const fg = a>0.55 ? '#fff' : 'var(--ink)';
+      html += `<div class="hm-cell" style="background:${bg};color:${fg}" title="${DIAS_ES[d]} ${h}h: ${v}">${v||''}</div>`;
+    }
+  }
+  el.innerHTML = html;
+}
+
+function renderProfes(base){ tablaAgregada('tProfes', base.filter(r=>r.profesor && r.profesor!==', '), 'profesor', 'Profesor (de la sesión)', 10); }
+
+function renderDetalle(canc){
+  const porPag = 25;
+  const filas = [...canc].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const pags = Math.max(1, Math.ceil(filas.length/porPag));
+  detallePag = Math.min(detallePag, pags-1);
+  const pagina = filas.slice(detallePag*porPag, (detallePag+1)*porPag);
+  document.getElementById('tDetalle').innerHTML =
+    `<thead><tr><th>Fecha</th><th>Proyecto</th><th>IE</th><th>Salón</th><th>Grado</th><th>Motivo</th><th>Profesor</th><th>Recup.</th><th>Cancelada el</th></tr></thead><tbody>` +
+    pagina.map(r=>`<tr><td>${r.fecha}</td><td>${r.proyecto}</td><td style="white-space:normal">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td style="white-space:normal">${r.motivo||''}</td><td>${r.profesor||''}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td></tr>`).join('') + '</tbody>';
+  document.getElementById('pagDetalle').innerHTML =
+    `${nf.format(filas.length)} canceladas · pág. ${detallePag+1}/${pags} ` +
+    `<button class="nav-btn" onclick="detallePag=Math.max(0,detallePag-1);renderDetalle(window._canc)">‹</button>` +
+    `<button class="nav-btn" onclick="detallePag=Math.min(${pags-1},detallePag+1);renderDetalle(window._canc)">›</button>`;
+  window._canc = canc;
+}
+
+document.getElementById('btnCSV').onclick = () => {
+  const canc = ROWS.filter(r => pasaFiltros(r,null) && esValida(r) && esCancelada(r));
+  const cols = ['fecha','semana','dia','hora','proyecto','canal','ie','grado','room_id','salon','reason_id','motivo','profesor','make_up_class','given_by_external','academic_hours','duracion_min','cancellation_at'];
+  const esc = v => v==null ? '' : /[",\n]/.test(String(v)) ? '"'+String(v).replace(/"/g,'""')+'"' : String(v);
+  const csv = cols.join(',') + '\n' + canc.map(r=>cols.map(c=>esc(r[c])).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `cancelaciones_${fDesde.value}_${fHasta.value}.csv`;
+  a.click();
+};
+
+cargar();
+</script>
+</body>
+</html>

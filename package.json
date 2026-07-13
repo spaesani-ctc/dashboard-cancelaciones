@@ -1,0 +1,7 @@
+{
+  "name": "ctc-dashboard-cancelaciones",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dashboard de cancelaciones CTC con datos en vivo desde Metabase/Athena (SSOT de cancelaciones)"
+}
