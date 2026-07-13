@@ -259,11 +259,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 
 <div class="wrap">
   <div class="kpis">
-    <div class="kpi"><div class="kpi-label">Programadas</div><div class="kpi-value" id="kProg">—</div><div class="kpi-sub" id="kProgSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
+    <div class="kpi"><div class="kpi-label" id="kProgL">Sesiones programadas</div><div class="kpi-value" id="kProg">—</div><div class="kpi-sub" id="kProgSub"></div></div>
+    <div class="kpi"><div class="kpi-label" id="kDictL">Sesiones dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
+    <div class="kpi"><div class="kpi-label" id="kCancL">Sesiones canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
     <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Canc. pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
+    <div class="kpi"><div class="kpi-label">Canceladas pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
     <div class="kpi"><div class="kpi-label">Salones afectados</div><div class="kpi-value" id="kSalones">—</div><div class="kpi-sub" id="kSalonesSub"></div></div>
   </div>
 
@@ -633,17 +633,23 @@ function renderKPIs(base, canc){
   const sProg = sumas(base), sDict = sumas(dict), sCanc = sumas(canc);
   const principal = s => enHoras() ? nf.format(Math.round(s.hrs))+' h' : nf.format(s.ses);
   const secundario = s => enHoras() ? `${nf.format(s.ses)} sesiones` : `${nf.format(Math.round(s.hrs))} h acad.`;
+  const u = enHoras() ? 'Horas' : 'Sesiones';
+  document.getElementById('kProgL').textContent = u + ' programadas';
+  document.getElementById('kDictL').textContent = u + ' dictadas';
+  document.getElementById('kCancL').textContent = u + ' canceladas';
   document.getElementById('kProg').textContent = principal(sProg);
-  document.getElementById('kProgSub').textContent = secundario(sProg) + ` · ${new Set(base.map(r=>r.project_id)).size} proyectos`;
+  document.getElementById('kProgSub').textContent = secundario(sProg);
   document.getElementById('kDict').textContent = principal(sDict);
-  document.getElementById('kDictSub').textContent = secundario(sDict) + ` · futuras: ${nf.format(base.filter(esFutura).length)}`;
+  document.getElementById('kDictSub').textContent = secundario(sDict);
   document.getElementById('kCanc').textContent = principal(sCanc);
-  document.getElementById('kCancSub').textContent = secundario(sCanc) + (MOTIVOS_EXCL && MOTIVOS_EXCL.size ? ` · ${MOTIVOS_EXCL.size} motivos excluidos` : ' · todos los motivos');
+  document.getElementById('kCancSub').textContent = secundario(sCanc);
   const pctSes = sProg.ses ? 100*sCanc.ses/sProg.ses : 0;
   const pctHrs = sProg.hrs ? 100*sCanc.hrs/sProg.hrs : 0;
   document.getElementById('kPct').textContent = (enHoras()?pctHrs:pctSes).toFixed(1)+'%';
   document.getElementById('kPctSub').textContent = enHoras() ? `en sesiones: ${pctSes.toFixed(1)}%` : `en horas acad.: ${sProg.hrs?pctHrs.toFixed(1)+'%':'s/d'}`;
-  const pagadas = canc.filter(r=>String(r.is_paid_session)==='true');
+  // pagada = is_paid_session 'paid_automatic' / 'paid_manual' (+ legacy 'True')
+  const esPagada = v => /^paid/.test(String(v)) || String(v)==='True';
+  const pagadas = canc.filter(r=>esPagada(r.is_paid_session));
   const sPag = sumas(pagadas);
   document.getElementById('kPagadas').textContent = principal(sPag);
   document.getElementById('kPagadasSub').textContent = canc.length ? `${(100*pagadas.length/canc.length).toFixed(1)}% de las canceladas` : '—';
