@@ -28,21 +28,24 @@ html, body { height: 100%; }
 body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink); font-size:13px; line-height:1.45; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column; overflow:hidden; }
 
 /* ===== TOPBAR ===== */
-.topbar { background:var(--accent); color:#fff; padding:8px 16px; display:flex; align-items:center; gap:14px; flex-shrink:0; }
+.topbar { background:var(--accent); color:#fff; padding:7px 16px; display:flex; align-items:center; gap:14px; flex-shrink:0; }
 .brand { display:flex; align-items:baseline; gap:10px; white-space:nowrap; }
 .brand-eyebrow { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.55); }
-.brand h1 { font-family:'DM Serif Display',serif; font-size:1.25rem; font-weight:400; line-height:1; }
+.brand h1 { font-family:'DM Serif Display',serif; font-size:1.2rem; font-weight:400; line-height:1; }
 .brand h1 em { font-style:italic; color:rgba(255,255,255,0.65); }
-.top-meta { font-family:'DM Mono',monospace; font-size:10px; color:rgba(255,255,255,0.5); white-space:nowrap; }
-.top-right { margin-left:auto; display:flex; gap:6px; align-items:center; }
+.tabs { display:flex; gap:2px; margin-left:12px; }
+.tab { font-size:11.5px; font-weight:500; padding:4px 12px; border-radius:6px; border:1px solid transparent; background:transparent; color:rgba(255,255,255,0.65); cursor:pointer; transition:background .15s,color .15s; }
+.tab:hover { color:#fff; background:rgba(255,255,255,0.08); }
+.tab.active { background:rgba(255,255,255,0.14); color:#fff; font-weight:600; border-color:rgba(255,255,255,0.2); }
+.top-meta { font-family:'DM Mono',monospace; font-size:10px; color:rgba(255,255,255,0.5); white-space:nowrap; margin-left:auto; }
+.top-right { display:flex; gap:6px; align-items:center; }
 .tb-btn { display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.08); cursor:pointer; color:#fff; font-family:'DM Sans',sans-serif; font-size:11.5px; font-weight:500; white-space:nowrap; transition:background .15s; }
 .tb-btn:hover { background:rgba(255,255,255,0.18); }
 
 /* ===== FILTERBAR ===== */
 .filterbar { background:var(--surface); border-bottom:1px solid var(--border); padding:6px 16px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex-shrink:0; }
 .f-select { font-family:'DM Sans',sans-serif; font-size:11.5px; padding:4px 7px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); max-width:150px; cursor:pointer; }
-.f-select.active-f { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.f-date { font-family:'DM Mono',monospace; font-size:10.5px; padding:3px 5px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); }
+.f-select.active-f { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
 .scope { display:flex; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:2px; flex-shrink:0; }
 .scope-btn { font-family:'DM Sans',sans-serif; font-size:10.5px; font-weight:500; padding:2px 8px; border:none; background:transparent; color:var(--ink2); border-radius:5px; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
 .scope-btn:hover { color:var(--ink); }
@@ -51,13 +54,27 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .f-clear { font-size:10.5px; color:var(--ink3); background:none; border:none; cursor:pointer; text-decoration:underline dotted; }
 .f-clear:hover { color:var(--ink); }
 
+/* período dropdown */
+.periodo { position:relative; }
+.periodo-btn { display:flex; align-items:center; gap:6px; font-family:'DM Sans',sans-serif; font-size:11.5px; font-weight:500; padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); cursor:pointer; white-space:nowrap; }
+.periodo-btn:hover { background:var(--border); }
+.periodo-btn .cal { opacity:.55; }
+.periodo-pop { position:absolute; top:calc(100% + 6px); left:0; z-index:500; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:0 12px 36px rgba(0,0,0,0.16); padding:6px; display:none; min-width:210px; }
+.periodo-pop.show { display:block; }
+.periodo-opt { display:block; width:100%; text-align:left; font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 10px; border:none; background:transparent; color:var(--ink2); border-radius:6px; cursor:pointer; }
+.periodo-opt:hover { background:var(--surface2); color:var(--ink); }
+.periodo-opt.sel { font-weight:600; color:var(--ink); background:var(--surface2); }
+.periodo-custom { border-top:1px solid var(--border); margin-top:5px; padding:8px 10px 4px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.f-date { font-family:'DM Mono',monospace; font-size:10.5px; padding:3px 5px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); }
+.periodo-apply { font-size:11px; font-weight:600; padding:3px 10px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
+
 /* ===== LAYOUT ===== */
 .wrap { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 16px 8px; gap:10px; }
 .kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; flex-shrink:0; }
 .kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 14px; display:flex; flex-direction:column; justify-content:center; }
 .kpi-label { font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink3); }
-.kpi-value { font-family:'DM Serif Display',serif; font-size:1.65rem; line-height:1.15; color:var(--ink); }
-.kpi-value.coral { color:var(--coral); } .kpi-value.amber { color:var(--amber); }
+.kpi-value { font-family:'DM Serif Display',serif; font-size:1.6rem; line-height:1.15; color:var(--ink); }
+.kpi-value.coral { color:var(--coral); } .kpi-value.amber { color:var(--amber); } .kpi-value.teal { color:var(--teal); }
 .kpi-sub { font-size:10px; color:var(--ink3); line-height:1.3; }
 
 .grid { flex:1; min-height:0; display:grid; grid-template-columns:repeat(12,1fr); grid-template-rows:11fr 10fr; gap:10px; }
@@ -70,19 +87,24 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .p-tab.active { background:var(--surface2); color:var(--ink); border-color:var(--border); font-weight:600; }
 .p-body { flex:1; min-height:0; position:relative; }
 .p-body.scroll { overflow:auto; }
-
 #pSemanal { grid-column:1/8; } #pMotivos { grid-column:8/13; }
 #pHeatmap { grid-column:1/5; } #pProyectos { grid-column:5/9; } #pRanking { grid-column:9/13; }
+
+/* vista sesiones y horas */
+#vistaSesiones { flex:1; min-height:0; display:none; flex-direction:column; }
+#vistaSesiones .panel { flex:1; }
 
 /* ===== TABLAS ===== */
 table.t { width:100%; border-collapse:collapse; font-size:11px; }
 table.t th { font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); text-align:left; padding:3px 7px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:2; white-space:nowrap; }
-table.t td { padding:3px 7px; border-bottom:1px solid var(--border2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:190px; }
+table.t td { padding:3px 7px; border-bottom:1px solid var(--border2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
 table.t tbody tr:nth-child(even) { background:var(--surface2); }
 table.t td.num, table.t th.num { text-align:right; font-variant-numeric:tabular-nums; }
+table.t th.sep, table.t td.sep { border-left:1px solid var(--border); }
 a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(--accent); }
 [data-theme="dark"] a.lk { color:var(--teal); border-color:var(--teal); }
 .badge { display:inline-block; font-size:9px; padding:0 6px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--ink2); }
+.dim { color:var(--ink3); }
 
 /* ===== HEATMAP ===== */
 .hm { display:grid; gap:2px; height:100%; }
@@ -109,7 +131,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 .nota { font-size:12px; color:var(--ink2); line-height:1.7; }
 .nota code { font-family:'DM Mono',monospace; font-size:11px; background:var(--surface2); padding:0 4px; border-radius:4px; }
 
-/* ===== LOADING OVERLAY (como el informe) ===== */
+/* ===== LOADING OVERLAY ===== */
 @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
 #loadingOverlay { position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(120,120,120,0.15); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); transition:opacity .25s ease; }
 #loadingOverlay.show { display:flex; }
@@ -118,7 +140,6 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 [data-theme="dark"] #loadingOverlay .loading-spin { color:var(--teal); }
 #loadingOverlay .loading-sub { color:var(--ink3); font-size:12px; font-weight:400; }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width:1100px) {
   body { overflow:auto; }
   .kpis { grid-template-columns:repeat(2,1fr); }
@@ -134,21 +155,35 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <span class="brand-eyebrow">Data · CTC</span>
     <h1>Dashboard de <em>Cancelaciones</em></h1>
   </div>
+  <div class="tabs" id="vistas">
+    <button class="tab active" data-v="resumen">Resumen</button>
+    <button class="tab" data-v="sesiones">Sesiones y horas</button>
+  </div>
   <span class="top-meta" id="metaRango">—</span>
   <div class="top-right">
-    <button class="tb-btn" id="btnRefresh"><span id="refreshIcon">↻</span> Actualizar</button>
+    <button class="tb-btn" id="btnRefresh">↻ Actualizar</button>
     <button class="tb-btn" id="btnTheme">🌙</button>
   </div>
 </div>
 
 <div class="filterbar">
-  <div class="scope" id="presets">
-    <button class="scope-btn" data-w="4">4 sem</button>
-    <button class="scope-btn active" data-w="12">12 sem</button>
-    <button class="scope-btn" data-w="26">26 sem</button>
-    <button class="scope-btn" data-w="ytd">YTD</button>
+  <div class="periodo">
+    <button class="periodo-btn" id="periodoBtn"><span class="cal">📅</span> <span id="periodoLabel">Últimos 3 meses</span> <span style="opacity:.5">▾</span></button>
+    <div class="periodo-pop" id="periodoPop">
+      <button class="periodo-opt" data-p="4">Últimas 4 semanas</button>
+      <button class="periodo-opt sel" data-p="13">Últimos 3 meses</button>
+      <button class="periodo-opt" data-p="26">Últimos 6 meses</button>
+      <button class="periodo-opt" data-p="ytd">Año en curso (YTD)</button>
+      <div class="periodo-custom">
+        <input type="date" class="f-date" id="fDesde"> <span class="dim">→</span> <input type="date" class="f-date" id="fHasta">
+        <button class="periodo-apply" id="periodoApply">Aplicar</button>
+      </div>
+    </div>
   </div>
-  <input type="date" class="f-date" id="fDesde"> <input type="date" class="f-date" id="fHasta">
+  <div class="scope" id="unidad" title="Unidad de medida de todo el dashboard">
+    <button class="scope-btn active" data-u="ses">Sesiones</button>
+    <button class="scope-btn" data-u="hrs">Horas acad.</button>
+  </div>
   <select class="f-select" id="fCanal"><option value="">Canal</option></select>
   <select class="f-select" id="fProyecto"><option value="">Proyecto</option></select>
   <select class="f-select" id="fIE"><option value="">IE</option></select>
@@ -165,15 +200,16 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 <div class="wrap">
   <div class="kpis">
     <div class="kpi"><div class="kpi-label">Programadas</div><div class="kpi-value" id="kProg">—</div><div class="kpi-sub" id="kProgSub"></div></div>
+    <div class="kpi"><div class="kpi-label">Dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
     <div class="kpi"><div class="kpi-label">Canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
-    <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub">canceladas / programadas</div></div>
+    <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
     <div class="kpi"><div class="kpi-label">Salones afectados</div><div class="kpi-value amber" id="kSalones">—</div><div class="kpi-sub" id="kSalonesSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Horas acad. canceladas</div><div class="kpi-value" id="kHoras">—</div><div class="kpi-sub" id="kHorasSub"></div></div>
   </div>
 
-  <div class="grid">
+  <!-- VISTA RESUMEN -->
+  <div class="grid" id="vistaResumen">
     <div class="panel" id="pSemanal">
-      <div class="p-head"><span class="p-title">Evolución semanal</span><span class="p-sub">canceladas + % cancelación</span></div>
+      <div class="p-head"><span class="p-title">Evolución semanal</span><span class="p-sub" id="semanalSub">canceladas + % cancelación</span></div>
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
     <div class="panel" id="pMotivos">
@@ -196,6 +232,24 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
         <div class="p-tabs"><button class="p-tab active" data-r="ie">IEs</button><button class="p-tab" data-r="prof">Profesores</button></div>
       </div>
       <div class="p-body scroll"><table class="t" id="tRanking"></table></div>
+    </div>
+  </div>
+
+  <!-- VISTA SESIONES Y HORAS -->
+  <div id="vistaSesiones">
+    <div class="panel">
+      <div class="p-head">
+        <span class="p-title">Sesiones y horas académicas</span>
+        <span class="p-sub">programadas · dictadas · futuras · canceladas</span>
+        <div class="p-tabs" id="dimTabs">
+          <button class="p-tab active" data-d="proyecto">Proyecto</button>
+          <button class="p-tab" data-d="ie">IE</button>
+          <button class="p-tab" data-d="grado">Grado</button>
+          <button class="p-tab" data-d="salon">Salón</button>
+        </div>
+      </div>
+      <div class="p-body scroll"><table class="t" id="tSesiones"></table></div>
+      <div class="pag" style="justify-content:flex-start"><span class="dim" id="notaCobertura"></span></div>
     </div>
   </div>
 </div>
@@ -223,10 +277,10 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="modal-head"><span class="modal-title">Metodología</span><button class="modal-close" data-close="mMet">✕</button></div>
     <div class="modal-body nota">
       <p><strong>Fuente:</strong> SSOT de Cancelaciones sobre <code>room_roomsessions</code> (datalake, vía API de Metabase), a grano sesión con IE/grado a nivel salón (catálogo).</p>
-      <p><strong>Cancelada</strong> = <code>state='false'</code>. <strong>% cancelación</strong> = canceladas / sesiones programadas del alcance filtrado.</p>
-      <p>Los motivos <strong>33 (Cambio operativo BO), 34 (Feriado) y 35 (Vacaciones)</strong> se excluyen por defecto — convención del dashboard oficial. Al excluirlos, salen también del denominador. El switch del filtro los incluye.</p>
-      <p><strong>Horas académicas:</strong> suma de <code>academic_hours</code> solo donde el campo está cargado; se indica la cobertura del dato. Sin conversiones desde duración de reloj.</p>
-      <p>Se excluyen las ventanas de paro 2024 (proyectos 19/14 y 47/48/56). El profesor mostrado es el de la sesión (contempla reemplazos). Datos con rezago de ETL, cache de 5 minutos.</p>
+      <p><strong>Definiciones:</strong> <em>programada</em> = toda sesión del alcance · <em>dictada</em> = <code>state='true'</code>, fecha pasada y sin motivo de cancelación · <em>futura</em> = <code>state='true'</code> con fecha ≥ hoy · <em>cancelada</em> = <code>state='false'</code>. <strong>% cancelación</strong> = canceladas / programadas.</p>
+      <p><strong>Unidad Horas acad.:</strong> suma de <code>academic_hours</code> solo donde el campo está cargado; la cobertura del dato se indica en cada vista. Sin conversiones desde duración de reloj.</p>
+      <p>Los motivos <strong>33 (Cambio operativo BO), 34 (Feriado) y 35 (Vacaciones)</strong> se excluyen por defecto — convención del dashboard oficial; al excluirlos salen también del denominador. El switch los incluye.</p>
+      <p>Se excluyen las ventanas de paro 2024 (proyectos 19/14 y 47/48/56). El profesor mostrado es el de la sesión (contempla reemplazos). Datos con rezago de ETL, cache 5 min.</p>
     </div>
   </div>
 </div>
@@ -248,35 +302,46 @@ let ROWS = [];
 let charts = {};
 let detallePag = 0;
 let rankMode = 'ie';
+let dimSesiones = 'proyecto';
+let UNIDAD = 'ses';           // 'ses' | 'hrs'
+let VISTA = 'resumen';        // 'resumen' | 'sesiones'
+const HOY = new Date().toISOString().slice(0,10);
 const DIAS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DIAS_ES = {Monday:'Lun',Tuesday:'Mar',Wednesday:'Mié',Thursday:'Jue',Friday:'Vie',Saturday:'Sáb',Sunday:'Dom'};
 const nf = new Intl.NumberFormat('es-AR');
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-/* ============ overlay ============ */
+/* ============ overlay / tema ============ */
 const overlay = document.getElementById('loadingOverlay');
-const showLoad = (txt, sub) => { document.getElementById('loadingText').textContent = txt; document.getElementById('loadingSub').textContent = sub||''; overlay.classList.add('show'); };
+const showLoad = (t,s) => { document.getElementById('loadingText').textContent=t; document.getElementById('loadingSub').textContent=s||''; overlay.classList.add('show'); };
 const hideLoad = () => overlay.classList.remove('show');
-
-/* ============ tema ============ */
 const themeBtn = document.getElementById('btnTheme');
 function setTheme(t){ document.documentElement.setAttribute('data-theme',t); localStorage.setItem('theme',t); themeBtn.textContent = t==='dark'?'☀️':'🌙'; if(ROWS.length) render(); }
 setTheme(localStorage.getItem('theme') || 'light');
 themeBtn.onclick = () => setTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
 
-/* ============ fechas ============ */
+/* ============ período (dropdown único) ============ */
 const fDesde = document.getElementById('fDesde'), fHasta = document.getElementById('fHasta');
+const pop = document.getElementById('periodoPop');
 const iso = d => d.toISOString().slice(0,10);
-function setPreset(w){ const hoy = new Date(); fHasta.value = iso(hoy); fDesde.value = w==='ytd' ? hoy.getFullYear()+'-01-01' : iso(new Date(Date.now()-w*7*86400000)); }
-setPreset(12);
-document.getElementById('presets').addEventListener('click', e => {
-  if(!e.target.dataset.w) return;
-  document.querySelectorAll('#presets .scope-btn').forEach(b=>b.classList.remove('active'));
-  e.target.classList.add('active');
-  setPreset(e.target.dataset.w==='ytd'?'ytd':+e.target.dataset.w);
-  cargar();
+const LBL = { '4':'Últimas 4 semanas', '13':'Últimos 3 meses', '26':'Últimos 6 meses', 'ytd':'Año en curso (YTD)' };
+function setPreset(p){
+  const hoy = new Date(); fHasta.value = iso(hoy);
+  fDesde.value = p==='ytd' ? hoy.getFullYear()+'-01-01' : iso(new Date(Date.now()-(+p)*7*86400000));
+  document.getElementById('periodoLabel').textContent = LBL[p];
+}
+setPreset('13');
+document.getElementById('periodoBtn').onclick = e => { e.stopPropagation(); pop.classList.toggle('show'); };
+document.addEventListener('click', e => { if(!pop.contains(e.target)) pop.classList.remove('show'); });
+document.querySelectorAll('.periodo-opt').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.periodo-opt').forEach(x=>x.classList.remove('sel'));
+  b.classList.add('sel'); setPreset(b.dataset.p); pop.classList.remove('show'); cargar();
 });
-fDesde.onchange = fHasta.onchange = () => cargar();
+document.getElementById('periodoApply').onclick = () => {
+  document.querySelectorAll('.periodo-opt').forEach(x=>x.classList.remove('sel'));
+  document.getElementById('periodoLabel').textContent = `${fDesde.value} → ${fHasta.value}`;
+  pop.classList.remove('show'); cargar();
+};
 
 /* ============ carga ============ */
 async function cargar(force=false){
@@ -292,6 +357,28 @@ async function cargar(force=false){
   } catch(e){ showLoad('Error al cargar', e.message); }
 }
 document.getElementById('btnRefresh').onclick = () => cargar(true);
+
+/* ============ vistas (tabs) ============ */
+document.getElementById('vistas').addEventListener('click', e => {
+  if(!e.target.dataset.v) return;
+  document.querySelectorAll('#vistas .tab').forEach(t=>t.classList.remove('active'));
+  e.target.classList.add('active');
+  VISTA = e.target.dataset.v;
+  document.getElementById('vistaResumen').style.display = VISTA==='resumen'?'grid':'none';
+  document.getElementById('vistaSesiones').style.display = VISTA==='sesiones'?'flex':'none';
+  if(ROWS.length) render();
+});
+
+/* ============ unidad ============ */
+document.getElementById('unidad').addEventListener('click', e => {
+  if(!e.target.dataset.u) return;
+  document.querySelectorAll('#unidad .scope-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  UNIDAD = e.target.dataset.u; render();
+});
+const enHoras = () => UNIDAD==='hrs';
+const val = r => enHoras() ? (r.academic_hours||0) : 1;
+const fmtU = v => enHoras() ? nf.format(Math.round(v))+' h' : nf.format(v);
 
 /* ============ filtros ============ */
 const F = { canal:'', proyecto:'', ie:'', grado:'', salon:'', motivo:'', m333435:'excl' };
@@ -342,6 +429,8 @@ function esValida(r){
   if(F.m333435==='excl' && r.state==='false' && [33,34,35].includes(r.reason_id)) return false;
   return true;
 }
+const esDictada = r => r.state==='true' && r.fecha < HOY && r.reason_id==null;
+const esFutura  = r => r.state==='true' && r.fecha >= HOY;
 
 /* ============ render ============ */
 function render(){
@@ -349,40 +438,51 @@ function render(){
   const canc = base.filter(esCancelada);
   window._base = base; window._canc = canc;
   renderKPIs(base, canc);
-  renderSemanal(base);
-  renderMotivos(canc);
-  renderProyectos(base);
-  renderRanking(base);
-  renderHeatmap(canc);
+  if(VISTA==='resumen'){
+    renderSemanal(base); renderMotivos(canc); renderProyectos(base); renderRanking(base); renderHeatmap(canc);
+  } else {
+    renderSesiones(base);
+  }
 }
 
+function sumas(filas){
+  let ses=0, hrs=0, hc=0;
+  for(const r of filas){ ses++; if(r.academic_hours!=null){ hrs+=r.academic_hours; hc++; } }
+  return {ses, hrs, hc};
+}
 function renderKPIs(base, canc){
-  document.getElementById('kProg').textContent = nf.format(base.length);
-  document.getElementById('kProgSub').textContent = `${new Set(base.map(r=>r.project_id)).size} proyectos · ${new Set(base.map(r=>r.ie)).size} IEs`;
-  document.getElementById('kCanc').textContent = nf.format(canc.length);
-  document.getElementById('kCancSub').textContent = F.m333435==='excl' ? 'sin motivos 33/34/35' : 'todos los motivos';
-  document.getElementById('kPct').textContent = base.length ? (100*canc.length/base.length).toFixed(1)+'%' : '—';
+  const dict = base.filter(esDictada);
+  const sProg = sumas(base), sDict = sumas(dict), sCanc = sumas(canc);
+  const principal = s => enHoras() ? nf.format(Math.round(s.hrs))+' h' : nf.format(s.ses);
+  const secundario = s => enHoras() ? `${nf.format(s.ses)} sesiones` : `${nf.format(Math.round(s.hrs))} h acad.`;
+  document.getElementById('kProg').textContent = principal(sProg);
+  document.getElementById('kProgSub').textContent = secundario(sProg) + ` · ${new Set(base.map(r=>r.project_id)).size} proyectos`;
+  document.getElementById('kDict').textContent = principal(sDict);
+  document.getElementById('kDictSub').textContent = secundario(sDict) + ` · futuras: ${nf.format(base.filter(esFutura).length)}`;
+  document.getElementById('kCanc').textContent = principal(sCanc);
+  document.getElementById('kCancSub').textContent = secundario(sCanc) + (F.m333435==='excl' ? ' · sin 33/34/35' : ' · todos los motivos');
+  const pctSes = sProg.ses ? 100*sCanc.ses/sProg.ses : 0;
+  const pctHrs = sProg.hrs ? 100*sCanc.hrs/sProg.hrs : 0;
+  document.getElementById('kPct').textContent = (enHoras()?pctHrs:pctSes).toFixed(1)+'%';
+  document.getElementById('kPctSub').textContent = enHoras() ? `en sesiones: ${pctSes.toFixed(1)}%` : `en horas acad.: ${sProg.hrs?pctHrs.toFixed(1)+'%':'s/d'}`;
   document.getElementById('kSalones').textContent = nf.format(new Set(canc.map(r=>r.room_id)).size);
-  document.getElementById('kSalonesSub').textContent = `de ${nf.format(new Set(base.map(r=>r.room_id)).size)} con sesiones`;
-  const conHoras = canc.filter(r=>r.academic_hours!=null);
-  const horas = conHoras.reduce((a,r)=>a+r.academic_hours,0);
-  const cob = canc.length ? Math.round(100*conHoras.length/canc.length) : 0;
-  document.getElementById('kHoras').textContent = cob>0 ? nf.format(horas)+' h' : 's/d';
-  document.getElementById('kHorasSub').textContent = cob>0 ? `cobertura del dato: ${cob}%` : 'academic_hours sin cargar acá';
+  const cob = canc.length ? Math.round(100*sCanc.hc/canc.length) : 0;
+  document.getElementById('kSalonesSub').textContent = `de ${nf.format(new Set(base.map(r=>r.room_id)).size)} · cobertura h: ${cob}%`;
 }
 
 function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
 
 function renderSemanal(base){
+  document.getElementById('semanalSub').textContent = (enHoras()?'horas canceladas':'canceladas') + ' + % cancelación';
   const sem = {};
-  for(const r of base){ (sem[r.semana] ??= {p:0,c:0}); sem[r.semana].p++; if(esCancelada(r)) sem[r.semana].c++; }
+  for(const r of base){ (sem[r.semana] ??= {p:0,c:0}); sem[r.semana].p += val(r); if(esCancelada(r)) sem[r.semana].c += val(r); }
   const labels = Object.keys(sem).sort();
   const fmt = s => { const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); };
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
-      { type:'bar', label:'Canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y' },
+      { type:'bar', label:enHoras()?'Horas canceladas':'Canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y' },
       { type:'line', label:'% cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2' } ]},
     options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}}, tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${nf.format(c.parsed.y)}`}} },
+      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}}, tooltip:{callbacks:{label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${fmtU(c.parsed.y)}`}} },
       scales:{ x:{ticks:{color:css('--ink3'),font:{size:9.5},maxRotation:0},grid:{display:false}},
                y:{position:'left',ticks:{color:css('--ink3'),font:{size:9.5}},grid:{color:css('--border2')}},
                y2:{position:'right',ticks:{color:css('--ink3'),font:{size:9.5},callback:v=>v+'%'},grid:{display:false}} } } });
@@ -390,40 +490,36 @@ function renderSemanal(base){
 
 function renderMotivos(canc){
   const m = {};
-  for(const r of canc){ const k = r.motivo||'Sin especificar'; m[k]=(m[k]||0)+1; }
+  for(const r of canc){ const k = r.motivo||'Sin especificar'; m[k]=(m[k]||0)+val(r); }
   const orden = Object.entries(m).sort((a,b)=>b[1]-a[1]);
   const top = orden.slice(0,9);
   mkChart('chMotivos', { type:'bar', data:{ labels:top.map(x=>x[0].length>30?x[0].slice(0,28)+'…':x[0]),
     datasets:[{ data:top.map(x=>x[1]), backgroundColor:css('--accent'), borderRadius:3 }] },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+fmtU(c.parsed.x)}}},
       scales:{ x:{ticks:{color:css('--ink3'),font:{size:9.5}},grid:{color:css('--border2')}}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } } });
-  const total = canc.length||1;
+  const total = orden.reduce((a,x)=>a+x[1],0)||1;
   document.getElementById('tMotivos').innerHTML =
-    `<thead><tr><th>Motivo</th><th class="num">Sesiones</th><th class="num">%</th></tr></thead><tbody>` +
-    orden.map(([k,v])=>`<tr><td style="max-width:260px" title="${k}">${k}</td><td class="num">${nf.format(v)}</td><td class="num">${(100*v/total).toFixed(1)}%</td></tr>`).join('') + '</tbody>';
+    `<thead><tr><th>Motivo</th><th class="num">${enHoras()?'Horas':'Sesiones'}</th><th class="num">%</th></tr></thead><tbody>` +
+    orden.map(([k,v])=>`<tr><td style="max-width:260px" title="${k}">${k}</td><td class="num">${fmtU(v)}</td><td class="num">${(100*v/total).toFixed(1)}%</td></tr>`).join('') + '</tbody>';
 }
 
 function filaAgg(filas, clave, minProg){
   const g = {};
-  for(const r of filas){ const k=r[clave]; (g[k] ??= {p:0,c:0,h:0,hc:0}); g[k].p++;
-    if(esCancelada(r)){ g[k].c++; if(r.academic_hours!=null){ g[k].h+=r.academic_hours; g[k].hc++; } } }
-  return Object.entries(g).filter(([,v])=>v.p>=minProg).map(([k,v])=>({k,...v,pct:v.p?100*v.c/v.p:0})).sort((a,b)=>b.pct-a.pct);
+  for(const r of filas){ const k=r[clave]; (g[k] ??= {p:0,c:0,pSes:0}); g[k].pSes++; g[k].p += val(r); if(esCancelada(r)) g[k].c += val(r); }
+  return Object.entries(g).filter(([,v])=>v.pSes>=minProg).map(([k,v])=>({k,...v,pct:v.p?100*v.c/v.p:0})).sort((a,b)=>b.pct-a.pct);
 }
 const colorPct = p => p>=20?css('--coral'):p>=10?css('--amber'):css('--teal');
-function renderProyectos(base){
-  const arr = filaAgg(base, 'proyecto', 1);
-  document.getElementById('tProyectos').innerHTML =
-    `<thead><tr><th>Proyecto</th><th class="num">Prog.</th><th class="num">Canc.</th><th class="num">%</th></tr></thead><tbody>` +
-    arr.map(x=>`<tr><td title="${x.k}">${x.k}</td><td class="num">${nf.format(x.p)}</td><td class="num">${nf.format(x.c)}</td><td class="num" style="color:${colorPct(x.pct)};font-weight:600">${x.pct.toFixed(1)}%</td></tr>`).join('') + '</tbody>';
+function tablaRank(id, arr, etiqueta){
+  document.getElementById(id).innerHTML =
+    `<thead><tr><th>${etiqueta}</th><th class="num">Prog.</th><th class="num">Canc.</th><th class="num">%</th></tr></thead><tbody>` +
+    arr.map(x=>`<tr><td title="${x.k}">${x.k}</td><td class="num">${fmtU(x.p)}</td><td class="num">${fmtU(x.c)}</td><td class="num" style="color:${colorPct(x.pct)};font-weight:600">${x.pct.toFixed(1)}%</td></tr>`).join('') + '</tbody>';
 }
+function renderProyectos(base){ tablaRank('tProyectos', filaAgg(base,'proyecto',1), 'Proyecto'); }
 function renderRanking(base){
   const esIE = rankMode==='ie';
-  document.getElementById('rankTitle').textContent = esIE ? 'Instituciones' : 'Profesores';
+  document.getElementById('rankTitle').textContent = esIE?'Instituciones':'Profesores';
   const filas = esIE ? base : base.filter(r=>r.profesor && r.profesor!==', ');
-  const arr = filaAgg(filas, esIE?'ie':'profesor', esIE?20:10);
-  document.getElementById('tRanking').innerHTML =
-    `<thead><tr><th>${esIE?'IE':'Profesor (sesión)'}</th><th class="num">Prog.</th><th class="num">Canc.</th><th class="num">%</th></tr></thead><tbody>` +
-    arr.map(x=>`<tr><td title="${x.k}">${x.k}</td><td class="num">${nf.format(x.p)}</td><td class="num">${nf.format(x.c)}</td><td class="num" style="color:${colorPct(x.pct)};font-weight:600">${x.pct.toFixed(1)}%</td></tr>`).join('') + '</tbody>';
+  tablaRank('tRanking', filaAgg(filas, esIE?'ie':'profesor', esIE?20:10), esIE?'IE':'Profesor (sesión)');
 }
 document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pRanking .p-tab').forEach(x=>x.classList.remove('active'));
@@ -456,7 +552,48 @@ function renderHeatmap(canc){
   el.innerHTML = html;
 }
 
-/* ============ modales / detalle ============ */
+/* ============ vista sesiones y horas ============ */
+document.getElementById('dimTabs').addEventListener('click', e => {
+  if(!e.target.dataset.d) return;
+  document.querySelectorAll('#dimTabs .p-tab').forEach(x=>x.classList.remove('active'));
+  e.target.classList.add('active'); dimSesiones = e.target.dataset.d; renderSesiones(window._base||[]);
+});
+function renderSesiones(base){
+  const g = {};
+  let sinHoras = 0, tot = 0;
+  for(const r of base){
+    const k = r[dimSesiones] ?? '—';
+    (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0});
+    const h = r.academic_hours||0; tot++; if(r.academic_hours==null) sinHoras++;
+    g[k].pS++; g[k].pH+=h;
+    if(esDictada(r)){ g[k].dS++; g[k].dH+=h; }
+    if(esFutura(r)){ g[k].fS++; g[k].fH+=h; }
+    if(esCancelada(r)){ g[k].cS++; g[k].cH+=h; }
+  }
+  const arr = Object.entries(g).map(([k,v])=>({k,...v,pctS:v.pS?100*v.cS/v.pS:0,pctH:v.pH?100*v.cH/v.pH:0})).sort((a,b)=>b.pS-a.pS);
+  const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0});
+  const fila = x => `<tr><td title="${x.k}">${x.k}</td>
+    <td class="num sep">${nf.format(x.pS)}</td><td class="num dim">${nf.format(Math.round(x.pH))}</td>
+    <td class="num sep">${nf.format(x.dS)}</td><td class="num dim">${nf.format(Math.round(x.dH))}</td>
+    <td class="num sep">${nf.format(x.fS)}</td><td class="num dim">${nf.format(Math.round(x.fH))}</td>
+    <td class="num sep">${nf.format(x.cS)}</td><td class="num dim">${nf.format(Math.round(x.cH))}</td>
+    <td class="num sep" style="color:${colorPct(x.pctS)};font-weight:600">${x.pctS.toFixed(1)}%</td>
+    <td class="num" style="color:${colorPct(x.pctH)}">${x.pH?x.pctH.toFixed(1)+'%':'s/d'}</td></tr>`;
+  const et = {proyecto:'Proyecto', ie:'Institución educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
+  document.getElementById('tSesiones').innerHTML =
+    `<thead><tr><th>${et}</th>
+      <th class="num sep">Prog. ses</th><th class="num">h</th>
+      <th class="num sep">Dictadas ses</th><th class="num">h</th>
+      <th class="num sep">Futuras ses</th><th class="num">h</th>
+      <th class="num sep">Canc. ses</th><th class="num">h</th>
+      <th class="num sep">% canc ses</th><th class="num">% canc h</th></tr></thead>
+    <tbody>` + arr.map(fila).join('') +
+    `<tr style="font-weight:600;border-top:2px solid var(--border)">${fila({k:'TOTAL',...T,pctS:T.pS?100*T.cS/T.pS:0,pctH:T.pH?100*T.cH/T.pH:0}).slice(4)}</tbody>`;
+  document.getElementById('notaCobertura').textContent =
+    `columnas "h" = horas académicas (academic_hours). Cobertura del dato en este alcance: ${tot?Math.round(100*(tot-sinHoras)/tot):0}% de las sesiones — donde falta, la sesión suma 0 h.`;
+}
+
+/* ============ modales / detalle / csv ============ */
 document.querySelectorAll('.modal-close').forEach(b => b.onclick = () => document.getElementById(b.dataset.close).classList.remove('show'));
 document.querySelectorAll('.modal').forEach(m => m.onclick = e => { if(e.target===m) m.classList.remove('show'); });
 document.getElementById('btnMet').onclick = () => document.getElementById('mMet').classList.add('show');
@@ -470,8 +607,8 @@ function renderDetalle(){
   const pagina = filas.slice(detallePag*porPag,(detallePag+1)*porPag);
   document.getElementById('detN').textContent = `${nf.format(filas.length)} sesiones`;
   document.getElementById('tDetalle').innerHTML =
-    `<thead><tr><th>Fecha</th><th>Proyecto</th><th>IE</th><th>Salón</th><th>Grado</th><th>Motivo</th><th>Profesor</th><th>Recup.</th><th>Cancelada el</th></tr></thead><tbody>` +
-    pagina.map(r=>`<tr><td>${r.fecha}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td></tr>`).join('') + '</tbody>';
+    `<thead><tr><th>Fecha</th><th>Proyecto</th><th>IE</th><th>Salón</th><th>Grado</th><th>Motivo</th><th>Profesor</th><th>h acad.</th><th>Recup.</th><th>Cancelada el</th></tr></thead><tbody>` +
+    pagina.map(r=>`<tr><td>${r.fecha}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td class="num">${r.academic_hours??'—'}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td></tr>`).join('') + '</tbody>';
   document.getElementById('pagDetalle').innerHTML =
     `pág. ${detallePag+1}/${pags} <button onclick="detallePag=Math.max(0,detallePag-1);renderDetalle()">‹</button> <button onclick="detallePag=Math.min(${pags-1},detallePag+1);renderDetalle()">›</button>`;
 }
