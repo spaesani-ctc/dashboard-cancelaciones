@@ -142,6 +142,12 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 [data-theme="dark"] #loadingOverlay .loading-spin { color:var(--teal); }
 #loadingOverlay .loading-sub { color:var(--ink3); font-size:12px; font-weight:400; }
 
+/* ===== TOAST DE CARGA (no bloquea, como el informe) ===== */
+@keyframes proyPulse { 0%,100%{box-shadow:0 12px 40px rgba(29,107,62,0.40)} 50%{box-shadow:0 14px 54px rgba(29,107,62,0.72)} }
+#toastLoading { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(12px) scale(0.96); z-index:1100; opacity:0; pointer-events:none; transition:opacity .22s ease, transform .22s cubic-bezier(.2,.9,.3,1.4); }
+#toastLoading.show { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+#toastLoading .toast-pill { display:flex; align-items:center; gap:11px; background:#1D6B3E; color:#fff; border:1px solid rgba(255,255,255,0.18); border-radius:999px; padding:13px 24px; box-shadow:0 12px 40px rgba(29,107,62,0.45); font-family:'DM Sans',sans-serif; font-size:14.5px; font-weight:600; animation:proyPulse 1.6s ease-in-out infinite; }
+
 /* ===== LOGIN ===== */
 #login { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; background:var(--bg); }
 .login-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2.6rem 2.8rem; width:min(400px,92vw); box-shadow:0 20px 60px rgba(0,0,0,0.10); text-align:center; }
