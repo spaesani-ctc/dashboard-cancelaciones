@@ -72,7 +72,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 
 /* ===== LAYOUT ===== */
 .wrap { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 16px 8px; gap:10px; }
-.kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; flex-shrink:0; }
+.kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; flex-shrink:0; }
 .kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 14px; display:flex; flex-direction:column; justify-content:center; }
 .kpi-label { font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink3); }
 .kpi-value { font-family:'DM Serif Display',serif; font-size:1.6rem; line-height:1.15; color:var(--ink); }
@@ -90,7 +90,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .p-body { flex:1; min-height:0; position:relative; }
 .p-body.scroll { overflow:auto; }
 #pSemanal { grid-column:1/8; } #pMotivos { grid-column:8/13; }
-#pHeatmap { grid-column:1/5; } #pRanking { grid-column:5/13; }
+#pHeatmap { grid-column:1/8; } #pRanking { grid-column:8/13; }
 
 /* vista sesiones y horas */
 #vistaSesiones { flex:1; min-height:0; display:none; flex-direction:column; }
@@ -271,7 +271,6 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="kpi"><div class="kpi-label" id="kCancL">Sesiones canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
     <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
     <div class="kpi"><div class="kpi-label" id="kPagadasL">% De sesiones canceladas pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Salones afectados</div><div class="kpi-value" id="kSalones">—</div><div class="kpi-sub" id="kSalonesSub"></div></div>
   </div>
 
   <!-- VISTA RESUMEN -->
@@ -681,9 +680,6 @@ function renderKPIs(base, canc){
   const pctPagSes = sCanc.ses ? 100*sPag.ses/sCanc.ses : 0;
   const pctPagHrs = sCanc.hrs ? 100*sPag.hrs/sCanc.hrs : 0;
   document.getElementById('kPagadasSub').textContent = enHoras() ? `en sesiones: ${pctPagSes.toFixed(1)}%` : `en horas académicas: ${sCanc.hrs?pctPagHrs.toFixed(1)+'%':'s/d'}`;
-  document.getElementById('kSalones').textContent = nf.format(new Set(canc.map(r=>r.room_id)).size);
-  const cob = canc.length ? Math.round(100*sCanc.hc/canc.length) : 0;
-  document.getElementById('kSalonesSub').textContent = `de ${nf.format(new Set(base.map(r=>r.room_id)).size)} con sesiones`;
 }
 
 function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
@@ -715,8 +711,8 @@ function renderSemanal(base){
           offset: ctx => choca(ctx) ? 2 : -2,
           color: ctx => choca(ctx) ? '#fff' : (document.documentElement.getAttribute('data-theme')==='dark' ? '#F5A588' : css('--coral')),
           font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
-      { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--amber'), backgroundColor:css('--amber'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels:{ align:'top', offset:5, color: document.documentElement.getAttribute('data-theme')==='dark' ? '#F2C879' : css('--amber'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
+      { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--ink'), backgroundColor:css('--ink'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+        datalabels:{ align:'top', offset:5, color: css('--ink'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
                 tooltip:{callbacks:{
@@ -824,12 +820,13 @@ function renderHeatmap(canc){
   for(const r of canc){ m[r.dia+'|'+r.hora]=(m[r.dia+'|'+r.hora]||0)+val(r); }
   const max = Math.max(1,...Object.values(m));
   const el = document.getElementById('heatmap');
-  el.style.gridTemplateColumns = `44px repeat(7,1fr)`;
+  const dias = DIAS.filter(d => horas.some(h => m[d+'|'+h]));
+  el.style.gridTemplateColumns = `44px repeat(${dias.length||1},1fr)`;
   el.style.gridTemplateRows = `18px repeat(${horas.length||1},24px)`;
-  let html = `<div class="hm-corner"></div>` + DIAS.map(d=>`<div class="hm-head">${DIAS_ES[d]}</div>`).join('');
+  let html = `<div class="hm-corner"></div>` + dias.map(d=>`<div class="hm-head">${DIAS_ES[d]}</div>`).join('');
   for(const h of horas){
     html += `<div class="hm-lab">${h}:00</div>`;
-    for(const d of DIAS){
+    for(const d of dias){
       const v = m[d+'|'+h]||0, a = v/max;
       const vTxt = v ? (enHoras() ? nf.format(Math.round(v)) : nf.format(v)) : '';
       const bg = v===0?'var(--surface2)':`rgba(216,90,48,${(0.12+0.75*a).toFixed(2)})`;
