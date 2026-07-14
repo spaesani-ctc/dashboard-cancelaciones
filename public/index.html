@@ -16,14 +16,14 @@
   --ink: #1A1916; --ink2: #5A5750; --ink3: #9A9790; --ink4: #C5C3BC;
   --border: #E0DDD6; --border2: rgba(26,25,22,0.06);
   --accent: #2D4A3E; --accent2: #8B5E3C;
-  --teal: #1D9E75; --teal-l: #5DCAA5; --coral: #D85A30; --coral-l: #F0997B; --amber: #BA7517;
+  --teal: #1D9E75; --teal-l: #5DCAA5; --coral: #D85A30; --coral-l: #F0997B; --amber: #BA7517; --slate: #4E6E8E;
 }
 [data-theme="dark"] {
   --bg: #141412; --surface: #1E1D1B; --surface2: #282623;
   --ink: #F0EDE6; --ink2: #B5B2AA; --ink3: #787570; --ink4: #4A4845;
   --border: #2E2D2A; --border2: rgba(240,237,230,0.06);
   --accent: #5A8A70; --accent2: #C4845A;
-  --teal: #2DC48F; --teal-l: #1A8F68; --coral: #E87050; --coral-l: #C04820; --amber: #D4901A;
+  --teal: #2DC48F; --teal-l: #1A8F68; --coral: #E87050; --coral-l: #C04820; --amber: #D4901A; --slate: #9DBBD6;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -87,10 +87,14 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .p-tabs { margin-left:auto; display:flex; gap:2px; }
 .p-tab { font-size:10px; font-weight:500; padding:2px 8px; border-radius:5px; border:1px solid transparent; background:transparent; color:var(--ink3); cursor:pointer; }
 .p-tab.active { background:var(--surface2); color:var(--ink); border-color:var(--border); font-weight:600; }
+.p-dl { display:flex; gap:3px; align-items:center; margin-left:6px; }
+.p-dl.solo { margin-left:auto; }
+.dl-btn { display:flex; align-items:center; padding:2px 5px; border-radius:5px; border:1px solid var(--border); background:transparent; color:var(--ink3); cursor:pointer; transition:color .15s,background .15s; }
+.dl-btn:hover { color:var(--ink); background:var(--surface2); }
 .p-body { flex:1; min-height:0; position:relative; }
 .p-body.scroll { overflow:auto; }
 #pSemanal { grid-column:1/8; } #pMotivos { grid-column:8/13; }
-#pHeatmap { grid-column:1/8; } #pRanking { grid-column:8/13; }
+#pHeatmap { grid-column:1/7; } #pRanking { grid-column:7/13; }
 
 /* vista sesiones y horas */
 #vistaSesiones { flex:1; min-height:0; display:none; flex-direction:column; }
@@ -111,16 +115,16 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 .dim { color:var(--ink3); }
 
 /* ===== HEATMAP ===== */
-.hm { display:grid; gap:2px; }
+.hm { display:grid; gap:2px; justify-content:center; }
 .hm-head, .hm-corner { position:sticky; top:0; background:var(--surface); z-index:1; }
 .hm-cell { border-radius:3px; text-align:center; color:var(--ink); font-variant-numeric:tabular-nums; font-size:9px; display:flex; align-items:center; justify-content:center; min-width:0; }
 .hm-head { font-family:'DM Mono',monospace; font-size:8px; text-transform:uppercase; color:var(--ink3); display:flex; align-items:center; justify-content:center; }
 .hm-lab { font-family:'DM Mono',monospace; font-size:8.5px; color:var(--ink3); display:flex; align-items:center; }
 
 /* ===== STATUSBAR ===== */
-.statusbar { flex-shrink:0; display:flex; align-items:center; gap:14px; padding:4px 16px 7px; font-family:'DM Mono',monospace; font-size:9.5px; color:var(--ink3); }
+.statusbar { flex-shrink:0; display:flex; align-items:center; gap:10px; padding:6px 16px 9px; font-family:'DM Mono',monospace; font-size:9.5px; color:var(--ink3); }
 .statusbar .dot { width:5px; height:5px; border-radius:50%; background:var(--teal); display:inline-block; margin-right:5px; }
-.statusbar button { font-family:'DM Mono',monospace; font-size:9.5px; color:var(--ink3); background:none; border:none; cursor:pointer; text-decoration:underline dotted; }
+.statusbar button { font-family:'DM Sans',sans-serif; font-size:10.5px; font-weight:500; color:var(--ink2); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:3px 11px; cursor:pointer; transition:background .15s,color .15s; }
 .statusbar button:hover { color:var(--ink); }
 
 /* ===== MODALES ===== */
@@ -276,18 +280,18 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <!-- VISTA RESUMEN -->
   <div class="grid" id="vistaResumen">
     <div class="panel" id="pSemanal">
-      <div class="p-head"><span class="p-title">Evolución semanal</span></div>
+      <div class="p-head"><span class="p-title">Evolución semanal</span><div class="p-dl solo"><button class="dl-btn" title="Guardar imagen (PNG)" onclick="dlPNG('chSemanal','evolucion_semanal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg></button><button class="dl-btn" title="Descargar Excel (CSV)" onclick="dlCSV('semanal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></button></div></div>
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
     <div class="panel" id="pMotivos">
       <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
-        <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div>
+        <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Guardar imagen (PNG)" onclick="dlPNG('chMotivos','motivos_cancelacion')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg></button><button class="dl-btn" title="Descargar Excel (CSV)" onclick="dlCSV('motivos')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></button></div>
       </div>
       <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
       <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
     </div>
     <div class="panel" id="pHeatmap">
-      <div class="p-head"><span class="p-title">Cancelaciones por día y hora</span></div>
+      <div class="p-head"><span class="p-title">Cancelaciones por día y hora</span><div class="p-dl solo"><button class="dl-btn" title="Descargar Excel (CSV)" onclick="dlCSV('heatmap')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></button></div></div>
       <div class="p-body scroll"><div class="hm" id="heatmap"></div></div>
     </div>
     <div class="panel" id="pRanking">
@@ -298,7 +302,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
           <button class="p-tab" data-r="salon">Salones</button>
           <button class="p-tab" data-r="grado">Grados</button>
           <button class="p-tab" data-r="profesor">Profesores</button>
-        </div>
+        </div><div class="p-dl"><button class="dl-btn" title="Descargar Excel (CSV)" onclick="dlCSV('ranking')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></button></div>
       </div>
       <div class="p-body scroll"><table class="t" id="tRanking"></table></div>
     </div>
@@ -314,7 +318,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
           <button class="p-tab" data-d="ie">IE</button>
           <button class="p-tab" data-d="grado">Grado</button>
           <button class="p-tab" data-d="salon">Salón</button>
-        </div>
+        </div><div class="p-dl"><button class="dl-btn" title="Descargar Excel (CSV)" onclick="dlCSV('sesiones')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></button></div>
       </div>
       <div class="p-body scroll"><table class="t" id="tSesiones"></table></div>
       <div class="pag" style="justify-content:flex-start"><span class="dim" id="notaCobertura"></span></div>
@@ -682,6 +686,22 @@ function renderKPIs(base, canc){
   document.getElementById('kPagadasSub').textContent = enHoras() ? `en sesiones: ${pctPagSes.toFixed(1)}%` : `en horas académicas: ${sCanc.hrs?pctPagHrs.toFixed(1)+'%':'s/d'}`;
 }
 
+const EXPORTS = {};
+function dlCSV(id){
+  const e = EXPORTS[id]; if(!e) return;
+  const esc = v => v==null?'':/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':String(v);
+  const csv = '\ufeff' + [e.cols.map(esc).join(','), ...e.rows.map(r=>r.map(esc).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = `${e.nombre}_${fDesde.value}_${fHasta.value}.csv`; a.click(); URL.revokeObjectURL(a.href);
+}
+function dlPNG(canvasId, nombre){
+  const src = document.getElementById(canvasId);
+  const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+  const ctx = c.getContext('2d'); ctx.fillStyle = css('--surface'); ctx.fillRect(0,0,c.width,c.height);
+  ctx.drawImage(src,0,0);
+  const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = `${nombre}_${fDesde.value}_${fHasta.value}.png`; a.click();
+}
 function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
 
 const showProg = true;
@@ -704,6 +724,8 @@ function renderSemanal(base){
       return yPct < yBar && (yBar - yPct) < 28;
     } catch(e){ return false; }
   };
+  EXPORTS.semanal = { nombre:'evolucion_semanal', cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas', (enHoras()?'Horas':'Sesiones')+' programadas', '% De cancelación'],
+    rows: labels.map((s,i)=>[s, Math.round(sem[s].c*100)/100, Math.round(sem[s].p*100)/100, pcts[i].toFixed(1)]) };
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
       { type:'bar', order:2, label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
         datalabels:{ display:pocas, anchor:'end',
@@ -711,8 +733,8 @@ function renderSemanal(base){
           offset: ctx => choca(ctx) ? 2 : -2,
           color: ctx => choca(ctx) ? '#fff' : (document.documentElement.getAttribute('data-theme')==='dark' ? '#F5A588' : css('--coral')),
           font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
-      { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--ink'), backgroundColor:css('--ink'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels:{ align:'top', offset:5, color: css('--ink'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
+      { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--slate'), backgroundColor:css('--slate'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+        datalabels:{ align:'top', offset:5, color: css('--slate'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
                 tooltip:{callbacks:{
@@ -742,6 +764,8 @@ function renderMotivos(canc){
       scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
   const total = orden.reduce((a,x)=>a+x[1],0)||1;
+  EXPORTS.motivos = { nombre:'motivos_cancelacion', cols:['Motivo', enHoras()?'Horas':'Sesiones', '% del total'],
+    rows: orden.map(([k,v])=>[k, Math.round(v*100)/100, (100*v/total).toFixed(1)]) };
   renderTable('tMotivos', [
     { k:'motivo', label:'Motivo', tip:'motivo' },
     { k:'v', label:enHoras()?'Horas':'Sesiones', num:true, fmt:r=>fmtU(r.v) },
@@ -801,7 +825,10 @@ function renderRanking(base){
   const cfg = CFG_RANK[rankMode];
   document.getElementById('rankTitle').textContent = cfg.titulo;
   const filas = rankMode==='profesor' ? base.filter(r=>r.profesor && r.profesor!==', ') : base;
-  tablaRank('tRanking', filaAgg(filas, rankMode, cfg.min), cfg.et);
+  const arr = filaAgg(filas, rankMode, cfg.min);
+  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', '% Canc.'],
+    rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, r.pct.toFixed(1)]) };
+  tablaRank('tRanking', arr, cfg.et);
 }
 document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pRanking .p-tab').forEach(x=>x.classList.remove('active'));
@@ -821,7 +848,7 @@ function renderHeatmap(canc){
   const max = Math.max(1,...Object.values(m));
   const el = document.getElementById('heatmap');
   const dias = DIAS.filter(d => horas.some(h => m[d+'|'+h]));
-  el.style.gridTemplateColumns = `44px repeat(${dias.length||1},1fr)`;
+  el.style.gridTemplateColumns = `44px repeat(${dias.length||1},minmax(48px,76px))`;
   el.style.gridTemplateRows = `18px repeat(${horas.length||1},24px)`;
   let html = `<div class="hm-corner"></div>` + dias.map(d=>`<div class="hm-head">${DIAS_ES[d]}</div>`).join('');
   for(const h of horas){
@@ -833,6 +860,8 @@ function renderHeatmap(canc){
       html += `<div class="hm-cell" style="background:${bg};color:${a>0.55?'#fff':'var(--ink)'}" title="${DIAS_ES[d]} ${h}:00: ${fmtU(v)}">${vTxt}</div>`;
     }
   }
+  EXPORTS.heatmap = { nombre:'cancelaciones_dia_hora', cols:['Hora', ...dias.map(d=>DIAS_ES[d])],
+    rows: horas.map(h=>[h+':00', ...dias.map(d=>Math.round((m[d+'|'+h]||0)*100)/100)]) };
   el.innerHTML = html;
 }
 
@@ -869,6 +898,9 @@ function renderSesiones(base){
     <td class="num sep" style="color:${colorPct(r.pctS)};font-weight:600">${r.pctS.toFixed(1)}%</td>
     <td class="num" style="color:${colorPct(r.pctH)}">${r.pH?r.pctH.toFixed(1)+'%':'s/d'}</td></tr>`;
   const totRow = {k:'TOTAL',...T,pctS:T.pS?100*T.cS/T.pS:0,pctH:T.pH?100*T.cH/T.pH:0};
+  EXPORTS.sesiones = { nombre:'sesiones_y_horas_por_'+dimSesiones,
+    cols:[et,'Programadas (sesiones)','Programadas (horas)','Dictadas (sesiones)','Dictadas (horas)','Futuras (sesiones)','Futuras (horas)','Canceladas (sesiones)','Canceladas (horas)','% canc. (sesiones)','% canc. (horas)'],
+    rows: [...arr, totRow].map(r=>[r.k, r.pS, Math.round(r.pH), r.dS, Math.round(r.dH), r.fS, Math.round(r.fH), r.cS, Math.round(r.cH), r.pctS.toFixed(1), r.pH?r.pctH.toFixed(1):'s/d']) };
   const el = document.getElementById('tSesiones');
   el.innerHTML = `<thead>
     <tr><th rowspan="2" data-k="k">${et}${flecha('k')}</th>
