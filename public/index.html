@@ -90,7 +90,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .p-body { flex:1; min-height:0; position:relative; }
 .p-body.scroll { overflow:auto; }
 #pSemanal { grid-column:1/8; } #pMotivos { grid-column:8/13; }
-#pHeatmap { grid-column:1/5; } #pProyectos { grid-column:5/9; } #pRanking { grid-column:9/13; }
+#pHeatmap { grid-column:1/5; } #pRanking { grid-column:5/13; }
 
 /* vista sesiones y horas */
 #vistaSesiones { flex:1; min-height:0; display:none; flex-direction:column; }
@@ -111,7 +111,8 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 .dim { color:var(--ink3); }
 
 /* ===== HEATMAP ===== */
-.hm { display:grid; gap:2px; height:100%; }
+.hm { display:grid; gap:2px; }
+.hm-head, .hm-corner { position:sticky; top:0; background:var(--surface); z-index:1; }
 .hm-cell { border-radius:3px; text-align:center; color:var(--ink); font-variant-numeric:tabular-nums; font-size:9px; display:flex; align-items:center; justify-content:center; min-width:0; }
 .hm-head { font-family:'DM Mono',monospace; font-size:8px; text-transform:uppercase; color:var(--ink3); display:flex; align-items:center; justify-content:center; }
 .hm-lab { font-family:'DM Mono',monospace; font-size:8.5px; color:var(--ink3); display:flex; align-items:center; }
@@ -288,15 +289,17 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pHeatmap">
       <div class="p-head"><span class="p-title">Cancelaciones por día y hora</span></div>
-      <div class="p-body"><div class="hm" id="heatmap"></div></div>
-    </div>
-    <div class="panel" id="pProyectos">
-      <div class="p-head"><span class="p-title">Cancelaciones por Proyecto</span></div>
-      <div class="p-body scroll"><table class="t" id="tProyectos"></table></div>
+      <div class="p-body scroll"><div class="hm" id="heatmap"></div></div>
     </div>
     <div class="panel" id="pRanking">
-      <div class="p-head"><span class="p-title" id="rankTitle">Cancelaciones por Institución</span>
-        <div class="p-tabs"><button class="p-tab active" data-r="ie">IEs</button><button class="p-tab" data-r="prof">Profesores</button></div>
+      <div class="p-head"><span class="p-title" id="rankTitle">Cancelaciones por Proyecto</span>
+        <div class="p-tabs">
+          <button class="p-tab active" data-r="proyecto">Proyectos</button>
+          <button class="p-tab" data-r="ie">IEs</button>
+          <button class="p-tab" data-r="salon">Salones</button>
+          <button class="p-tab" data-r="grado">Grados</button>
+          <button class="p-tab" data-r="profesor">Profesores</button>
+        </div>
       </div>
       <div class="p-body scroll"><table class="t" id="tRanking"></table></div>
     </div>
@@ -397,7 +400,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 let ROWS = [];
 let charts = {};
 let detallePag = 0;
-let rankMode = 'ie';
+let rankMode = 'proyecto';
 let dimSesiones = 'proyecto';
 let UNIDAD = 'ses';           // 'ses' | 'hrs'
 let VISTA = 'resumen';        // 'resumen' | 'sesiones'
@@ -637,7 +640,7 @@ function render(){
   window._base = base; window._canc = canc;
   renderKPIs(base, canc);
   if(VISTA==='resumen'){
-    renderSemanal(base); renderMotivos(canc); renderProyectos(base); renderRanking(base); renderHeatmap(canc);
+    renderSemanal(base); renderMotivos(canc); renderRanking(base); renderHeatmap(canc);
   } else {
     renderSesiones(base);
   }
@@ -654,7 +657,8 @@ function renderKPIs(base, canc){
   const principal = s => enHoras() ? nf.format(Math.round(s.hrs))+' h' : nf.format(s.ses);
   const secundario = s => enHoras() ? `${nf.format(s.ses)} sesiones` : `${nf.format(Math.round(s.hrs))} horas académicas`;
   const u = enHoras() ? 'Horas' : 'Sesiones';
-  document.getElementById('kProgL').textContent = u + ' programadas';
+  const fR = x => { const d=new Date(x+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}); };
+  document.getElementById('kProgL').textContent = `${u} programadas del ${fR(fDesde.value)} al ${fR(fHasta.value)}`;
   document.getElementById('kDictL').textContent = u + ' dictadas';
   document.getElementById('kCancL').textContent = u + ' canceladas';
   document.getElementById('kProg').textContent = principal(sProg);
@@ -705,14 +709,14 @@ function renderSemanal(base){
     } catch(e){ return false; }
   };
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
-      { type:'bar', label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
+      { type:'bar', order:2, label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
         datalabels:{ display:pocas, anchor:'end',
           align: ctx => choca(ctx) ? 'start' : 'end',
           offset: ctx => choca(ctx) ? 2 : -2,
           color: ctx => choca(ctx) ? '#fff' : (document.documentElement.getAttribute('data-theme')==='dark' ? '#F5A588' : css('--coral')),
           font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
-      { type:'line', label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent'), backgroundColor:css('--accent'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels:{ align:'top', offset:5, color: document.documentElement.getAttribute('data-theme')==='dark' ? '#E9F7EF' : css('--accent'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
+      { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--amber'), backgroundColor:css('--amber'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+        datalabels:{ align:'top', offset:5, color: document.documentElement.getAttribute('data-theme')==='dark' ? '#F2C879' : css('--amber'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
                 tooltip:{callbacks:{
@@ -734,7 +738,7 @@ function renderMotivos(canc){
   const inner = document.getElementById('motivosInner');
   inner.style.height = Math.max(cont.clientHeight - 6, orden.length * 26 + 24) + 'px';
   mkChart('chMotivos', { type:'bar', data:{ labels:orden.map(x=>x[0].length>34?x[0].slice(0,32)+'…':x[0]),
-    datasets:[{ data:orden.map(x=>x[1]), backgroundColor:css('--accent'), borderRadius:3, maxBarThickness:18,
+    datasets:[{ data:orden.map(x=>x[1]), backgroundColor:css('--coral-l'), borderRadius:3, maxBarThickness:18,
       datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>fmtN(v) } }] },
     options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:38}},
       plugins:{ legend:{display:false},
@@ -751,7 +755,7 @@ function renderMotivos(canc){
 
 function filaAgg(filas, clave, minProg){
   const g = {};
-  for(const r of filas){ const k=r[clave]; (g[k] ??= {p:0,c:0,pSes:0}); g[k].pSes++; g[k].p += val(r); if(esCancelada(r)) g[k].c += val(r); }
+  for(const r of filas){ const k=r[clave] ?? '\u2014'; (g[k] ??= {p:0,c:0,pSes:0}); g[k].pSes++; g[k].p += val(r); if(esCancelada(r)) g[k].c += val(r); }
   return Object.entries(g).filter(([,v])=>v.pSes>=minProg).map(([k,v])=>({k,...v,pct:v.p?100*v.c/v.p:0})).sort((a,b)=>b.pct-a.pct);
 }
 const colorPct = p => p>=20?css('--coral'):p>=10?css('--amber'):css('--teal');
@@ -790,12 +794,18 @@ function tablaRank(id, arr, etiqueta){
     { k:'pct', label:'% Canc.', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
   ], arr);
 }
-function renderProyectos(base){ tablaRank('tProyectos', filaAgg(base,'proyecto',1), 'Proyecto'); }
+const CFG_RANK = {
+  proyecto: { titulo:'Cancelaciones por Proyecto',    et:'Proyecto',          min:1  },
+  ie:       { titulo:'Cancelaciones por Institución', et:'IE',                min:20 },
+  salon:    { titulo:'Cancelaciones por Salón',       et:'Salón',             min:10 },
+  grado:    { titulo:'Cancelaciones por Grado',       et:'Grado',             min:1  },
+  profesor: { titulo:'Cancelaciones por Profesor',    et:'Profesor (sesión)', min:10 },
+};
 function renderRanking(base){
-  const esIE = rankMode==='ie';
-  document.getElementById('rankTitle').textContent = esIE?'Cancelaciones por Institución':'Cancelaciones por Profesor';
-  const filas = esIE ? base : base.filter(r=>r.profesor && r.profesor!==', ');
-  tablaRank('tRanking', filaAgg(filas, esIE?'ie':'profesor', esIE?20:10), esIE?'IE':'Profesor (sesión)');
+  const cfg = CFG_RANK[rankMode];
+  document.getElementById('rankTitle').textContent = cfg.titulo;
+  const filas = rankMode==='profesor' ? base.filter(r=>r.profesor && r.profesor!==', ') : base;
+  tablaRank('tRanking', filaAgg(filas, rankMode, cfg.min), cfg.et);
 }
 document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pRanking .p-tab').forEach(x=>x.classList.remove('active'));
@@ -814,16 +824,16 @@ function renderHeatmap(canc){
   for(const r of canc){ m[r.dia+'|'+r.hora]=(m[r.dia+'|'+r.hora]||0)+val(r); }
   const max = Math.max(1,...Object.values(m));
   const el = document.getElementById('heatmap');
-  el.style.gridTemplateColumns = `34px repeat(${horas.length||1},1fr)`;
-  el.style.gridTemplateRows = `14px repeat(7,1fr)`;
-  let html = `<div></div>` + horas.map(h=>`<div class="hm-head">${h}</div>`).join('');
-  for(const d of DIAS){
-    html += `<div class="hm-lab">${DIAS_ES[d]}</div>`;
-    for(const h of horas){
+  el.style.gridTemplateColumns = `44px repeat(7,1fr)`;
+  el.style.gridTemplateRows = `18px repeat(${horas.length||1},24px)`;
+  let html = `<div class="hm-corner"></div>` + DIAS.map(d=>`<div class="hm-head">${DIAS_ES[d]}</div>`).join('');
+  for(const h of horas){
+    html += `<div class="hm-lab">${h}:00</div>`;
+    for(const d of DIAS){
       const v = m[d+'|'+h]||0, a = v/max;
       const vTxt = v ? (enHoras() ? nf.format(Math.round(v)) : nf.format(v)) : '';
       const bg = v===0?'var(--surface2)':`rgba(216,90,48,${(0.12+0.75*a).toFixed(2)})`;
-      html += `<div class="hm-cell" style="background:${bg};color:${a>0.55?'#fff':'var(--ink)'}" title="${DIAS_ES[d]} ${h}h: ${fmtU(v)}">${vTxt}</div>`;
+      html += `<div class="hm-cell" style="background:${bg};color:${a>0.55?'#fff':'var(--ink)'}" title="${DIAS_ES[d]} ${h}:00: ${fmtU(v)}">${vTxt}</div>`;
     }
   }
   el.innerHTML = html;
