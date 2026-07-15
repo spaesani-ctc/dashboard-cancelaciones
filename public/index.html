@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root {
   --bg: #F5F3EE; --surface: #FDFCFA; --surface2: #ECEAE4;
@@ -322,7 +323,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 
   <!-- VISTA SESIONES Y HORAS -->
   <div id="vistaSesiones">
-    <div class="panel">
+    <div class="panel" id="pSesiones">
       <div class="p-head">
         <span class="p-title">Sesiones y horas académicas</span>
         <div class="p-tabs" id="dimTabs">
@@ -707,23 +708,42 @@ function dlXLSX(id){
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Datos');
   XLSX.writeFile(wb, `${e.nombre}_${fDesde.value}_${fHasta.value}.xlsx`);
 }
+async function dlDomPNG(panel, nombre){
+  const canvas = await html2canvas(panel, {
+    backgroundColor: css('--surface'), scale: 2,
+    onclone: doc => {
+      const q = panel.id ? doc.getElementById(panel.id) : doc.body;
+      if(!q) return;
+      q.style.height = 'auto';
+      q.querySelectorAll('.p-body').forEach(b => { b.style.overflow='visible'; b.style.height='auto'; b.style.flex='none'; });
+      q.querySelectorAll('.p-dl').forEach(b => b.remove());
+    }
+  });
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = `${nombre}_${fDesde.value}_${fHasta.value}.png`; a.click();
+}
 let dlPop = null;
 function cerrarDlPop(){ if(dlPop){ dlPop.remove(); dlPop = null; } }
 document.addEventListener('click', e => { if(dlPop && !dlPop.contains(e.target)) cerrarDlPop(); });
 function dlMenu(ev, id, canvasId, nombre){
   ev.stopPropagation();
   if(dlPop){ cerrarDlPop(); return; }
-  if(!canvasId){ dlXLSX(id); return; }   // sin gráfico: descarga directa del Excel
+  const panel = ev.currentTarget.closest('.panel');
   dlPop = document.createElement('div');
   dlPop.className = 'dl-pop';
   dlPop.innerHTML =
-    `<button class="dl-opt" data-x="png">🖼️&nbsp; Guardar imagen (PNG)</button>` +
-    `<button class="dl-opt" data-x="xlsx">📊&nbsp; Descargar Excel</button>`;
+    `<button class="dl-opt" data-x="png">🖼️&nbsp; Guardar como imagen (.png)</button>` +
+    `<button class="dl-opt" data-x="xlsx">📊&nbsp; Guardar como archivo Excel (.xlsx)</button>`;
   document.body.appendChild(dlPop);
   const r = ev.currentTarget.getBoundingClientRect();
   dlPop.style.top = (r.bottom + 6) + 'px';
-  dlPop.style.left = Math.min(r.left, window.innerWidth - 210) + 'px';
-  dlPop.querySelector('[data-x="png"]').onclick = () => { dlPNG(canvasId, nombre); cerrarDlPop(); };
+  dlPop.style.left = Math.min(r.left, window.innerWidth - 250) + 'px';
+  dlPop.querySelector('[data-x="png"]').onclick = () => {
+    if(canvasId) dlPNG(canvasId, nombre);
+    else dlDomPNG(panel, (EXPORTS[id]&&EXPORTS[id].nombre)||id);
+    cerrarDlPop();
+  };
   dlPop.querySelector('[data-x="xlsx"]').onclick = () => { dlXLSX(id); cerrarDlPop(); };
 }
 function dlPNG(canvasId, nombre){
