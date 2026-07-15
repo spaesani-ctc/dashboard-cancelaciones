@@ -780,7 +780,7 @@ function renderSemanal(base){
   EXPORTS.semanal = { nombre:'evolucion_semanal'+(semMode==='pagadas'?'_pagadas':''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas'+(semMode==='pagadas'?' pagadas':''), (enHoras()?'Horas':'Sesiones')+' programadas', semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación'],
     rows: labels.map((s,i)=>[s, Math.round(sem[s].c*100)/100, Math.round(sem[s].p*100)/100, pcts[i].toFixed(1)]) };
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
-      { type:'bar', order:2, label:(enHoras()?'Horas canceladas':'Sesiones canceladas')+(semMode==='pagadas'?' pagadas':''), data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, yAxisID:'y',
+      { type:'bar', order:2, label:(enHoras()?'Horas canceladas':'Sesiones canceladas')+(semMode==='pagadas'?' pagadas':''), data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, minBarLength:3, yAxisID:'y',
         datalabels:{ display:pocas, anchor:'end',
           align: ctx => choca(ctx) ? 'start' : 'end',
           offset: ctx => choca(ctx) ? 2 : -2,
