@@ -341,7 +341,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 <div class="statusbar">
   <span><span class="dot"></span><span id="metaUpdated">—</span></span>
   <button id="btnDetalle">Ver detalle de canceladas</button>
-  <button id="btnCSV">Exportar CSV</button>
+  <button id="btnCSV">Exportar Excel</button>
   <button id="btnMet">Metodología</button>
 </div>
 
@@ -1038,12 +1038,9 @@ function renderDetalle(){
 document.getElementById('btnCSV').onclick = () => {
   const canc = window._canc||[];
   const cols = ['fecha','semana','dia','hora','proyecto','canal','ie','grado','room_id','salon','reason_id','motivo','profesor','make_up_class','given_by_external','academic_hours','duracion_min','cancellation_at'];
-  const esc = v => v==null?'':/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':String(v);
-  const csv = cols.join(',')+'\n'+canc.map(r=>cols.map(c=>esc(r[c])).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download = `cancelaciones_${fDesde.value}_${fHasta.value}.csv`;
-  a.click();
+  const ws = XLSX.utils.aoa_to_sheet([cols, ...canc.map(r=>cols.map(c=>r[c]??''))]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Cancelaciones');
+  XLSX.writeFile(wb, `cancelaciones_${fDesde.value}_${fHasta.value}.xlsx`);
 };
 
 /* ============ login ============ */
