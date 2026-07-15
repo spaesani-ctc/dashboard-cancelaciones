@@ -94,7 +94,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .p-body { flex:1; min-height:0; position:relative; }
 .p-body.scroll { overflow:auto; }
 #pSemanal { grid-column:1/8; } #pMotivos { grid-column:8/13; }
-#pHeatmap { grid-column:1/7; } #pRanking { grid-column:7/13; }
+#pHeatmap { grid-column:1/5; } #pAntic { grid-column:5/9; } #pRanking { grid-column:9/13; }
 
 /* vista sesiones y horas */
 #vistaSesiones { flex:1; min-height:0; display:none; flex-direction:column; }
@@ -294,6 +294,13 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <div class="p-head"><span class="p-title">Cancelaciones por día y hora</span><div class="p-dl solo"><button class="dl-btn" title="Descargar Excel (CSV)" onclick="dlCSV('heatmap')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></button></div></div>
       <div class="p-body scroll"><div class="hm" id="heatmap"></div></div>
     </div>
+    <div class="panel" id="pAntic">
+      <div class="p-head"><span class="p-title">Anticipación de la cancelación</span>
+        <div class="p-tabs" id="anticTabs"><button class="p-tab active" data-a="todas">Todas</button><button class="p-tab" data-a="pagadas">Pagadas</button></div>
+        <div class="p-dl"><button class="dl-btn" title="Guardar imagen (PNG)" onclick="dlPNG('chAntic','anticipacion_cancelacion')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg></button><button class="dl-btn" title="Descargar Excel (CSV)" onclick="dlCSV('antic')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg></button></div>
+      </div>
+      <div class="p-body"><canvas id="chAntic"></canvas></div>
+    </div>
     <div class="panel" id="pRanking">
       <div class="p-head"><span class="p-title" id="rankTitle">Cancelaciones por Proyecto</span>
         <div class="p-tabs">
@@ -349,7 +356,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="modal-body nota">
       <p><strong>¿Qué muestra este dashboard?</strong> Las clases canceladas: cuántas fueron, por qué motivo, en qué proyectos, instituciones y salones, y cuándo. Todo se puede ver en cantidad de sesiones o en horas académicas (el switch de arriba a la izquierda).</p>
       <p><strong>¿Cómo se calcula el % de cancelación?</strong> Clases canceladas divididas por las programadas, dentro del período y los filtros que elijas.</p>
-      <p><strong>Motivos que no se cuentan por defecto:</strong> Feriado, Vacaciones y Cambio operativo — son movimientos de calendario, no cancelaciones reales. Si querés incluirlos, están en el filtro de Motivos.</p>
+      <p><strong>Motivos que no se cuentan por defecto:</strong> Feriado, Vacaciones, Cambio operativo e Inicio de proyecto atrasado — son movimientos de calendario, no cancelaciones reales. Si querés incluirlos, están en el filtro de Motivos.</p>
       <p><strong>Horas académicas:</strong> se muestran solo donde el dato está cargado en el sistema; siempre te indicamos qué porcentaje de cobertura tiene.</p>
       <p>Cualquier duda, puedes contactar a <strong>@Data</strong> :)</p>
     </div>
@@ -493,11 +500,13 @@ document.getElementById('unidad').addEventListener('click', e => {
 const enHoras = () => UNIDAD==='hrs';
 const val = r => enHoras() ? (r.academic_hours||0) : 1;
 const fmtU = v => enHoras() ? nf.format(Math.round(v))+' h' : nf.format(v);
+// pagada = is_paid_session 'paid_automatic' / 'paid_manual' (+ legacy 'True')
+const PAGADA = v => /^paid/.test(String(v)) || String(v)==='True';
 
 /* ============ filtros ============ */
 const F = { canal:'', proyecto:'', ie:'', grado:'', salon:'', roomId:'' };
 let MOTIVOS_EXCL = null;                 // Set de nombres de motivo excluidos
-const DEFAULT_EXCL_IDS = [33, 34, 35];   // Cambio operativo BO · Feriado · Vacaciones
+const DEFAULT_EXCL_IDS = [26, 33, 34, 35];   // Inicio de proyecto atrasado · Cambio operativo BO · Feriado · Vacaciones
 function defaultExcl(){
   const s = new Set();
   for(const r of ROWS) if(r.state==='false' && DEFAULT_EXCL_IDS.includes(r.reason_id) && r.motivo) s.add(r.motivo);
@@ -643,7 +652,7 @@ function render(){
   window._base = base; window._canc = canc;
   renderKPIs(base, canc);
   if(VISTA==='resumen'){
-    renderSemanal(base); renderMotivos(canc); renderRanking(base); renderHeatmap(canc);
+    renderSemanal(base); renderMotivos(canc); renderAnticipacion(canc); renderRanking(base); renderHeatmap(canc);
   } else {
     renderSesiones(base);
   }
@@ -674,9 +683,7 @@ function renderKPIs(base, canc){
   const pctHrs = sProg.hrs ? 100*sCanc.hrs/sProg.hrs : 0;
   document.getElementById('kPct').textContent = (enHoras()?pctHrs:pctSes).toFixed(1)+'%';
   document.getElementById('kPctSub').textContent = enHoras() ? `en sesiones: ${pctSes.toFixed(1)}%` : `en horas académicas: ${sProg.hrs?pctHrs.toFixed(1)+'%':'s/d'}`;
-  // pagada = is_paid_session 'paid_automatic' / 'paid_manual' (+ legacy 'True')
-  const esPagada = v => /^paid/.test(String(v)) || String(v)==='True';
-  const pagadas = canc.filter(r=>esPagada(r.is_paid_session));
+  const pagadas = canc.filter(r=>PAGADA(r.is_paid_session));
   const sPag = sumas(pagadas);
   document.getElementById('kPagadasL').textContent = enHoras() ? '% De horas canceladas pagadas' : '% De sesiones canceladas pagadas';
   const pctPag = enHoras() ? (sCanc.hrs ? 100*sPag.hrs/sCanc.hrs : 0) : (sCanc.ses ? 100*sPag.ses/sCanc.ses : 0);
@@ -733,8 +740,8 @@ function renderSemanal(base){
           offset: ctx => choca(ctx) ? 2 : -2,
           color: ctx => choca(ctx) ? '#fff' : (document.documentElement.getAttribute('data-theme')==='dark' ? '#F5A588' : css('--coral')),
           font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
-      { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--slate'), backgroundColor:css('--slate'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels:{ align:'top', offset:5, color: css('--slate'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
+      { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--accent2'), backgroundColor:css('--accent2'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+        datalabels:{ align:'top', offset:5, color: css('--accent2'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
                 tooltip:{callbacks:{
@@ -841,6 +848,43 @@ document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
   document.getElementById('motivosTabla').style.display = b.dataset.t==='tabla'?'block':'none';
 });
 
+let anticMode = 'todas';
+function bucketAntic(r){
+  const raw = r.cancellation_at;
+  if(!raw) return 'Sin dato';
+  let x = String(raw).replace(' ','T').replace(/\.(\d{3})\d+/, '.$1');
+  if(/[+\-]\d{2}$/.test(x)) x += ':00';
+  else if(!/(Z|[+\-]\d{2}:\d{2})$/.test(x)) x += 'Z';
+  const canc = new Date(x);
+  if(isNaN(canc)) return 'Sin dato';
+  const sched = new Date(`${r.fecha}T${r.hora_inicio||'00:00:00'}-05:00`);  // America/Bogota
+  if(canc >= sched) return 'En el inicio o después';
+  return (sched - canc)/3.6e6 < 24 ? 'Con menos de 24 h' : 'Con 24 h o más';
+}
+function renderAnticipacion(canc){
+  const filas = anticMode==='pagadas' ? canc.filter(r=>PAGADA(r.is_paid_session)) : canc;
+  const CATS = ['En el inicio o después','Con menos de 24 h','Con 24 h o más','Sin dato'];
+  const agg = {}; for(const c of CATS) agg[c] = {s:0,h:0};
+  for(const r of filas){ const b = bucketAntic(r); agg[b].s++; agg[b].h += r.academic_hours||0; }
+  const vals = CATS.map(c => enHoras() ? agg[c].h : agg[c].s);
+  const tot = vals.reduce((a,b)=>a+b,0)||1;
+  const colores = [css('--coral'), css('--amber'), css('--ink3'), css('--ink4')];
+  EXPORTS.antic = { nombre:'anticipacion_cancelacion'+(anticMode==='pagadas'?'_pagadas':''),
+    cols:['Anticipación','Sesiones','Horas académicas','% ('+(enHoras()?'horas':'sesiones')+')'],
+    rows: CATS.map(c=>[c, agg[c].s, Math.round(agg[c].h*100)/100, (100*(enHoras()?agg[c].h:agg[c].s)/tot).toFixed(1)]) };
+  mkChart('chAntic', { type:'bar', data:{ labels:CATS, datasets:[{ data:vals, backgroundColor:colores, borderRadius:3, maxBarThickness:26,
+      datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'DM Sans',size:9.5,weight:600},
+        formatter:v => v ? `${enHoras()?nf.format(Math.round(v)):nf.format(v)} · ${(100*v/tot).toFixed(1)}%` : '' } }]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:74}},
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{ label:c=>` ${fmtU(c.parsed.x)} (${(100*c.parsed.x/tot).toFixed(1)}%)` }} },
+      scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
+    plugins:[ChartDataLabels] });
+}
+document.querySelectorAll('#pAntic .p-tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#pAntic .p-tab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); anticMode = b.dataset.a; renderAnticipacion(window._canc||[]);
+});
+
 function renderHeatmap(canc){
   const horas = [...new Set(canc.map(r=>r.hora).filter(h=>h && h>='05' && h<='22'))].sort();
   const m = {};
@@ -848,8 +892,8 @@ function renderHeatmap(canc){
   const max = Math.max(1,...Object.values(m));
   const el = document.getElementById('heatmap');
   const dias = DIAS.filter(d => horas.some(h => m[d+'|'+h]));
-  el.style.gridTemplateColumns = `44px repeat(${dias.length||1},minmax(48px,76px))`;
-  el.style.gridTemplateRows = `18px repeat(${horas.length||1},24px)`;
+  el.style.gridTemplateColumns = `40px repeat(${dias.length||1},minmax(34px,60px))`;
+  el.style.gridTemplateRows = `18px repeat(${horas.length||1},21px)`;
   let html = `<div class="hm-corner"></div>` + dias.map(d=>`<div class="hm-head">${DIAS_ES[d]}</div>`).join('');
   for(const h of horas){
     html += `<div class="hm-lab">${h}:00</div>`;

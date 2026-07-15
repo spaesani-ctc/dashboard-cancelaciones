@@ -24,6 +24,7 @@ SELECT
   DATE_FORMAT(DATE_TRUNC('week', rs.start_date), '%Y-%m-%d') AS semana,
   DATE_FORMAT(rs.start_date, '%W') AS dia,
   SUBSTR(rs.start_time, 1, 2) AS hora,
+  rs.start_time AS hora_inicio,
   COALESCE(p.id, 0) AS project_id,
   COALESCE(p.internal_name, p.name, 'B2C') AS proyecto,
   COALESCE(p.type, 'B2C') AS canal,
