@@ -842,9 +842,9 @@ function renderTable(id, cols, rows, totalHtml){
 function tablaRank(id, arr, etiqueta){
   renderTable(id, [
     { k:'k', label:etiqueta, tip:'k' },
-    { k:'p', label:'Prog.', num:true, fmt:r=>fmtU(r.p) },
-    { k:'c', label:'Canc.', num:true, fmt:r=>fmtU(r.c) },
-    { k:'pct', label:'% Canc.', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
+    { k:'p', label:'Programadas', num:true, fmt:r=>fmtU(r.p) },
+    { k:'c', label:'Canceladas', num:true, fmt:r=>fmtU(r.c) },
+    { k:'pct', label:'% De cancelación', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
   ], arr);
 }
 const CFG_RANK = {
@@ -859,7 +859,7 @@ function renderRanking(base){
   document.getElementById('rankTitle').textContent = cfg.titulo;
   const filas = rankMode==='profesor' ? base.filter(r=>r.profesor && r.profesor!==', ') : base;
   const arr = filaAgg(filas, rankMode, cfg.min);
-  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', '% Canc.'],
+  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', '% De cancelación'],
     rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, r.pct.toFixed(1)]) };
   tablaRank('tRanking', arr, cfg.et);
 }
