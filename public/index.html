@@ -17,14 +17,14 @@
   --ink: #1A1916; --ink2: #5A5750; --ink3: #9A9790; --ink4: #C5C3BC;
   --border: #E0DDD6; --border2: rgba(26,25,22,0.06);
   --accent: #2D4A3E; --accent2: #8B5E3C;
-  --teal: #1D9E75; --teal-l: #5DCAA5; --coral: #D85A30; --coral-l: #F0997B; --amber: #BA7517; --slate: #4E6E8E;
+  --teal: #1D9E75; --teal-l: #5DCAA5; --coral: #D85A30; --coral-l: #F0997B; --amber: #BA7517; --slate: #4E6E8E; --burdeos: #7E2F33;
 }
 [data-theme="dark"] {
   --bg: #141412; --surface: #1E1D1B; --surface2: #282623;
   --ink: #F0EDE6; --ink2: #B5B2AA; --ink3: #787570; --ink4: #4A4845;
   --border: #2E2D2A; --border2: rgba(240,237,230,0.06);
   --accent: #5A8A70; --accent2: #C4845A;
-  --teal: #2DC48F; --teal-l: #1A8F68; --coral: #E87050; --coral-l: #C04820; --amber: #D4901A; --slate: #9DBBD6;
+  --teal: #2DC48F; --teal-l: #1A8F68; --coral: #E87050; --coral-l: #C04820; --amber: #D4901A; --slate: #9DBBD6; --burdeos: #D98A8F;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -766,8 +766,8 @@ function renderSemanal(base){
           offset: ctx => choca(ctx) ? 2 : -2,
           color: ctx => choca(ctx) ? '#fff' : css('--ink2'),
           font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
-      { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--coral'), backgroundColor:css('--coral'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels:{ align:'top', offset:5, color: css('--coral'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
+      { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+        datalabels:{ align:'top', offset:5, color: css('--burdeos'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
                 tooltip:{callbacks:{
