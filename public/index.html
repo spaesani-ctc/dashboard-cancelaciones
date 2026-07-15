@@ -771,6 +771,7 @@ function renderSemanal(base){
   // si el % cae dentro de la barra, el nominal va arriba (no se pisan)
   const choca = ctx => {
     try {
+      if(!ctx.chart.isDatasetVisible(1)) return false;   // línea de % oculta → no hay colisión posible
       const i = ctx.dataIndex;
       const yBar = ctx.chart.scales.y.getPixelForValue(ctx.dataset.data[i]);
       const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
