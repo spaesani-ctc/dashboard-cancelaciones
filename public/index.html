@@ -775,11 +775,20 @@ function renderSemanal(base){
       const i = ctx.dataIndex;
       const yBar = ctx.chart.scales.y.getPixelForValue(ctx.dataset.data[i]);
       const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
-      return Math.abs(yBar - yPct) < 30;   // % cerca del tope de la barra (por arriba o por abajo) → nominal adentro
+      return yPct < yBar && (yBar - yPct) < 30;   // % por encima del tope → nominal adentro
     } catch(e){ return false; }
   };
   EXPORTS.semanal = { nombre:'evolucion_semanal'+(semMode==='pagadas'?'_pagadas':''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas'+(semMode==='pagadas'?' pagadas':''), (enHoras()?'Horas':'Sesiones')+' programadas', semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación'],
     rows: labels.map((s,i)=>[s, Math.round(sem[s].c*100)/100, Math.round(sem[s].p*100)/100, pcts[i].toFixed(1)]) };
+  const flip = ctx => {
+    try {
+      if(!ctx.chart.isDatasetVisible(1)) return false;
+      const i = ctx.dataIndex;
+      const yBar = ctx.chart.scales.y.getPixelForValue(ctx.chart.data.datasets[0].data[i]);
+      const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
+      return (yPct - yBar) >= 0 && (yPct - yBar) < 42 && yPct < ctx.chart.scales.y.bottom - 26;
+    } catch(e){ return false; }
+  };
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets:[
       { type:'bar', order:2, label:(enHoras()?'Horas canceladas':'Sesiones canceladas')+(semMode==='pagadas'?' pagadas':''), data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, minBarLength:3, yAxisID:'y',
         datalabels:{ display:pocas, anchor:'end',
@@ -788,7 +797,7 @@ function renderSemanal(base){
           color: ctx => choca(ctx) ? '#fff' : css('--ink2'),
           font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
       { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels:{ align:'top', offset:5, color: css('--burdeos'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
+        datalabels:{ align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
                 tooltip:{callbacks:{
