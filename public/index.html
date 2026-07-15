@@ -97,8 +97,8 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .dl-opt:hover { background:var(--surface2); color:var(--ink); }
 .p-body { flex:1; min-height:0; position:relative; }
 .p-body.scroll { overflow:auto; }
-#pSemanal { grid-column:1/8; } #pMotivos { grid-column:8/13; }
-#pHeatmap { grid-column:1/4; } #pAntic { grid-column:4/8; } #pRanking { grid-column:8/13; }
+#pSemanal { grid-column:1/8; } #pRanking { grid-column:8/13; }
+#pMotivos { grid-column:1/6; } #pAntic { grid-column:6/10; } #pHeatmap { grid-column:10/13; }
 
 /* vista sesiones y horas */
 #vistaSesiones { flex:1; min-height:0; display:none; flex-direction:column; }
@@ -288,24 +288,6 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
         <div class="p-tabs" id="semTabs"><button class="p-tab active" data-s="todas">Todas</button><button class="p-tab" data-s="pagadas">Pagadas</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'semanal','chSemanal','evolucion_semanal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
-    <div class="panel" id="pMotivos">
-      <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
-        <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'motivos','chMotivos','motivos_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
-      </div>
-      <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
-      <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
-    </div>
-    <div class="panel" id="pHeatmap">
-      <div class="p-head"><span class="p-title" id="hmTitle">Sesiones canceladas por día y hora</span><div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'heatmap','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
-      <div class="p-body scroll"><div class="hm" id="heatmap"></div></div>
-    </div>
-    <div class="panel" id="pAntic">
-      <div class="p-head"><span class="p-title">Anticipación de la cancelación</span>
-        <div class="p-tabs" id="anticTabs"><button class="p-tab active" data-a="todas">Todas</button><button class="p-tab" data-a="pagadas">Pagadas</button></div>
-        <div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'antic','chAntic','anticipacion_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
-      </div>
-      <div class="p-body"><canvas id="chAntic"></canvas></div>
-    </div>
     <div class="panel" id="pRanking">
       <div class="p-head"><span class="p-title" id="rankTitle">Cancelaciones por Proyecto</span>
         <div class="p-tabs">
@@ -317,6 +299,24 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
         </div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'ranking','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body scroll"><table class="t" id="tRanking"></table></div>
+    </div>
+    <div class="panel" id="pMotivos">
+      <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
+        <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'motivos','chMotivos','motivos_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+      </div>
+      <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
+      <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
+    </div>
+    <div class="panel" id="pAntic">
+      <div class="p-head"><span class="p-title">Anticipación de la cancelación</span>
+        <div class="p-tabs" id="anticTabs"><button class="p-tab active" data-a="todas">Todas</button><button class="p-tab" data-a="pagadas">Pagadas</button></div>
+        <div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'antic','chAntic','anticipacion_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+      </div>
+      <div class="p-body"><canvas id="chAntic"></canvas></div>
+    </div>
+    <div class="panel" id="pHeatmap">
+      <div class="p-head"><span class="p-title" id="hmTitle">Sesiones canceladas por día y hora</span><div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'heatmap','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
+      <div class="p-body scroll"><div class="hm" id="heatmap"></div></div>
     </div>
   </div>
 
