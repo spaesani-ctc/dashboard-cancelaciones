@@ -754,7 +754,7 @@ function renderSemanal(base){
       const i = ctx.dataIndex;
       const yBar = ctx.chart.scales.y.getPixelForValue(ctx.dataset.data[i]);
       const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
-      return yPct < yBar && (yBar - yPct) < 28;
+      return Math.abs(yBar - yPct) < 30;   // % cerca del tope de la barra (por arriba o por abajo) → nominal adentro
     } catch(e){ return false; }
   };
   EXPORTS.semanal = { nombre:'evolucion_semanal'+(semMode==='pagadas'?'_pagadas':''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas'+(semMode==='pagadas'?' pagadas':''), (enHoras()?'Horas':'Sesiones')+' programadas', semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación'],
