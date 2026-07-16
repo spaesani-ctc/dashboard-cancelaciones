@@ -347,11 +347,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <div id="vistaReprog" style="display:none; flex:1; min-height:0; flex-direction:column; gap:10px;">
     <div class="panel" style="flex:none">
       <div class="p-head"><span class="p-title">Intentos de reprogramación</span><span class="p-sub" id="reprogResumen"></span>
-        <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'reprogRes','chReprog','intentos_reprogramacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+        <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'reprogRes','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
-      <div class="p-body" id="reprogChartWrap" style="height:118px; flex:none"><canvas id="chReprog"></canvas></div>
+      <div class="p-body" id="reprogChartWrap" style="flex:none; height:auto"><div id="reprogStrip"></div></div>
     </div>
-    <div class="panel" style="flex:1; min-height:0">
+    <div class="panel" id="pReprogDim" style="flex:1; min-height:0">
       <div class="p-head"><span class="p-title">Recuperaciones por dimensión</span>
         <div class="p-tabs" id="reprogTabs">
           <button class="p-tab active" data-d="proyecto">Proyecto</button>
@@ -363,7 +363,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       </div>
       <div class="p-body scroll"><table class="t" id="tReprogDim"></table></div>
     </div>
-    <div class="panel" style="flex:1; min-height:0">
+    <div class="panel" id="pReprogDet" style="flex:1; min-height:0">
       <div class="p-head"><span class="p-title">Detalle de recuperaciones</span><span class="p-sub" id="reprogDetN"></span>
         <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'reprogDet','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
@@ -1179,14 +1179,13 @@ function renderReprog(base){
     const CATS_R = [['Dictadas', v(mkD), css('--teal')], ['Canceladas', v(mkC), css('--coral')], ['Programadas (futuras)', v(mkF), css('--ink4')]].filter(x=>x[1]>0);
     EXPORTS.reprogRes = { nombre:'intentos_reprogramacion', cols:['Resultado', enHoras()?'Horas':'Sesiones', '% de los intentos'],
       rows: CATS_R.map(([n,x])=>[n, Math.round(x*100)/100, (100*x/tot).toFixed(1)]) };
-    mkChart('chReprog', { type:'bar', data:{ labels:CATS_R.map(x=>x[0]),
-      datasets:[{ data:CATS_R.map(x=>x[1]), backgroundColor:CATS_R.map(x=>x[2]), borderRadius:3, maxBarThickness:22,
-        datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'DM Sans',size:9.5,weight:600},
-          formatter:x=> x ? `${enHoras()?nf.format(Math.round(x)):nf.format(x)} · ${(100*x/tot).toFixed(1)}%` : '' } }]},
-      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:80}},
-        plugins:{ legend:{display:false}, tooltip:{callbacks:{ label:c=>` ${fmtU(c.parsed.x)} (${(100*c.parsed.x/tot).toFixed(1)}%)` }} },
-        scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10.5}},grid:{display:false}} } },
-      plugins:[ChartDataLabels] });
+    document.getElementById('reprogStrip').innerHTML =
+      '<div style="display:flex;height:26px;border-radius:6px;overflow:hidden;gap:1px;max-width:560px">' +
+      CATS_R.map(([n,x,col])=>{
+        const pct = 100*x/tot;
+        const txt = pct>=18 ? `${n} · ${fmtU(x)} (${pct.toFixed(0)}%)` : (pct>=8 ? `${fmtU(x)}` : '');
+        return `<div title="${n}: ${fmtU(x)} (${pct.toFixed(1)}%)" style="width:${pct}%;min-width:${x?'26px':'0'};background:${col};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden">${txt}</div>`;
+      }).join('') + '</div>';
   }
   // por dimensión (solo filas con actividad de recuperación o canceladas)
   const g = {};
@@ -1202,7 +1201,9 @@ function renderReprog(base){
   }
   const arr = Object.entries(g).map(([k,x])=>({k,...x,
       tR: x.co?100*x.int/x.co:0, tRec: x.co?100*x.d/x.co:0}))
-    .filter(x=>x.int>0 || x.co>0).sort((a,b)=>b.int-a.int || b.co-a.co);
+    .filter(x=>x.int>0).sort((a,b)=>b.int-a.int || b.co-a.co);
+  document.getElementById('pReprogDim').style.display = arr.length ? 'flex' : 'none';
+  document.getElementById('pReprogDet').style.display = mk.length ? 'flex' : 'none';
   const et = {proyecto:'Proyecto', ie:'Institución Educativa', salon:'Salón', grado:'Grado'}[dimReprog];
   EXPORTS.reprogDim = { nombre:'recuperaciones_por_'+dimReprog,
     cols:[et,'Intentos','Dictadas','Canceladas','Futuras','Canceladas originales','Tasa reprogramación %','Tasa recuperación %'],
