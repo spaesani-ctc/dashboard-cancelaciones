@@ -75,7 +75,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 
 /* ===== LAYOUT ===== */
 .wrap { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 16px 8px; gap:10px; }
-.kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; flex-shrink:0; }
+.kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; flex-shrink:0; }
 .kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 14px; display:flex; flex-direction:column; justify-content:center; }
 .kpi-label { font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink3); }
 .kpi-value { font-family:'DM Serif Display',serif; font-size:1.6rem; line-height:1.15; color:var(--ink); }
@@ -282,6 +282,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="kpi"><div class="kpi-label" id="kCancL">Sesiones canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
     <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
     <div class="kpi"><div class="kpi-label" id="kPagadasL">% De sesiones canceladas pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
+    <div class="kpi"><div class="kpi-label" id="kReprogL">Intentos de reprogramación</div><div class="kpi-value" id="kReprog">—</div><div class="kpi-sub" id="kReprogSub"></div></div>
   </div>
 
   <!-- VISTA RESUMEN -->
@@ -718,6 +719,18 @@ function renderKPIs(base, canc){
   const pctPagSes = sCanc.ses ? 100*sPag.ses/sCanc.ses : 0;
   const pctPagHrs = sCanc.hrs ? 100*sPag.hrs/sCanc.hrs : 0;
   document.getElementById('kPagadasSub').textContent = enHoras() ? `en sesiones: ${pctPagSes.toFixed(1)}%` : `en horas académicas: ${sCanc.hrs?pctPagHrs.toFixed(1)+'%':'s/d'}`;
+  // intentos de reprogramación: make-ups del período, abiertas por resultado
+  const mk = base.filter(esMakeUp);
+  const mkDict = sumas(mk.filter(esDictada)), mkCanc = sumas(mk.filter(esCancelada)), mkFut = sumas(mk.filter(esFutura));
+  const sMk = sumas(mk);
+  const cancOrig = sumas(base.filter(r=>esCancelada(r) && !esMakeUp(r)));
+  const den = enHoras() ? cancOrig.hrs : cancOrig.ses;
+  const tReprog = den ? 100*(enHoras()?sMk.hrs:sMk.ses)/den : 0;
+  const tRecup  = den ? 100*(enHoras()?mkDict.hrs:mkDict.ses)/den : 0;
+  document.getElementById('kReprog').textContent = principal(sMk);
+  document.getElementById('kReprogSub').innerHTML = sMk.ses
+    ? `<span style="color:var(--teal)">✓ ${fmtU(enHoras()?mkDict.hrs:mkDict.ses)} dictadas</span> · <span style="color:var(--coral)">✗ ${fmtU(enHoras()?mkCanc.hrs:mkCanc.ses)} canceladas</span>${(enHoras()?mkFut.hrs:mkFut.ses)?` · ${fmtU(enHoras()?mkFut.hrs:mkFut.ses)} futuras`:''}<br>reprogramación ${tReprog.toFixed(1)}% · recuperación ${tRecup.toFixed(1)}%`
+    : 'sin recuperaciones en el período';
 }
 
 const EXPORTS = {};
@@ -901,8 +914,12 @@ const TAG_COLOR = () => ({
 function filaAgg(filas, clave, minProg){
   const g = {};
   for(const r of filas){
-    const k=r[clave] ?? '\u2014'; (g[k] ??= {p:0,c:0,d:0,rd:0,pSes:0}); g[k].pSes++; g[k].p += val(r);
-    if(esCancOriginal(r)) g[k].c += val(r);
+    const k=r[clave] ?? '\u2014'; (g[k] ??= {p:0,c:0,d:0,rd:0,c24:0,pSes:0}); g[k].pSes++; g[k].p += val(r);
+    if(esCancOriginal(r)){
+      g[k].c += val(r);
+      const b = bucketAntic(r);
+      if(b==='Con menos de 24 h' || b==='Posterior al inicio de la sesión') g[k].c24 += val(r);
+    }
     else if(esDictada(r)){ g[k].d += val(r); if(esMakeUp(r)) g[k].rd += val(r); }
   }
   return Object.entries(g).filter(([,v])=>v.pSes>=minProg)
@@ -941,6 +958,7 @@ function tablaRank(id, arr, etiqueta){
     { k:'k', label:etiqueta, tip:'k' },
     { k:'p', label:'Programadas', num:true, fmt:r=>fmtU(r.p) },
     { k:'c', label:'Canceladas', num:true, fmt:r=>fmtU(r.c) },
+    { k:'c24', label:'Canc. aviso <24 h', num:true, fmt:r=>fmtU(r.c24) },
     { k:'pct', label:'% De cancelación', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
   ], arr);
 }
@@ -956,8 +974,8 @@ function renderRanking(base){
   document.getElementById('rankTitle').textContent = cfg.titulo;
   const filas = rankMode==='profesor' ? base.filter(r=>r.profesor && r.profesor!==', ') : base;
   const arr = filaAgg(filas, rankMode, cfg.min);
-  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', '% De cancelación'],
-    rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, r.pct.toFixed(1)]) };
+  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', 'Canceladas aviso <24 h', '% De cancelación (neto)'],
+    rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, Math.round(r.c24*100)/100, r.pct.toFixed(1)]) };
   tablaRank('tRanking', arr, cfg.et);
 }
 document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
@@ -1113,7 +1131,7 @@ function renderDetalle(){
   const porPag = 22;
   const s = SORT['tDetalle'] || { k:'fecha', dir:'desc' };
   const filas = [...(window._canc||[])].sort((a,b)=>{
-    const x=a[s.k], y=b[s.k];
+    const x = s.k==='antic' ? bucketAntic(a) : a[s.k], y = s.k==='antic' ? bucketAntic(b) : b[s.k];
     const cmp = (typeof x==='number' && typeof y==='number') ? x-y : String(x??'').localeCompare(String(y??''), 'es');
     return s.dir==='asc' ? cmp : -cmp;
   });
@@ -1122,13 +1140,13 @@ function renderDetalle(){
   const pagina = filas.slice(detallePag*porPag,(detallePag+1)*porPag);
   document.getElementById('detN').textContent = `${nf.format(filas.length)} sesiones`;
   const cols = [
-    ['fecha','Fecha'],['cancellation_at','Cancelada el'],['proyecto','Proyecto'],['ie','IE'],['salon','Salón'],['grado','Grado'],
+    ['fecha','Fecha'],['cancellation_at','Cancelada el'],['antic','Anticipación'],['proyecto','Proyecto'],['ie','IE'],['salon','Salón'],['grado','Grado'],
     ['motivo','Motivo'],['profesor','Profesor'],['academic_hours','Horas académicas'],['make_up_class','Clase de recuperación']
   ];
   const el = document.getElementById('tDetalle');
   el.innerHTML =
     '<thead><tr>' + cols.map(([k,l])=>`<th data-k="${k}">${l}${s.k===k?(s.dir==='asc'?' ▲':' ▼'):''}</th>`).join('') + '</tr></thead><tbody>' +
-    pagina.map(r=>`<tr><td>${r.fecha}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td class="num">${r.academic_hours??'—'}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td></tr>`).join('') + '</tbody>';
+    pagina.map(r=>`<tr><td>${r.fecha}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td><td>${bucketAntic(r)}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td class="num">${r.academic_hours??'—'}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td></tr>`).join('') + '</tbody>';
   el.querySelectorAll('th').forEach(th => th.onclick = () => {
     const k = th.dataset.k;
     const prev = SORT['tDetalle'];
