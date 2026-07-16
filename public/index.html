@@ -850,7 +850,6 @@ function renderMotivos(canc){
     { k:'v', label:enHoras()?'Horas':'Sesiones', num:true, fmt:r=>fmtU(r.v) },
     { k:'pct', label:'% del total', num:true, fmt:r=>r.pct.toFixed(1)+'%' },
   ], orden.map(([k,v])=>({motivo:k, tag:mTag[k]||'Sin categoría', v, pct:100*v/total})));
-  if(motivosTab==='tree') renderMotivosTree(canc);
 }
 
 const hexA = (hex, a) => {
