@@ -364,7 +364,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="modal-head"><span class="modal-title">Metodología</span><button class="modal-close" data-close="mMet">✕</button></div>
     <div class="modal-body nota">
       <p><strong>¿Qué muestra este dashboard?</strong> Las clases canceladas: cuántas fueron, por qué motivo, en qué proyectos, instituciones y salones, y cuándo. Todo se puede ver en cantidad de sesiones o en horas académicas (el switch de arriba a la izquierda).</p>
-      <p><strong>¿Cómo se calcula el % de cancelación?</strong> Clases canceladas divididas por las programadas, dentro del período y los filtros que elijas.</p>
+      <p><strong>¿Cómo se calcula el % de cancelación?</strong> Es un porcentaje neto: a las clases canceladas se les descuentan las recuperaciones ya dictadas, y el resultado se divide por el total de clases dictadas y canceladas del período (las clases futuras no cuentan). Si se recuperó más de lo que se canceló, se muestra 0%.</p>
       <p><strong>Motivos que no se cuentan por defecto:</strong> Feriado, Vacaciones, Cambio operativo e Inicio de proyecto atrasado — son movimientos de calendario, no cancelaciones reales. Si querés incluirlos, están en el filtro de Motivos.</p>
       <p><strong>Horas académicas:</strong> se muestran solo donde el dato está cargado en el sistema; siempre te indicamos qué porcentaje de cobertura tiene.</p>
       <p>Cualquier duda, puedes contactar a <strong>@Data</strong> :)</p>
@@ -656,6 +656,18 @@ function esValida(r){
 }
 const esDictada = r => r.state==='true' && r.fecha < HOY && r.reason_id==null;
 const esFutura  = r => r.state==='true' && r.fecha >= HOY;
+const esMakeUp  = r => String(r.make_up_class)==='true';
+// % de cancelación NETO: max(0, canceladas − recuperaciones dictadas) / (dictadas + canceladas)
+// (las dictadas ya incluyen a las recuperaciones una sola vez; las futuras quedan fuera del denominador)
+function netoPct(filas){
+  let cS=0,cH=0,dS=0,dH=0,rdS=0,rdH=0;
+  for(const r of filas){
+    const h = r.academic_hours||0;
+    if(esCancelada(r)){ cS++; cH+=h; }
+    else if(esDictada(r)){ dS++; dH+=h; if(esMakeUp(r)){ rdS++; rdH+=h; } }
+  }
+  return { ses:(dS+cS)?100*Math.max(0,cS-rdS)/(dS+cS):0, hrs:(dH+cH)?100*Math.max(0,cH-rdH)/(dH+cH):0 };
+}
 
 /* ============ render ============ */
 function render(){
@@ -691,8 +703,8 @@ function renderKPIs(base, canc){
   document.getElementById('kDictSub').textContent = secundario(sDict);
   document.getElementById('kCanc').textContent = principal(sCanc);
   document.getElementById('kCancSub').textContent = secundario(sCanc);
-  const pctSes = sProg.ses ? 100*sCanc.ses/sProg.ses : 0;
-  const pctHrs = sProg.hrs ? 100*sCanc.hrs/sProg.hrs : 0;
+  const neto = netoPct(base);
+  const pctSes = neto.ses, pctHrs = neto.hrs;
   document.getElementById('kPct').textContent = (enHoras()?pctHrs:pctSes).toFixed(1)+'%';
   document.getElementById('kPctSub').textContent = enHoras() ? `en sesiones: ${pctSes.toFixed(1)}%` : `en horas académicas: ${sProg.hrs?pctHrs.toFixed(1)+'%':'s/d'}`;
   const pagadas = canc.filter(r=>PAGADA(r.is_paid_session));
@@ -766,12 +778,19 @@ let semMode = 'todas';
 function renderSemanal(base){
   const sem = {};
   const cuenta = r => esCancelada(r) && (semMode!=='pagadas' || PAGADA(r.is_paid_session));
-  for(const r of base){ (sem[r.semana] ??= {p:0,c:0}); sem[r.semana].p += val(r); if(cuenta(r)) sem[r.semana].c += val(r); }
+  for(const r of base){
+    (sem[r.semana] ??= {c:0, cAll:0, d:0, rd:0});
+    if(cuenta(r)) sem[r.semana].c += val(r);
+    if(esCancelada(r)) sem[r.semana].cAll += val(r);
+    else if(esDictada(r)){ sem[r.semana].d += val(r); if(esMakeUp(r)) sem[r.semana].rd += val(r); }
+  }
+  // % neto semanal: max(0, canceladas − recuperaciones dictadas) / (dictadas + canceladas)
+  const pctDe = o => (o.d+o.cAll) ? 100*(semMode==='pagadas' ? o.c : Math.max(0,o.cAll-o.rd))/(o.d+o.cAll) : 0;
   const labels = Object.keys(sem).sort();
   const pocas = labels.length <= 15;
   const fmt = s => { const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); };
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
-  const pcts = labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0);
+  const pcts = labels.map(s=>pctDe(sem[s]));
   // si la etiqueta de % (línea) cae cerca del tope de la barra, la cantidad va DENTRO de la barra
   // nominal DENTRO de la barra solo si el % está apenas por encima del tope;
   // si el % cae dentro de la barra, el nominal va arriba (no se pisan)
@@ -784,8 +803,8 @@ function renderSemanal(base){
       return yPct < yBar && (yBar - yPct) < 30;   // % por encima del tope → nominal adentro
     } catch(e){ return false; }
   };
-  EXPORTS.semanal = { nombre:'evolucion_semanal'+(semMode==='pagadas'?'_pagadas':''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas'+(semMode==='pagadas'?' pagadas':''), (enHoras()?'Horas':'Sesiones')+' programadas', semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación'],
-    rows: labels.map((s,i)=>[s, Math.round(sem[s].c*100)/100, Math.round(sem[s].p*100)/100, pcts[i].toFixed(1)]) };
+  EXPORTS.semanal = { nombre:'evolucion_semanal'+(semMode==='pagadas'?'_pagadas':''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas'+(semMode==='pagadas'?' pagadas':''), (enHoras()?'Horas':'Sesiones')+' dictadas', 'Recuperaciones dictadas', semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación (neto)'],
+    rows: labels.map((s,i)=>[s, Math.round(sem[s].cAll*100)/100, Math.round(sem[s].d*100)/100, Math.round(sem[s].rd*100)/100, pcts[i].toFixed(1)]) };
   const flip = ctx => {
     try {
       if(!ctx.chart.isDatasetVisible(1)) return false;
@@ -802,7 +821,7 @@ function renderSemanal(base){
           offset: ctx => choca(ctx) ? 2 : -2,
           color: ctx => choca(ctx) ? '#fff' : css('--ink2'),
           font:{family:'DM Sans',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } },
-      { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>sem[s].p?100*sem[s].c/sem[s].p:0), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+      { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
         datalabels:{ align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } } ]},
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'DM Sans',size:10},boxWidth:12}},
@@ -878,8 +897,13 @@ const TAG_COLOR = () => ({
 
 function filaAgg(filas, clave, minProg){
   const g = {};
-  for(const r of filas){ const k=r[clave] ?? '\u2014'; (g[k] ??= {p:0,c:0,pSes:0}); g[k].pSes++; g[k].p += val(r); if(esCancelada(r)) g[k].c += val(r); }
-  return Object.entries(g).filter(([,v])=>v.pSes>=minProg).map(([k,v])=>({k,...v,pct:v.p?100*v.c/v.p:0})).sort((a,b)=>b.pct-a.pct);
+  for(const r of filas){
+    const k=r[clave] ?? '\u2014'; (g[k] ??= {p:0,c:0,d:0,rd:0,pSes:0}); g[k].pSes++; g[k].p += val(r);
+    if(esCancelada(r)) g[k].c += val(r);
+    else if(esDictada(r)){ g[k].d += val(r); if(esMakeUp(r)) g[k].rd += val(r); }
+  }
+  return Object.entries(g).filter(([,v])=>v.pSes>=minProg)
+    .map(([k,v])=>({k,...v,pct:(v.d+v.c)?100*Math.max(0,v.c-v.rd)/(v.d+v.c):0})).sort((a,b)=>b.pct-a.pct);
 }
 const colorPct = p => p>=20?css('--coral'):p>=10?css('--amber'):css('--teal');
 
@@ -1029,15 +1053,15 @@ function renderSesiones(base){
   let sinHoras = 0, tot = 0;
   for(const r of base){
     const k = r[dimSesiones] ?? '—';
-    (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0});
+    (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0});
     const h = r.academic_hours||0; tot++; if(r.academic_hours==null) sinHoras++;
     g[k].pS++; g[k].pH+=h;
-    if(esDictada(r)){ g[k].dS++; g[k].dH+=h; }
+    if(esDictada(r)){ g[k].dS++; g[k].dH+=h; if(esMakeUp(r)){ g[k].rdS++; g[k].rdH+=h; } }
     if(esFutura(r)){ g[k].fS++; g[k].fH+=h; }
     if(esCancelada(r)){ g[k].cS++; g[k].cH+=h; }
   }
-  const arr = Object.entries(g).map(([k,v])=>({k,...v,pctS:v.pS?100*v.cS/v.pS:0,pctH:v.pH?100*v.cH/v.pH:0})).sort((a,b)=>b.pS-a.pS);
-  const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0});
+  const arr = Object.entries(g).map(([k,v])=>({k,...v,pctS:(v.dS+v.cS)?100*Math.max(0,v.cS-v.rdS)/(v.dS+v.cS):0,pctH:(v.dH+v.cH)?100*Math.max(0,v.cH-v.rdH)/(v.dH+v.cH):0})).sort((a,b)=>b.pS-a.pS);
+  const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH,rdS:a.rdS+x.rdS,rdH:a.rdH+x.rdH}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0});
   const et = {proyecto:'Proyecto', ie:'Institución Educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
   const s = SORT['tSesiones'];
   if(s) arr.sort((a,b)=>{ const x=a[s.k], y=b[s.k]; const cmp = (typeof x==='number'&&typeof y==='number')?x-y:String(x??'').localeCompare(String(y??''),'es'); return s.dir==='asc'?cmp:-cmp; });
@@ -1050,7 +1074,7 @@ function renderSesiones(base){
     <td class="num sep">${nf.format(r.cS)}</td><td class="num dim">${nf.format(Math.round(r.cH))}</td>
     <td class="num sep" style="color:${colorPct(r.pctS)};font-weight:600">${r.pctS.toFixed(1)}%</td>
     <td class="num" style="color:${colorPct(r.pctH)}">${r.pH?r.pctH.toFixed(1)+'%':'s/d'}</td></tr>`;
-  const totRow = {k:'TOTAL',...T,pctS:T.pS?100*T.cS/T.pS:0,pctH:T.pH?100*T.cH/T.pH:0};
+  const totRow = {k:'TOTAL',...T,pctS:(T.dS+T.cS)?100*Math.max(0,T.cS-T.rdS)/(T.dS+T.cS):0,pctH:(T.dH+T.cH)?100*Math.max(0,T.cH-T.rdH)/(T.dH+T.cH):0};
   EXPORTS.sesiones = { nombre:'sesiones_y_horas_por_'+dimSesiones,
     cols:[et,'Programadas (sesiones)','Programadas (horas)','Dictadas (sesiones)','Dictadas (horas)','Futuras (sesiones)','Futuras (horas)','Canceladas (sesiones)','Canceladas (horas)','% canc. (sesiones)','% canc. (horas)'],
     rows: [...arr, totRow].map(r=>[r.k, r.pS, Math.round(r.pH), r.dS, Math.round(r.dH), r.fS, Math.round(r.fH), r.cS, Math.round(r.cH), r.pctS.toFixed(1), r.pH?r.pctH.toFixed(1):'s/d']) };
