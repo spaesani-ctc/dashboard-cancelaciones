@@ -538,19 +538,19 @@ const gradoDesc = arr => arr.sort((a,b)=>{
 
 /* combos multi-choice con buscador */
 const COMBOS = [
-  { id:'cbCanal', k:'canal', label:'Canal', todos:'Todos', vals: () => uniqDe('canal','canal') },
-  { id:'cbProyecto', k:'proyecto', label:'Proyecto', todos:'Todos', vals: () => uniqDe('proyecto','proyecto') },
-  { id:'cbIe', k:'ie', label:'Institución Educativa', todos:'Todas', vals: () => uniqDe('ie','ie') },
-  { id:'cbGrado', k:'grado', label:'Grado', todos:'Todos', vals: () => gradoDesc(uniqDe('grado','grado')) },
-  { id:'cbRoomId', k:'roomId', label:'ID Salón', todos:'Todos', vals: () => uniqDe('roomId','room_id') },
-  { id:'cbSalon', k:'salon', label:'Salón', todos:'Todos', vals: () => uniqDe('salon','salon') },
-  { id:'cbCategoria', k:'categoria', label:'Categoría', todos:'Todas', vals: () =>
+  { id:'cbCanal', k:'canal', label:'Canal', plural:'Canales', todos:'Todos', vals: () => uniqDe('canal','canal') },
+  { id:'cbProyecto', k:'proyecto', label:'Proyecto', plural:'Proyectos', todos:'Todos', vals: () => uniqDe('proyecto','proyecto') },
+  { id:'cbIe', k:'ie', label:'Institución Educativa', plural:'Instituciones Educativas', todos:'Todas', vals: () => uniqDe('ie','ie') },
+  { id:'cbGrado', k:'grado', label:'Grado', plural:'Grados', todos:'Todos', vals: () => gradoDesc(uniqDe('grado','grado')) },
+  { id:'cbRoomId', k:'roomId', label:'ID Salón', plural:'IDs de Salón', todos:'Todos', vals: () => uniqDe('roomId','room_id') },
+  { id:'cbSalon', k:'salon', label:'Salón', plural:'Salones', todos:'Todos', vals: () => uniqDe('salon','salon') },
+  { id:'cbCategoria', k:'categoria', label:'Categoría', plural:'Categorías', todos:'Todas', vals: () =>
       [...new Set(ROWS.filter(r=>pasaFiltros(r,'categoria') && r.state==='false').map(r=>r.tag||'Sin categoría'))].sort((a,b)=>a.localeCompare(b,'es')) },
 ];
 function mkCombo(cfg){
   const el = document.getElementById(cfg.id);
   const sel = F[cfg.k];
-  const etiqueta = () => sel.size===0 ? cfg.label : (sel.size===1 ? [...sel][0] : `${cfg.label} · ${sel.size}`);
+  const etiqueta = () => sel.size===0 ? cfg.label : (sel.size===1 ? [...sel][0] : `${cfg.plural||cfg.label} · ${sel.size}`);
   el.innerHTML = `
     <button class="combo-btn ${sel.size?'active-f':''}"><span class="cv">${etiqueta()}</span> <span style="opacity:.5">▾</span></button>
     <div class="combo-pop">
