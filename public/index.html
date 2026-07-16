@@ -38,9 +38,10 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .brand h1 { font-family:'DM Serif Display',serif; font-size:1.2rem; font-weight:400; line-height:1; }
 .brand h1 em { font-style:italic; color:rgba(255,255,255,0.65); }
 .tabs { display:flex; gap:2px; margin-left:12px; }
-.tab { font-size:11.5px; font-weight:500; padding:4px 12px; border-radius:6px; border:1px solid transparent; background:transparent; color:rgba(255,255,255,0.65); cursor:pointer; transition:background .15s,color .15s; }
+.tab { position:relative; font-size:11.5px; font-weight:500; padding:4px 12px 4px 19px; border-radius:6px; border:1px solid transparent; background:transparent; color:rgba(255,255,255,0.65); cursor:pointer; transition:background .15s,color .15s; }
 .tab:hover { color:#fff; background:rgba(255,255,255,0.08); }
 .tab.active { background:rgba(255,255,255,0.14); color:#fff; font-weight:600; border-color:rgba(255,255,255,0.2); }
+.tab.active::before { content:''; position:absolute; left:9px; top:50%; transform:translateY(-50%); width:3px; height:13px; border-radius:2px; background:#5DCAA5; }
 .top-meta { font-family:'DM Mono',monospace; font-size:10px; color:rgba(255,255,255,0.5); white-space:nowrap; margin-left:auto; }
 .top-right { margin-left:auto; display:flex; gap:6px; align-items:center; }
 .tb-btn { display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.08); cursor:pointer; color:#fff; font-family:'DM Sans',sans-serif; font-size:11.5px; font-weight:500; white-space:nowrap; transition:background .15s; }
@@ -267,6 +268,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <div class="combo" id="cbProyecto"></div>
   <div class="combo" id="cbIe"></div>
   <select class="f-select" id="fGrado"><option value="" hidden>Grado</option></select>
+  <select class="f-select" id="fCategoria"><option value="" hidden>Categoría</option></select>
   <div class="combo" id="cbRoomId"></div>
   <div class="combo" id="cbSalon"></div>
   <div class="combo" id="cbMotivos"></div>
@@ -303,7 +305,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pMotivos">
       <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
-        <div class="p-tabs"><button class="p-tab active" data-t="chart">Motivos</button><button class="p-tab" data-t="cat">Categorías</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,motivosExportActivo(),motivosCanvasActivo(),motivosExportActivo()+'_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+        <div class="p-tabs"><button class="p-tab active" data-t="chart">Motivos</button><button class="p-tab" data-t="tabla">Tabla</button><button class="p-tab" data-t="cat">Categorías</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,motivosExportActivo(),motivosCanvasActivo(),motivosExportActivo()+'_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
       <div class="p-body" id="motivosCat" style="display:none"><canvas id="chCategorias"></canvas></div>
@@ -511,7 +513,7 @@ const fmtU = v => enHoras() ? nf.format(Math.round(v))+' h' : nf.format(v);
 const PAGADA = v => /^paid/.test(String(v)) || String(v)==='True';
 
 /* ============ filtros ============ */
-const F = { canal:'', proyecto:'', ie:'', grado:'', salon:'', roomId:'' };
+const F = { canal:'', proyecto:'', ie:'', grado:'', salon:'', roomId:'', categoria:'' };
 let MOTIVOS_EXCL = null;                 // Set de nombres de motivo excluidos
 const DEFAULT_EXCL_IDS = [26, 33, 34, 35];   // Inicio de proyecto atrasado · Cambio operativo BO · Feriado · Vacaciones
 function defaultExcl(){
@@ -521,7 +523,7 @@ function defaultExcl(){
 }
 
 /* selects nativos (canal, grado) */
-for(const [id,k] of Object.entries({ fCanal:'canal', fGrado:'grado' })){
+for(const [id,k] of Object.entries({ fCanal:'canal', fGrado:'grado', fCategoria:'categoria' })){
   document.getElementById(id).onchange = e => { F[k]=e.target.value; e.target.classList.toggle('active-f', !!e.target.value); poblarFiltros(); render(); };
 }
 function opciones(sel, etiqueta, valores, actual){
@@ -608,7 +610,7 @@ function cerrarPops(){ document.querySelectorAll('.combo-pop.show, .periodo-pop.
 document.addEventListener('click', cerrarPops);
 
 document.getElementById('btnLimpiar').onclick = () => {
-  Object.assign(F,{canal:'',proyecto:'',ie:'',grado:'',salon:'',roomId:''});
+  Object.assign(F,{canal:'',proyecto:'',ie:'',grado:'',salon:'',roomId:'',categoria:''});
   MOTIVOS_EXCL = defaultExcl();
   document.querySelectorAll('.f-select').forEach(s=>s.classList.remove('active-f'));
   poblarFiltros(); render();
@@ -628,6 +630,8 @@ function poblarFiltros(){
     if(!isNaN(nb)) return 1;
     return String(a).localeCompare(String(b));
   }), F.grado);
+  const cancTag = ROWS.filter(r => pasaFiltros(r,'categoria') && r.state==='false');
+  opciones('fCategoria', 'Categoría', [...new Set(cancTag.map(r=>r.tag||'Sin categoría'))].sort((a,b)=>a.localeCompare(b,'es')), F.categoria);
   for(const c of COMBOS) mkCombo(c, uniqDe(c.k, c.campo));
   mkComboMotivos();
 }
@@ -638,6 +642,7 @@ function pasaFiltros(r, omitir){
   if(omitir!=='grado' && F.grado && String(r.grado)!==F.grado) return false;
   if(omitir!=='roomId' && F.roomId && String(r.room_id)!==String(F.roomId)) return false;
   if(omitir!=='salon' && F.salon && r.salon!==F.salon) return false;
+  if(omitir!=='categoria' && F.categoria && r.state==='false' && (r.tag||'Sin categoría')!==F.categoria) return false;
   return true;
 }
 function esCancelada(r){
@@ -851,14 +856,14 @@ function renderCategorias(canc){
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
   EXPORTS.categorias = { nombre:'categorias_cancelacion', cols:['Categoría', enHoras()?'Horas':'Sesiones', '% del total'],
     rows: orden.map(([k,v])=>[k, Math.round(v*100)/100, (100*v/total).toFixed(1)]) };
-  mkChart('chCategorias', { type:'bar', data:{ labels:orden.map(x=>x[0]),
-    datasets:[{ data:orden.map(x=>x[1]), backgroundColor:orden.map(([k])=>hexA(tc(k),0.85)), borderRadius:3, maxBarThickness:26,
-      datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'DM Sans',size:9.5,weight:600},
-        formatter:(v)=>`${fmtN(v)} · ${(100*v/total).toFixed(1)}%` } }] },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:74}},
-      plugins:{ legend:{display:false},
-        tooltip:{ callbacks:{ label:c=>` ${fmtU(c.parsed.x)} (${(100*c.parsed.x/total).toFixed(1)}%)` } } },
-      scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10.5}},grid:{display:false}} } },
+  mkChart('chCategorias', { type:'doughnut', data:{
+    labels:orden.map(([k,v])=>`${k} · ${(100*v/total).toFixed(1)}%`),
+    datasets:[{ data:orden.map(x=>x[1]), backgroundColor:orden.map(([k])=>hexA(tc(k),0.88)),
+      borderColor:css('--surface'), borderWidth:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'45%',
+      plugins:{ legend:{ position:'right', labels:{ color:css('--ink2'), font:{family:'DM Sans',size:10.5}, boxWidth:11, padding:8 } },
+        tooltip:{ callbacks:{ title: items => orden[items[0].dataIndex][0], label: c => ` ${fmtU(c.parsed)} (${(100*c.parsed/total).toFixed(1)}%)` } },
+        datalabels:{ color:'#fff', font:{family:'DM Sans',size:9.5,weight:600}, formatter: v => (100*v/total)>=6 ? fmtN(v) : '' } } },
     plugins:[ChartDataLabels] });
 }
 
