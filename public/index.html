@@ -1298,8 +1298,10 @@ function renderDetalle(){
 
 document.getElementById('btnCSV').onclick = () => {
   const canc = window._canc||[];
-  const cols = ['fecha','semana','dia','hora','proyecto','canal','ie','grado','room_id','salon','reason_id','motivo','tag','profesor','make_up_class','given_by_external','academic_hours','duracion_min','cancellation_at'];
-  const ws = XLSX.utils.aoa_to_sheet([cols, ...canc.map(r=>cols.map(c=>r[c]??''))]);
+  const cols = ['fecha','semana','dia','hora','proyecto','canal','ie','grado','room_id','salon','reason_id','motivo','tag','profesor','make_up_class','given_by_external','academic_hours','duracion_min','cancelada_el_bogota','anticipacion'];
+  const ws = XLSX.utils.aoa_to_sheet([cols, ...canc.map(r=>cols.map(c=>
+    c==='cancelada_el_bogota' ? fmtCancEl(r.cancellation_at) :
+    c==='anticipacion' ? bucketAntic(r) : (r[c]??'')))]);
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Cancelaciones');
   XLSX.writeFile(wb, `cancelaciones_${fDesde.value}_${fHasta.value}.xlsx`);
 };
