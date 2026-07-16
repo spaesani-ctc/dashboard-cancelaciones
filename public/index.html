@@ -1108,15 +1108,21 @@ function renderSesiones(base){
   let sinHoras = 0, tot = 0;
   for(const r of base){
     const k = r[dimSesiones] ?? '—';
-    (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0});
+    (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0});
     const h = r.academic_hours||0; tot++; if(r.academic_hours==null) sinHoras++;
     g[k].pS++; g[k].pH+=h;
     if(esDictada(r)){ g[k].dS++; g[k].dH+=h; if(esMakeUp(r)){ g[k].rdS++; g[k].rdH+=h; } }
     if(esFutura(r)){ g[k].fS++; g[k].fH+=h; }
-    if(esCancelada(r)){ g[k].cS++; g[k].cH+=h; if(!esMakeUp(r)){ g[k].coS++; g[k].coH+=h; } }
+    if(esCancelada(r)){
+      g[k].cS++; g[k].cH+=h; if(!esMakeUp(r)){ g[k].coS++; g[k].coH+=h; }
+      const b = bucketAntic(r);
+      if(b==='Posterior al inicio de la sesión'){ g[k].poS++; g[k].poH+=h; }
+      else if(b==='Con menos de 24 h'){ g[k].u24S++; g[k].u24H+=h; }
+      else if(b==='Con 24 h o más'){ g[k].o24S++; g[k].o24H+=h; }
+    }
   }
   const arr = Object.entries(g).map(([k,v])=>({k,...v,pctS:v.pS?100*Math.max(0,v.coS-v.rdS)/v.pS:0,pctH:v.pH?100*Math.max(0,v.coH-v.rdH)/v.pH:0})).sort((a,b)=>b.pS-a.pS);
-  const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH,rdS:a.rdS+x.rdS,rdH:a.rdH+x.rdH,coS:a.coS+x.coS,coH:a.coH+x.coH}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0});
+  const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH,rdS:a.rdS+x.rdS,rdH:a.rdH+x.rdH,coS:a.coS+x.coS,coH:a.coH+x.coH,poS:a.poS+x.poS,poH:a.poH+x.poH,u24S:a.u24S+x.u24S,u24H:a.u24H+x.u24H,o24S:a.o24S+x.o24S,o24H:a.o24H+x.o24H}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0});
   const et = {proyecto:'Proyecto', ie:'Institución Educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
   const s = SORT['tSesiones'];
   if(s) arr.sort((a,b)=>{ const x=a[s.k], y=b[s.k]; const cmp = (typeof x==='number'&&typeof y==='number')?x-y:String(x??'').localeCompare(String(y??''),'es'); return s.dir==='asc'?cmp:-cmp; });
@@ -1127,22 +1133,29 @@ function renderSesiones(base){
     <td class="num sep">${nf.format(r.dS)}</td><td class="num dim">${nf.format(Math.round(r.dH))}</td>
     <td class="num sep">${nf.format(r.fS)}</td><td class="num dim">${nf.format(Math.round(r.fH))}</td>
     <td class="num sep">${nf.format(r.cS)}</td><td class="num dim">${nf.format(Math.round(r.cH))}</td>
+    <td class="num sep">${nf.format(r.poS)}</td><td class="num dim">${nf.format(Math.round(r.poH))}</td>
+    <td class="num sep">${nf.format(r.u24S)}</td><td class="num dim">${nf.format(Math.round(r.u24H))}</td>
+    <td class="num sep">${nf.format(r.o24S)}</td><td class="num dim">${nf.format(Math.round(r.o24H))}</td>
     <td class="num sep" style="color:${colorPct(r.pctS)};font-weight:600">${r.pctS.toFixed(1)}%</td>
     <td class="num" style="color:${colorPct(r.pctH)}">${r.pH?r.pctH.toFixed(1)+'%':'s/d'}</td></tr>`;
   const totRow = {k:'TOTAL',...T,pctS:T.pS?100*Math.max(0,T.coS-T.rdS)/T.pS:0,pctH:T.pH?100*Math.max(0,T.coH-T.rdH)/T.pH:0};
   EXPORTS.sesiones = { nombre:'sesiones_y_horas_por_'+dimSesiones,
-    cols:[et,'Programadas (sesiones)','Programadas (horas)','Dictadas (sesiones)','Dictadas (horas)','Futuras (sesiones)','Futuras (horas)','Canceladas (sesiones)','Canceladas (horas)','% canc. (sesiones)','% canc. (horas)'],
-    rows: [...arr, totRow].map(r=>[r.k, r.pS, Math.round(r.pH), r.dS, Math.round(r.dH), r.fS, Math.round(r.fH), r.cS, Math.round(r.cH), r.pctS.toFixed(1), r.pH?r.pctH.toFixed(1):'s/d']) };
+    cols:[et,'Programadas (sesiones)','Programadas (horas)','Dictadas (sesiones)','Dictadas (horas)','Futuras (sesiones)','Futuras (horas)','Canceladas (sesiones)','Canceladas (horas)','Canc. posterior al inicio (sesiones)','Canc. posterior al inicio (horas)','Canc. aviso <24 h (sesiones)','Canc. aviso <24 h (horas)','Canc. aviso >=24 h (sesiones)','Canc. aviso >=24 h (horas)','% canc. (sesiones)','% canc. (horas)'],
+    rows: [...arr, totRow].map(r=>[r.k, r.pS, Math.round(r.pH), r.dS, Math.round(r.dH), r.fS, Math.round(r.fH), r.cS, Math.round(r.cH), r.poS, Math.round(r.poH), r.u24S, Math.round(r.u24H), r.o24S, Math.round(r.o24H), r.pctS.toFixed(1), r.pH?r.pctH.toFixed(1):'s/d']) };
   const el = document.getElementById('tSesiones');
   el.innerHTML = `<thead>
     <tr><th rowspan="2" data-k="k">${et}${flecha('k')}</th>
       <th class="grp sep" colspan="2">Programadas</th><th class="grp sep" colspan="2">Dictadas</th>
       <th class="grp sep" colspan="2">Futuras</th><th class="grp sep" colspan="2">Canceladas</th>
+      <th class="grp sep" colspan="2">Canc. posterior al inicio</th><th class="grp sep" colspan="2">Canc. aviso &lt;24 h</th><th class="grp sep" colspan="2">Canc. aviso ≥24 h</th>
       <th class="grp sep" colspan="2">% De cancelación</th></tr>
     <tr><th class="num sep" data-k="pS">Sesiones${flecha('pS')}</th><th class="num" data-k="pH">Horas${flecha('pH')}</th>
         <th class="num sep" data-k="dS">Sesiones${flecha('dS')}</th><th class="num" data-k="dH">Horas${flecha('dH')}</th>
         <th class="num sep" data-k="fS">Sesiones${flecha('fS')}</th><th class="num" data-k="fH">Horas${flecha('fH')}</th>
         <th class="num sep" data-k="cS">Sesiones${flecha('cS')}</th><th class="num" data-k="cH">Horas${flecha('cH')}</th>
+        <th class="num sep" data-k="poS">Sesiones${flecha('poS')}</th><th class="num" data-k="poH">Horas${flecha('poH')}</th>
+        <th class="num sep" data-k="u24S">Sesiones${flecha('u24S')}</th><th class="num" data-k="u24H">Horas${flecha('u24H')}</th>
+        <th class="num sep" data-k="o24S">Sesiones${flecha('o24S')}</th><th class="num" data-k="o24H">Horas${flecha('o24H')}</th>
         <th class="num sep" data-k="pctS">Sesiones${flecha('pctS')}</th><th class="num" data-k="pctH">Horas${flecha('pctH')}</th></tr>
   </thead><tbody>` + arr.map(r=>celda(r)).join('') + celda(totRow, true) + '</tbody>';
   el.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
