@@ -238,6 +238,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <div class="tabs" id="vistas">
     <button class="tab active" data-v="resumen">Resumen</button>
     <button class="tab" data-v="sesiones">Sesiones y horas</button>
+    <button class="tab" data-v="reprog">Reprogramaciones</button>
   </div>
   <div class="top-right">
     <button class="tb-btn" id="btnRefresh"><svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform-origin:center"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Actualizar</button>
@@ -339,6 +340,31 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       </div>
       <div class="p-body scroll"><table class="t" id="tSesiones"></table></div>
       <div class="pag" style="justify-content:flex-start"><span class="dim" id="notaCobertura"></span></div>
+    </div>
+  </div>
+
+  <!-- VISTA REPROGRAMACIONES -->
+  <div id="vistaReprog" style="display:none; flex:1; min-height:0; flex-direction:column; gap:10px;">
+    <div class="panel" style="flex:none">
+      <div class="p-head"><span class="p-title">Intentos de reprogramación</span><span class="p-sub" id="reprogResumen"></span></div>
+    </div>
+    <div class="panel" style="flex:1; min-height:0">
+      <div class="p-head"><span class="p-title">Recuperaciones por dimensión</span>
+        <div class="p-tabs" id="reprogTabs">
+          <button class="p-tab active" data-d="proyecto">Proyecto</button>
+          <button class="p-tab" data-d="ie">IE</button>
+          <button class="p-tab" data-d="salon">Salón</button>
+          <button class="p-tab" data-d="grado">Grado</button>
+        </div>
+        <div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'reprogDim','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+      </div>
+      <div class="p-body scroll"><table class="t" id="tReprogDim"></table></div>
+    </div>
+    <div class="panel" style="flex:1; min-height:0">
+      <div class="p-head"><span class="p-title">Detalle de recuperaciones</span><span class="p-sub" id="reprogDetN"></span>
+        <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'reprogDet','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+      </div>
+      <div class="p-body scroll"><table class="t" id="tReprogDet"></table></div>
     </div>
   </div>
 </div>
@@ -496,6 +522,7 @@ document.getElementById('vistas').addEventListener('click', e => {
   VISTA = e.target.dataset.v;
   document.getElementById('vistaResumen').style.display = VISTA==='resumen'?'grid':'none';
   document.getElementById('vistaSesiones').style.display = VISTA==='sesiones'?'flex':'none';
+  document.getElementById('vistaReprog').style.display = VISTA==='reprog'?'flex':'none';
   document.querySelector('.kpis').style.display = VISTA==='resumen'?'grid':'none';
   if(ROWS.length) render();
 });
@@ -682,8 +709,10 @@ function render(){
   renderKPIs(base, canc);
   if(VISTA==='resumen'){
     renderSemanal(base); renderMotivos(canc); renderAnticipacion(canc); renderRanking(base); renderHeatmap(canc);
-  } else {
+  } else if(VISTA==='sesiones'){
     renderSesiones(base);
+  } else {
+    renderReprog(base);
   }
 }
 
@@ -1121,6 +1150,74 @@ function renderSesiones(base){
   });
   document.getElementById('notaCobertura').textContent =
     `Las columnas "Horas" son horas académicas. El dato está cargado en el ${tot?Math.round(100*(tot-sinHoras)/tot):0}% de las sesiones de este alcance — donde falta, la sesión suma 0 horas.`;
+}
+
+/* ============ vista reprogramaciones ============ */
+let dimReprog = 'proyecto';
+document.getElementById('reprogTabs').addEventListener('click', e => {
+  if(!e.target.dataset.d) return;
+  document.querySelectorAll('#reprogTabs .p-tab').forEach(x=>x.classList.remove('active'));
+  e.target.classList.add('active'); dimReprog = e.target.dataset.d; renderReprog(window._base||[]);
+});
+function renderReprog(base){
+  const mk = base.filter(esMakeUp);
+  const mkD = mk.filter(esDictada), mkC = mk.filter(esCancelada), mkF = mk.filter(esFutura);
+  const cancOrig = base.filter(r=>esCancelada(r) && !esMakeUp(r));
+  const v = filas => filas.reduce((a,r)=>a+val(r),0);
+  const tR = v(cancOrig) ? 100*v(mk)/v(cancOrig) : 0;
+  const tRec = v(cancOrig) ? 100*v(mkD)/v(cancOrig) : 0;
+  document.getElementById('reprogResumen').innerHTML = mk.length
+    ? `${fmtU(v(mk))} intentos — <span style="color:var(--teal)">✓ ${fmtU(v(mkD))} dictadas</span> · <span style="color:var(--coral)">✗ ${fmtU(v(mkC))} canceladas</span> · ${fmtU(v(mkF))} futuras · tasa de reprogramación ${tR.toFixed(1)}% · tasa de recuperación ${tRec.toFixed(1)}% (sobre ${fmtU(v(cancOrig))} canceladas)`
+    : 'Sin recuperaciones registradas en el período y filtros elegidos. Los intentos aparecen cuando el backoffice marca una sesión como clase de recuperación.';
+  // por dimensión (solo filas con actividad de recuperación o canceladas)
+  const g = {};
+  for(const r of base){
+    const k = r[dimReprog] ?? '—';
+    (g[k] ??= {int:0, d:0, c:0, f:0, co:0});
+    if(esMakeUp(r)){
+      g[k].int += val(r);
+      if(esDictada(r)) g[k].d += val(r);
+      else if(esCancelada(r)) g[k].c += val(r);
+      else if(esFutura(r)) g[k].f += val(r);
+    } else if(esCancelada(r)) g[k].co += val(r);
+  }
+  const arr = Object.entries(g).map(([k,x])=>({k,...x,
+      tR: x.co?100*x.int/x.co:0, tRec: x.co?100*x.d/x.co:0}))
+    .filter(x=>x.int>0 || x.co>0).sort((a,b)=>b.int-a.int || b.co-a.co);
+  const et = {proyecto:'Proyecto', ie:'Institución Educativa', salon:'Salón', grado:'Grado'}[dimReprog];
+  EXPORTS.reprogDim = { nombre:'recuperaciones_por_'+dimReprog,
+    cols:[et,'Intentos','Dictadas','Canceladas','Futuras','Canceladas originales','Tasa reprogramación %','Tasa recuperación %'],
+    rows: arr.map(x=>[x.k, x.int, x.d, x.c, x.f, x.co, x.tR.toFixed(1), x.tRec.toFixed(1)]) };
+  renderTable('tReprogDim', [
+    { k:'k', label:et, tip:'k' },
+    { k:'int', label:'Intentos', num:true, fmt:r=>fmtU(r.int) },
+    { k:'d', label:'Dictadas', num:true, fmt:r=>fmtU(r.d), style:()=>`color:${css('--teal')}` },
+    { k:'c', label:'Canceladas', num:true, fmt:r=>fmtU(r.c), style:()=>`color:${css('--coral')}` },
+    { k:'f', label:'Futuras', num:true, fmt:r=>fmtU(r.f) },
+    { k:'co', label:'Canceladas originales', num:true, fmt:r=>fmtU(r.co) },
+    { k:'tR', label:'Tasa reprogramación', num:true, fmt:r=>r.co?r.tR.toFixed(1)+'%':'—' },
+    { k:'tRec', label:'Tasa recuperación', num:true, fmt:r=>r.co?r.tRec.toFixed(1)+'%':'—' },
+  ], arr);
+  // detalle de cada intento
+  const det = [...mk].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
+  document.getElementById('reprogDetN').textContent = det.length ? `${nf.format(det.length)} sesiones de recuperación` : '';
+  const resultado = r => esDictada(r) ? 'Dictada' : esCancelada(r) ? 'Cancelada' : esFutura(r) ? 'Programada' : '—';
+  EXPORTS.reprogDet = { nombre:'detalle_recuperaciones',
+    cols:['Fecha','Resultado','Proyecto','IE','Salón','Grado','Motivo (si cancelada)','Profesor','Horas académicas'],
+    rows: det.map(r=>[r.fecha, resultado(r), r.proyecto, r.ie, r.salon, r.grado, r.motivo||'', r.profesor||'', r.academic_hours??'']) };
+  renderTable('tReprogDet', [
+    { k:'fecha', label:'Fecha' },
+    { k:'res', label:'Resultado', fmt:r=>{
+        const col = r.res==='Dictada'?'--teal':r.res==='Cancelada'?'--coral':'--ink3';
+        return `<span style="color:var(${col});font-weight:600">${r.res}</span>`; } },
+    { k:'proyecto', label:'Proyecto', tip:'proyecto' },
+    { k:'ie', label:'IE', tip:'ie' },
+    { k:'salon', label:'Salón', tip:'salon' },
+    { k:'grado', label:'Grado' },
+    { k:'motivo', label:'Motivo (si cancelada)', tip:'motivo' },
+    { k:'profesor', label:'Profesor' },
+    { k:'academic_hours', label:'Horas académicas', num:true },
+  ], det.map(r=>({...r, res:resultado(r)})));
 }
 
 /* ============ modales / detalle / csv ============ */
