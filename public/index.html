@@ -304,10 +304,10 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pMotivos">
       <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
-        <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tree">Treemap</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'motivos',motivosCanvasActivo(),'motivos_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+        <div class="p-tabs"><button class="p-tab active" data-t="tree">Treemap</button><button class="p-tab" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'motivos',motivosCanvasActivo(),'motivos_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
-      <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
-      <div class="p-body" id="motivosTree" style="display:none"><canvas id="chTreeMotivos"></canvas></div>
+      <div class="p-body" id="motivosTree"><canvas id="chTreeMotivos"></canvas></div>
+      <div class="p-body scroll" id="motivosChart" style="display:none"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
       <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
     </div>
     <div class="panel" id="pAntic">
@@ -864,21 +864,21 @@ function renderMotivosTree(canc){
     data:{ datasets:[{ tree, key:'v', groups:['tag','motivo'], spacing:1.5, borderWidth:1, borderColor:css('--surface'),
       backgroundColor: ctx => {
         if(ctx.type!=='data') return 'transparent';
-        const o = ctx.raw._data;
-        return o.children ? hexA(tc(o.tag), 0.22) : hexA(tc(o.tag), 0.85);
+        return ctx.raw.l ? hexA(tc(ctx.raw._data.tag), 0.85) : hexA(tc(ctx.raw._data.tag), 0.22);
       },
       captions:{ display:true, color:css('--ink2'), font:{family:'DM Sans',size:10,weight:600} },
-      labels:{ display:true, color:'#fff', font:[{family:'DM Sans',size:10,weight:600},{family:'DM Sans',size:9}],
+      labels:{ display: ctx => !!ctx.raw.l, color:'#fff', font:[{family:'DM Sans',size:10,weight:600},{family:'DM Sans',size:9}],
         formatter: ctx => {
-          const o = ctx.raw._data; if(!o || o.children) return '';
-          const nom = o.motivo.length>26 ? o.motivo.slice(0,24)+'…' : o.motivo;
-          return [nom, fmtU(o.v)+' · '+(100*o.v/total).toFixed(1)+'%'];
+          if(!ctx.raw.l) return '';
+          const mo = ctx.raw._data.motivo || '';
+          const nom = mo.length>26 ? mo.slice(0,24)+'…' : mo;
+          return [nom, fmtU(ctx.raw.v)+' · '+(100*ctx.raw.v/total).toFixed(1)+'%'];
         } } }]},
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, datalabels:{display:false},
         tooltip:{ callbacks:{
-          title: items => { const o = items[0].raw._data; return o.children ? o.tag : o.motivo; },
-          label: c => { const o = c.raw._data; const v = o.children ? c.raw.v : o.v; return ` ${o.children?'Categoría':o.tag} — ${fmtU(v)} (${(100*v/total).toFixed(1)}%)`; } } } } },
+          title: items => { const r = items[0].raw; return r.l ? r._data.motivo : r._data.tag; },
+          label: c => ` ${c.raw.l ? c.raw._data.tag : 'Categoría'} — ${fmtU(c.raw.v)} (${(100*c.raw.v/total).toFixed(1)}%)` } } } },
     plugins:[] });
 }
 
@@ -943,7 +943,7 @@ document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pRanking .p-tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); rankMode = b.dataset.r; renderRanking(window._base||[]);
 });
-let motivosTab = 'chart';
+let motivosTab = 'tree';
 const motivosCanvasActivo = () => motivosTab==='chart' ? 'chMotivos' : motivosTab==='tree' ? 'chTreeMotivos' : '';
 document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pMotivos .p-tab').forEach(x=>x.classList.remove('active'));
@@ -952,6 +952,7 @@ document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
   document.getElementById('motivosTree').style.display  = motivosTab==='tree'?'block':'none';
   document.getElementById('motivosTabla').style.display = motivosTab==='tabla'?'block':'none';
   if(motivosTab==='tree') renderMotivosTree(window._canc||[]);
+  else renderMotivos(window._canc||[]);
 });
 
 let anticMode = 'todas';
