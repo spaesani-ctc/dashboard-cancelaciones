@@ -40,7 +40,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--ink);
 .tabs { display:flex; gap:2px; margin-left:12px; }
 .tab { position:relative; font-size:11.5px; font-weight:500; padding:4px 12px 4px 19px; border-radius:6px; border:1px solid transparent; background:transparent; color:rgba(255,255,255,0.65); cursor:pointer; transition:background .15s,color .15s; }
 .tab:hover { color:#fff; background:rgba(255,255,255,0.08); }
-.tab.active { background:rgba(255,255,255,0.14); color:#fff; font-weight:600; border-color:rgba(255,255,255,0.2); }
+.tab.active { background:transparent; color:#fff; font-weight:600; }
 .tab.active::before { content:''; position:absolute; left:9px; top:50%; transform:translateY(-50%); width:3px; height:13px; border-radius:2px; background:#5DCAA5; }
 .top-meta { font-family:'DM Mono',monospace; font-size:10px; color:rgba(255,255,255,0.5); white-space:nowrap; margin-left:auto; }
 .top-right { margin-left:auto; display:flex; gap:6px; align-items:center; }
@@ -862,8 +862,8 @@ function renderCategorias(canc){
       borderColor:css('--surface'), borderWidth:2 }] },
     options:{ responsive:true, maintainAspectRatio:false, cutout:'45%',
       plugins:{ legend:{ position:'right', labels:{ color:css('--ink2'), font:{family:'DM Sans',size:10.5}, boxWidth:11, padding:8 } },
-        tooltip:{ callbacks:{ title: items => orden[items[0].dataIndex][0], label: c => ` ${fmtU(c.parsed)} (${(100*c.parsed/total).toFixed(1)}%)` } },
-        datalabels:{ color:'#fff', font:{family:'DM Sans',size:9.5,weight:600}, formatter: v => (100*v/total)>=6 ? fmtN(v) : '' } } },
+        tooltip:{ callbacks:{ title: items => orden[items[0].dataIndex][0], label: c => ` ${fmtU(c.parsed)}` } },
+        datalabels:{ color:'#fff', font:{family:'DM Sans',size:10,weight:600}, formatter: v => (100*v/total)>=5 ? (100*v/total).toFixed(1)+'%' : '' } } },
     plugins:[ChartDataLabels] });
 }
 
