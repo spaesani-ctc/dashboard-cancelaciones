@@ -867,18 +867,23 @@ function renderMotivosTree(canc){
         return ctx.raw.l ? hexA(tc(ctx.raw._data.tag), 0.85) : hexA(tc(ctx.raw._data.tag), 0.22);
       },
       captions:{ display:true, color:css('--ink2'), font:{family:'DM Sans',size:10,weight:600} },
-      labels:{ display: ctx => !!ctx.raw.l, color:'#fff', font:[{family:'DM Sans',size:10,weight:600},{family:'DM Sans',size:9}],
+      labels:{ display: ctx => !!ctx.raw.l, color:'#fff', overflow:'hidden', font:[{family:'DM Sans',size:10,weight:600},{family:'DM Sans',size:9}],
         formatter: ctx => {
           if(!ctx.raw.l) return '';
+          const w = ctx.raw.w||0, h = ctx.raw.h||0;
+          const maxCh = Math.floor((w-8)/6.2);
+          if(maxCh < 5 || h < 18) return '';
           const mo = ctx.raw._data.motivo || '';
-          const nom = mo.length>26 ? mo.slice(0,24)+'…' : mo;
-          return [nom, fmtU(ctx.raw.v)+' · '+(100*ctx.raw.v/total).toFixed(1)+'%'];
+          const nom = mo.length>maxCh ? mo.slice(0,Math.max(1,maxCh-1))+'…' : mo;
+          const linea2 = fmtU(ctx.raw.v)+' · '+(100*ctx.raw.v/total).toFixed(1)+'%';
+          return (h>34 && linea2.length<=maxCh) ? [nom, linea2] : [nom];
         } } }]},
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, datalabels:{display:false},
-        tooltip:{ callbacks:{
-          title: items => { const r = items[0].raw; return r.l ? r._data.motivo : r._data.tag; },
-          label: c => ` ${c.raw.l ? c.raw._data.tag : 'Categoría'} — ${fmtU(c.raw.v)} (${(100*c.raw.v/total).toFixed(1)}%)` } } } },
+        tooltip:{ filter: i => i.raw.l === 1,
+          callbacks:{
+          title: items => items.length ? items[0].raw._data.motivo : '',
+          label: c => ` ${c.raw._data.tag} — ${fmtU(c.raw.v)} (${(100*c.raw.v/total).toFixed(1)}%)` } } } },
     plugins:[] });
 }
 
