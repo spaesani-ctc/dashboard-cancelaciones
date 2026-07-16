@@ -36,6 +36,7 @@ SELECT
   rs.is_paid_session,
   rs.cancellation_reason_id AS reason_id,
   CASE WHEN rs.state = 'false' THEN COALESCE(rc.name, 'Sin especificar') END AS motivo,
+  CASE WHEN rs.state = 'false' THEN rc.category END AS tag,
   rs.risk_cancellation AS riesgo,
   rs.make_up_class,
   rs.given_by_external,

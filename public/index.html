@@ -12,6 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3.1.0/dist/chartjs-chart-treemap.min.js"></script>
 <style>
 :root {
   --bg: #F5F3EE; --surface: #FDFCFA; --surface2: #ECEAE4;
@@ -303,9 +304,10 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pMotivos">
       <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
-        <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'motivos','chMotivos','motivos_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+        <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tree">Treemap</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'motivos',motivosCanvasActivo(),'motivos_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
+      <div class="p-body" id="motivosTree" style="display:none"><canvas id="chTreeMotivos"></canvas></div>
       <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
     </div>
     <div class="panel" id="pAntic">
@@ -810,8 +812,8 @@ function renderSemanal(base){
 }
 
 function renderMotivos(canc){
-  const m = {};
-  for(const r of canc){ const k = r.motivo||'Sin especificar'; m[k]=(m[k]||0)+val(r); }
+  const m = {}, mTag = {};
+  for(const r of canc){ const k = r.motivo||'Sin especificar'; m[k]=(m[k]||0)+val(r); if(r.tag) mTag[k]=r.tag; }
   const orden = Object.entries(m).sort((a,b)=>b[1]-a[1]);
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
   // alto dinámico: ~26px por barra, scrolleable dentro del panel
@@ -827,13 +829,57 @@ function renderMotivos(canc){
       scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
   const total = orden.reduce((a,x)=>a+x[1],0)||1;
-  EXPORTS.motivos = { nombre:'motivos_cancelacion', cols:['Motivo', enHoras()?'Horas':'Sesiones', '% del total'],
-    rows: orden.map(([k,v])=>[k, Math.round(v*100)/100, (100*v/total).toFixed(1)]) };
+  EXPORTS.motivos = { nombre:'motivos_cancelacion', cols:['Motivo', 'Categoría', enHoras()?'Horas':'Sesiones', '% del total'],
+    rows: orden.map(([k,v])=>[k, mTag[k]||'Sin categoría', Math.round(v*100)/100, (100*v/total).toFixed(1)]) };
   renderTable('tMotivos', [
     { k:'motivo', label:'Motivo', tip:'motivo' },
+    { k:'tag', label:'Categoría' },
     { k:'v', label:enHoras()?'Horas':'Sesiones', num:true, fmt:r=>fmtU(r.v) },
     { k:'pct', label:'% del total', num:true, fmt:r=>r.pct.toFixed(1)+'%' },
-  ], orden.map(([k,v])=>({motivo:k, v, pct:100*v/total})));
+  ], orden.map(([k,v])=>({motivo:k, tag:mTag[k]||'Sin categoría', v, pct:100*v/total})));
+  if(motivosTab==='tree') renderMotivosTree(canc);
+}
+
+const hexA = (hex, a) => {
+  const h = hex.replace('#',''); const n = parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h, 16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+};
+const TAG_COLOR = () => ({
+  'IE': css('--coral'), 'Externo': css('--slate'), 'Docente CTC': css('--amber'),
+  'CTC': css('--burdeos'), 'Operativo': css('--accent2'), 'Otro': css('--ink3'), 'N/A': css('--ink4'),
+});
+function renderMotivosTree(canc){
+  const g = {};
+  for(const r of canc){
+    const t = r.tag||'Sin categoría', mo = r.motivo||'Sin especificar', k = t+'|'+mo;
+    (g[k] ??= {tag:t, motivo:mo, v:0}); g[k].v += val(r);
+  }
+  const tree = Object.values(g).filter(x=>x.v>0);
+  const total = tree.reduce((a,x)=>a+x.v,0)||1;
+  const TC = TAG_COLOR();
+  const fallback = [css('--teal'),css('--coral-l'),css('--amber'),css('--slate')];
+  let fi = 0; const colorTag = {};
+  const tc = t => colorTag[t] ??= (TC[t] || fallback[fi++ % fallback.length]);
+  mkChart('chTreeMotivos', { type:'treemap',
+    data:{ datasets:[{ tree, key:'v', groups:['tag','motivo'], spacing:1.5, borderWidth:1, borderColor:css('--surface'),
+      backgroundColor: ctx => {
+        if(ctx.type!=='data') return 'transparent';
+        const o = ctx.raw._data;
+        return o.children ? hexA(tc(o.tag), 0.22) : hexA(tc(o.tag), 0.85);
+      },
+      captions:{ display:true, color:css('--ink2'), font:{family:'DM Sans',size:10,weight:600} },
+      labels:{ display:true, color:'#fff', font:[{family:'DM Sans',size:10,weight:600},{family:'DM Sans',size:9}],
+        formatter: ctx => {
+          const o = ctx.raw._data; if(!o || o.children) return '';
+          const nom = o.motivo.length>26 ? o.motivo.slice(0,24)+'…' : o.motivo;
+          return [nom, fmtU(o.v)+' · '+(100*o.v/total).toFixed(1)+'%'];
+        } } }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, datalabels:{display:false},
+        tooltip:{ callbacks:{
+          title: items => { const o = items[0].raw._data; return o.children ? o.tag : o.motivo; },
+          label: c => { const o = c.raw._data; const v = o.children ? c.raw.v : o.v; return ` ${o.children?'Categoría':o.tag} — ${fmtU(v)} (${(100*v/total).toFixed(1)}%)`; } } } } },
+    plugins:[] });
 }
 
 function filaAgg(filas, clave, minProg){
@@ -897,11 +943,15 @@ document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pRanking .p-tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); rankMode = b.dataset.r; renderRanking(window._base||[]);
 });
+let motivosTab = 'chart';
+const motivosCanvasActivo = () => motivosTab==='chart' ? 'chMotivos' : motivosTab==='tree' ? 'chTreeMotivos' : '';
 document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pMotivos .p-tab').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  document.getElementById('motivosChart').style.display = b.dataset.t==='chart'?'block':'none';
-  document.getElementById('motivosTabla').style.display = b.dataset.t==='tabla'?'block':'none';
+  b.classList.add('active'); motivosTab = b.dataset.t;
+  document.getElementById('motivosChart').style.display = motivosTab==='chart'?'block':'none';
+  document.getElementById('motivosTree').style.display  = motivosTab==='tree'?'block':'none';
+  document.getElementById('motivosTabla').style.display = motivosTab==='tabla'?'block':'none';
+  if(motivosTab==='tree') renderMotivosTree(window._canc||[]);
 });
 
 let anticMode = 'todas';
@@ -1068,7 +1118,7 @@ function renderDetalle(){
 
 document.getElementById('btnCSV').onclick = () => {
   const canc = window._canc||[];
-  const cols = ['fecha','semana','dia','hora','proyecto','canal','ie','grado','room_id','salon','reason_id','motivo','profesor','make_up_class','given_by_external','academic_hours','duracion_min','cancellation_at'];
+  const cols = ['fecha','semana','dia','hora','proyecto','canal','ie','grado','room_id','salon','reason_id','motivo','tag','profesor','make_up_class','given_by_external','academic_hours','duracion_min','cancellation_at'];
   const ws = XLSX.utils.aoa_to_sheet([cols, ...canc.map(r=>cols.map(c=>r[c]??''))]);
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Cancelaciones');
   XLSX.writeFile(wb, `cancelaciones_${fDesde.value}_${fHasta.value}.xlsx`);
