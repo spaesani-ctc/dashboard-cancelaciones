@@ -346,7 +346,10 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <!-- VISTA REPROGRAMACIONES -->
   <div id="vistaReprog" style="display:none; flex:1; min-height:0; flex-direction:column; gap:10px;">
     <div class="panel" style="flex:none">
-      <div class="p-head"><span class="p-title">Intentos de reprogramación</span><span class="p-sub" id="reprogResumen"></span></div>
+      <div class="p-head"><span class="p-title">Intentos de reprogramación</span><span class="p-sub" id="reprogResumen"></span>
+        <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'reprogRes','chReprog','intentos_reprogramacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+      </div>
+      <div class="p-body" id="reprogChartWrap" style="height:118px; flex:none"><canvas id="chReprog"></canvas></div>
     </div>
     <div class="panel" style="flex:1; min-height:0">
       <div class="p-head"><span class="p-title">Recuperaciones por dimensión</span>
@@ -1167,8 +1170,24 @@ function renderReprog(base){
   const tR = v(cancOrig) ? 100*v(mk)/v(cancOrig) : 0;
   const tRec = v(cancOrig) ? 100*v(mkD)/v(cancOrig) : 0;
   document.getElementById('reprogResumen').innerHTML = mk.length
-    ? `${fmtU(v(mk))} intentos — <span style="color:var(--teal)">✓ ${fmtU(v(mkD))} dictadas</span> · <span style="color:var(--coral)">✗ ${fmtU(v(mkC))} canceladas</span> · ${fmtU(v(mkF))} futuras · tasa de reprogramación ${tR.toFixed(1)}% · tasa de recuperación ${tRec.toFixed(1)}% (sobre ${fmtU(v(cancOrig))} canceladas)`
+    ? `${fmtU(v(mk))} intentos · tasa de reprogramación ${tR.toFixed(1)}% · tasa de recuperación ${tRec.toFixed(1)}% (sobre ${fmtU(v(cancOrig))} canceladas)`
     : 'Sin recuperaciones registradas en el período y filtros elegidos. Los intentos aparecen cuando el backoffice marca una sesión como clase de recuperación.';
+  const wrap = document.getElementById('reprogChartWrap');
+  wrap.style.display = mk.length ? 'block' : 'none';
+  if(mk.length){
+    const tot = v(mk)||1;
+    const CATS_R = [['Dictadas', v(mkD), css('--teal')], ['Canceladas', v(mkC), css('--coral')], ['Programadas (futuras)', v(mkF), css('--ink4')]].filter(x=>x[1]>0);
+    EXPORTS.reprogRes = { nombre:'intentos_reprogramacion', cols:['Resultado', enHoras()?'Horas':'Sesiones', '% de los intentos'],
+      rows: CATS_R.map(([n,x])=>[n, Math.round(x*100)/100, (100*x/tot).toFixed(1)]) };
+    mkChart('chReprog', { type:'bar', data:{ labels:CATS_R.map(x=>x[0]),
+      datasets:[{ data:CATS_R.map(x=>x[1]), backgroundColor:CATS_R.map(x=>x[2]), borderRadius:3, maxBarThickness:22,
+        datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'DM Sans',size:9.5,weight:600},
+          formatter:x=> x ? `${enHoras()?nf.format(Math.round(x)):nf.format(x)} · ${(100*x/tot).toFixed(1)}%` : '' } }]},
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:80}},
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{ label:c=>` ${fmtU(c.parsed.x)} (${(100*c.parsed.x/tot).toFixed(1)}%)` }} },
+        scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10.5}},grid:{display:false}} } },
+      plugins:[ChartDataLabels] });
+  }
   // por dimensión (solo filas con actividad de recuperación o canceladas)
   const g = {};
   for(const r of base){
@@ -1239,13 +1258,13 @@ function renderDetalle(){
   const pagina = filas.slice(detallePag*porPag,(detallePag+1)*porPag);
   document.getElementById('detN').textContent = `${nf.format(filas.length)} sesiones`;
   const cols = [
-    ['fecha','Fecha'],['cancellation_at','Cancelada el'],['antic','Anticipación'],['proyecto','Proyecto'],['ie','IE'],['salon','Salón'],['grado','Grado'],
+    ['fecha','Fecha y hora'],['cancellation_at','Cancelada el'],['antic','Anticipación'],['proyecto','Proyecto'],['ie','IE'],['salon','Salón'],['grado','Grado'],
     ['motivo','Motivo'],['profesor','Profesor'],['academic_hours','Horas académicas'],['make_up_class','Clase de recuperación']
   ];
   const el = document.getElementById('tDetalle');
   el.innerHTML =
     '<thead><tr>' + cols.map(([k,l])=>`<th data-k="${k}">${l}${s.k===k?(s.dir==='asc'?' ▲':' ▼'):''}</th>`).join('') + '</tr></thead><tbody>' +
-    pagina.map(r=>`<tr><td>${r.fecha}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td><td>${bucketAntic(r)}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td class="num">${r.academic_hours??'—'}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td></tr>`).join('') + '</tbody>';
+    pagina.map(r=>`<tr><td style="white-space:nowrap">${r.fecha}${r.hora_inicio?` · ${String(r.hora_inicio).slice(0,5)}`:''}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td><td>${bucketAntic(r)}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td class="num">${r.academic_hours??'—'}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td></tr>`).join('') + '</tbody>';
   el.querySelectorAll('th').forEach(th => th.onclick = () => {
     const k = th.dataset.k;
     const prev = SORT['tDetalle'];
