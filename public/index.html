@@ -12,7 +12,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3.1.0/dist/chartjs-chart-treemap.min.js"></script>
 <style>
 :root {
   --bg: #F5F3EE; --surface: #FDFCFA; --surface2: #ECEAE4;
@@ -304,10 +303,9 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pMotivos">
       <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
-        <div class="p-tabs"><button class="p-tab active" data-t="tree">Treemap</button><button class="p-tab" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'motivos',motivosCanvasActivo(),'motivos_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+        <div class="p-tabs"><button class="p-tab active" data-t="chart">Gráfico</button><button class="p-tab" data-t="tabla">Tabla</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'motivos',motivosCanvasActivo(),'motivos_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
-      <div class="p-body" id="motivosTree"><canvas id="chTreeMotivos"></canvas></div>
-      <div class="p-body scroll" id="motivosChart" style="display:none"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
+      <div class="p-body" id="motivosChart" style="display:flex;flex-direction:column;gap:5px"><div id="motivosStrip" style="flex:none"></div><div id="motivosScroll" style="flex:1;min-height:0;overflow:auto;position:relative"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div></div>
       <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
     </div>
     <div class="panel" id="pAntic">
@@ -816,19 +814,34 @@ function renderMotivos(canc){
   for(const r of canc){ const k = r.motivo||'Sin especificar'; m[k]=(m[k]||0)+val(r); if(r.tag) mTag[k]=r.tag; }
   const orden = Object.entries(m).sort((a,b)=>b[1]-a[1]);
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
+  const total = orden.reduce((a,x)=>a+x[1],0)||1;
+  const TC = TAG_COLOR();
+  const fallback = [css('--teal'),css('--coral-l'),css('--amber'),css('--slate')];
+  let fi = 0; const colorTag = {};
+  const tc = t => colorTag[t] ??= (TC[t] || fallback[fi++ % fallback.length]);
+  const tagDe = k => mTag[k]||'Sin categoría';
+  // franja apilada: peso de cada categoría
+  const porTag = {};
+  for(const [k,v] of orden) porTag[tagDe(k)] = (porTag[tagDe(k)]||0) + v;
+  const tagsOrd = Object.entries(porTag).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('motivosStrip').innerHTML =
+    '<div style="display:flex;height:22px;border-radius:5px;overflow:hidden;gap:1px">' +
+    tagsOrd.map(([t,v])=>{
+      const pct = 100*v/total;
+      const txt = pct>=14 ? `${t} · ${pct.toFixed(0)}%` : (pct>=7 ? `${pct.toFixed(0)}%` : '');
+      return `<div title="${t}: ${fmtU(v)} (${pct.toFixed(1)}%)" style="width:${pct}%;background:${hexA(tc(t),0.85)};display:flex;align-items:center;justify-content:center;color:#fff;font-size:9.5px;font-weight:600;white-space:nowrap;overflow:hidden">${txt}</div>`;
+    }).join('') + '</div>';
   // alto dinámico: ~26px por barra, scrolleable dentro del panel
-  const cont = document.getElementById('motivosChart');
   const inner = document.getElementById('motivosInner');
-  inner.style.height = Math.max(cont.clientHeight - 6, orden.length * 26 + 24) + 'px';
+  inner.style.height = Math.max(document.getElementById('motivosScroll').clientHeight - 6, orden.length * 26 + 24) + 'px';
   mkChart('chMotivos', { type:'bar', data:{ labels:orden.map(x=>x[0].length>34?x[0].slice(0,32)+'…':x[0]),
-    datasets:[{ data:orden.map(x=>x[1]), backgroundColor:css('--coral-l'), borderRadius:3, maxBarThickness:18,
+    datasets:[{ data:orden.map(x=>x[1]), backgroundColor:orden.map(([k])=>hexA(tc(tagDe(k)),0.85)), borderRadius:3, maxBarThickness:18,
       datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'DM Sans',size:9,weight:600}, formatter:v=>fmtN(v) } }] },
     options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:38}},
       plugins:{ legend:{display:false},
-        tooltip:{ callbacks:{ title:(items)=>orden[items[0].dataIndex][0], label:c=>' '+fmtU(c.parsed.x) } } },
+        tooltip:{ callbacks:{ title:(items)=>orden[items[0].dataIndex][0], label:c=>` ${tagDe(orden[c.dataIndex][0])} — ${fmtU(c.parsed.x)}` } } },
       scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
-  const total = orden.reduce((a,x)=>a+x[1],0)||1;
   EXPORTS.motivos = { nombre:'motivos_cancelacion', cols:['Motivo', 'Categoría', enHoras()?'Horas':'Sesiones', '% del total'],
     rows: orden.map(([k,v])=>[k, mTag[k]||'Sin categoría', Math.round(v*100)/100, (100*v/total).toFixed(1)]) };
   renderTable('tMotivos', [
@@ -848,44 +861,6 @@ const TAG_COLOR = () => ({
   'IE': css('--coral'), 'Externo': css('--slate'), 'Docente CTC': css('--amber'),
   'CTC': css('--burdeos'), 'Operativo': css('--accent2'), 'Otro': css('--ink3'), 'N/A': css('--ink4'),
 });
-function renderMotivosTree(canc){
-  const g = {};
-  for(const r of canc){
-    const t = r.tag||'Sin categoría', mo = r.motivo||'Sin especificar', k = t+'|'+mo;
-    (g[k] ??= {tag:t, motivo:mo, v:0}); g[k].v += val(r);
-  }
-  const tree = Object.values(g).filter(x=>x.v>0);
-  const total = tree.reduce((a,x)=>a+x.v,0)||1;
-  const TC = TAG_COLOR();
-  const fallback = [css('--teal'),css('--coral-l'),css('--amber'),css('--slate')];
-  let fi = 0; const colorTag = {};
-  const tc = t => colorTag[t] ??= (TC[t] || fallback[fi++ % fallback.length]);
-  mkChart('chTreeMotivos', { type:'treemap',
-    data:{ datasets:[{ tree, key:'v', groups:['tag','motivo'], spacing:1.5, borderWidth:1, borderColor:css('--surface'),
-      backgroundColor: ctx => {
-        if(ctx.type!=='data') return 'transparent';
-        return ctx.raw.l ? hexA(tc(ctx.raw._data.tag), 0.85) : hexA(tc(ctx.raw._data.tag), 0.22);
-      },
-      captions:{ display:true, color:css('--ink2'), font:{family:'DM Sans',size:10,weight:600} },
-      labels:{ display: ctx => !!ctx.raw.l, color:'#fff', overflow:'hidden', font:[{family:'DM Sans',size:10,weight:600},{family:'DM Sans',size:9}],
-        formatter: ctx => {
-          if(!ctx.raw.l) return '';
-          const w = ctx.raw.w||0, h = ctx.raw.h||0;
-          const maxCh = Math.floor((w-8)/6.2);
-          if(maxCh < 5 || h < 18) return '';
-          const mo = ctx.raw._data.motivo || '';
-          const nom = mo.length>maxCh ? mo.slice(0,Math.max(1,maxCh-1))+'…' : mo;
-          const linea2 = fmtU(ctx.raw.v)+' · '+(100*ctx.raw.v/total).toFixed(1)+'%';
-          return (h>34 && linea2.length<=maxCh) ? [nom, linea2] : [nom];
-        } } }]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, datalabels:{display:false},
-        tooltip:{ filter: i => i.raw.l === 1,
-          callbacks:{
-          title: items => items.length ? items[0].raw._data.motivo : '',
-          label: c => ` ${c.raw._data.tag} — ${fmtU(c.raw.v)} (${(100*c.raw.v/total).toFixed(1)}%)` } } } },
-    plugins:[] });
-}
 
 function filaAgg(filas, clave, minProg){
   const g = {};
@@ -948,16 +923,14 @@ document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pRanking .p-tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); rankMode = b.dataset.r; renderRanking(window._base||[]);
 });
-let motivosTab = 'tree';
-const motivosCanvasActivo = () => motivosTab==='chart' ? 'chMotivos' : motivosTab==='tree' ? 'chTreeMotivos' : '';
+let motivosTab = 'chart';
+const motivosCanvasActivo = () => motivosTab==='chart' ? 'chMotivos' : '';
 document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pMotivos .p-tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); motivosTab = b.dataset.t;
-  document.getElementById('motivosChart').style.display = motivosTab==='chart'?'block':'none';
-  document.getElementById('motivosTree').style.display  = motivosTab==='tree'?'block':'none';
+  document.getElementById('motivosChart').style.display = motivosTab==='chart'?'flex':'none';
   document.getElementById('motivosTabla').style.display = motivosTab==='tabla'?'block':'none';
-  if(motivosTab==='tree') renderMotivosTree(window._canc||[]);
-  else renderMotivos(window._canc||[]);
+  if(motivosTab==='chart') renderMotivos(window._canc||[]);
 });
 
 let anticMode = 'todas';
