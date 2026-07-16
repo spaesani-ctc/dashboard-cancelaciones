@@ -1034,14 +1034,22 @@ document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
 });
 
 let anticMode = 'todas';
-function bucketAntic(r){
-  const raw = r.cancellation_at;
-  if(!raw) return 'Sin dato';
+function parseCanc(raw){
+  if(!raw) return null;
   let x = String(raw).replace(' ','T').replace(/\.(\d{3})\d+/, '.$1');
   if(/[+\-]\d{2}$/.test(x)) x += ':00';
   else if(!/(Z|[+\-]\d{2}:\d{2})$/.test(x)) x += 'Z';
-  const canc = new Date(x);
-  if(isNaN(canc)) return 'Sin dato';
+  const d = new Date(x);
+  return isNaN(d) ? null : d;
+}
+// hora local de Bogotá para mostrar (el dato viene en UTC)
+function fmtCancEl(raw){
+  const d = parseCanc(raw);
+  return d ? d.toLocaleString('sv-SE', { timeZone:'America/Bogota' }).slice(0,16) : (raw ? String(raw).slice(0,16) : '');
+}
+function bucketAntic(r){
+  const canc = parseCanc(r.cancellation_at);
+  if(!canc) return 'Sin dato';
   const sched = new Date(`${r.fecha}T${r.hora_inicio||'00:00:00'}-05:00`);  // America/Bogota
   if(canc >= sched) return 'Posterior al inicio de la sesión';
   return (sched - canc)/3.6e6 < 24 ? 'Con menos de 24 h' : 'Con 24 h o más';
@@ -1277,7 +1285,7 @@ function renderDetalle(){
   const el = document.getElementById('tDetalle');
   el.innerHTML =
     '<thead><tr>' + cols.map(([k,l])=>`<th data-k="${k}">${l}${s.k===k?(s.dir==='asc'?' ▲':' ▼'):''}</th>`).join('') + '</tr></thead><tbody>' +
-    pagina.map(r=>`<tr><td style="white-space:nowrap">${r.fecha}${r.hora_inicio?` · ${String(r.hora_inicio).slice(0,5)}`:''}</td><td>${(r.cancellation_at||'').slice(0,16).replace('T',' ')}</td><td>${bucketAntic(r)}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td class="num">${r.academic_hours??'—'}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td></tr>`).join('') + '</tbody>';
+    pagina.map(r=>`<tr><td style="white-space:nowrap">${r.fecha}${r.hora_inicio?` · ${String(r.hora_inicio).slice(0,5)}`:''}</td><td title="hora de Bogotá">${fmtCancEl(r.cancellation_at)}</td><td>${bucketAntic(r)}</td><td title="${r.proyecto}">${r.proyecto}</td><td title="${r.ie}">${r.ie}</td><td><a class="lk" target="_blank" href="https://backoffice.crackthecode.la/dashboard/rooms/${r.room_id}">${r.salon}</a></td><td>${r.grado}</td><td title="${r.motivo||''}">${r.motivo||''}</td><td>${r.profesor||''}</td><td class="num">${r.academic_hours??'—'}</td><td>${r.make_up_class==='true'?'<span class="badge">sí</span>':''}</td></tr>`).join('') + '</tbody>';
   el.querySelectorAll('th').forEach(th => th.onclick = () => {
     const k = th.dataset.k;
     const prev = SORT['tDetalle'];
