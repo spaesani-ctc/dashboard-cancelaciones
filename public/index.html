@@ -276,11 +276,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <div class="combo" id="cbMotivos"></div>
   <button class="combo-btn" id="btnMasFiltros">Más filtros <span style="opacity:.5">▾</span></button>
   <div id="masFiltros" style="display:none; gap:6px; align-items:center;">
-    <div class="scope" id="fPago" title="Qué cancelaciones cuentan en todo el dashboard (no afecta dictadas ni futuras)">
-      <button class="scope-btn active" data-p="todas">Todas</button>
-      <button class="scope-btn" data-p="pagadas">Pagadas</button>
-      <button class="scope-btn" data-p="nopagadas">No pagadas</button>
-    </div>
+    <div class="combo" id="cbPago"></div>
     <div class="combo" id="cbCanal"></div>
     <div class="combo" id="cbAutonomia"></div>
     <div class="combo" id="cbCurricula"></div>
@@ -564,14 +560,6 @@ document.getElementById('vistas').addEventListener('click', e => {
   if(ROWS.length) render();
 });
 
-/* ============ pago (global) ============ */
-document.getElementById('fPago').addEventListener('click', e => {
-  if(!e.target.dataset.p) return;
-  document.querySelectorAll('#fPago .scope-btn').forEach(b=>b.classList.remove('active'));
-  e.target.classList.add('active');
-  PAGO = e.target.dataset.p; etiquetaMas(); render();
-});
-
 /* ============ unidad ============ */
 document.getElementById('unidad').addEventListener('click', e => {
   if(!e.target.dataset.u) return;
@@ -586,9 +574,10 @@ const fmtU = v => enHoras() ? nf.format(Math.round(v))+' h' : nf.format(v);
 const PAGADA = v => /^paid/.test(String(v)) || String(v)==='True';
 
 /* ============ filtros ============ */
-const F = { canal:new Set(), proyecto:new Set(), ie:new Set(), grado:new Set(), salon:new Set(), categoria:new Set(), autonomia:new Set(), curricula:new Set() };
-let PAGO = 'todas';                      // 'todas' | 'pagadas' | 'nopagadas' — solo restringe canceladas
-const pasaPago = r => PAGO==='todas' || (PAGO==='pagadas') === PAGADA(r.is_paid_session);
+const F = { canal:new Set(), proyecto:new Set(), ie:new Set(), grado:new Set(), salon:new Set(), categoria:new Set(), autonomia:new Set(), curricula:new Set(), pago:new Set() };
+// pago: combo multi (vacío o ambos = todas) — solo restringe canceladas
+const pasaPago = r => F.pago.size===0 || (F.pago.has('Pagadas') && PAGADA(r.is_paid_session)) || (F.pago.has('No pagadas') && !PAGADA(r.is_paid_session));
+const sufPago = () => F.pago.size===1 ? (F.pago.has('Pagadas') ? '_pagadas' : '_nopagadas') : '';
 let MOTIVOS_EXCL = null;                 // Set de nombres de motivo excluidos
 const DEFAULT_EXCL_IDS = [26, 33, 34, 35];   // Inicio de proyecto atrasado · Cambio operativo BO · Feriado · Vacaciones
 function defaultExcl(){
@@ -619,7 +608,7 @@ document.getElementById('btnMasFiltros').onclick = () => {
   etiquetaMas();
 };
 function etiquetaMas(){
-  const n = F.canal.size + F.autonomia.size + F.curricula.size + (PAGO!=='todas' ? 1 : 0);
+  const n = F.canal.size + F.autonomia.size + F.curricula.size + (F.pago.size===1 ? 1 : 0);
   document.getElementById('btnMasFiltros').innerHTML =
     (n ? `Más filtros · ${n} ` : 'Más filtros ') + `<span style="opacity:.5">${masAbierto?'▴':'▾'}</span>`;
   document.getElementById('btnMasFiltros').classList.toggle('active-f', n>0);
@@ -627,6 +616,7 @@ function etiquetaMas(){
 
 /* combos multi-choice con buscador */
 const COMBOS = [
+  { id:'cbPago', k:'pago', label:'Pago', plural:'Pago', todos:'Todas', vals: () => ['Pagadas','No pagadas'] },
   { id:'cbCanal', k:'canal', label:'Canal', plural:'Canales', todos:'Todos', vals: () => uniqDe('canal','canal') },
   { id:'cbProyecto', k:'proyecto', label:'Proyecto', plural:'Proyectos', todos:'Todos',
     vals: () => [...new Set(ROWS.filter(r=>pasaFiltros(r,'proyecto')).map(r=>r.project_id+' · '+(r.proyecto||''))) ].sort((a,b)=>a.localeCompare(b,'es',{numeric:true})) },
@@ -662,7 +652,7 @@ function mkCombo(cfg){
     }).join('') || '<div class="combo-item" style="cursor:default">Sin opciones</div>';
     list.querySelectorAll('input[type=checkbox]').forEach(c => c.onchange = () => {
       if(c.checked) sel.add(c.dataset.v); else sel.delete(c.dataset.v);
-      btnLabel(); render();
+      btnLabel(); if(cfg.k==='pago'||cfg.k==='canal'||cfg.k==='autonomia'||cfg.k==='curricula') etiquetaMas(); render();
     });
   };
   el.querySelector('[data-a="todos"]').onclick = () => { cfg.vals().forEach(v=>sel.add(String(v))); pinta(search.value); btnLabel(); render(); };
@@ -720,8 +710,6 @@ document.addEventListener('click', cerrarPops);
 document.getElementById('btnLimpiar').onclick = () => {
   Object.values(F).forEach(s=>s.clear());
   MOTIVOS_EXCL = defaultExcl();
-  PAGO = 'todas';
-  document.querySelectorAll('#fPago .scope-btn').forEach(b=>b.classList.toggle('active', b.dataset.p==='todas'));
   poblarFiltros(); render();
 };
 
@@ -936,10 +924,10 @@ function renderSemanal(base){
     } catch(e){ return false; }
   };
   EXPORTS.semanal = semVista==='cat'
-    ? { nombre:'evolucion_semanal_por_categoria'+(PAGO!=='todas'?'_'+PAGO:''),
+    ? { nombre:'evolucion_semanal_por_categoria'+sufPago(),
         cols:['Semana', ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]), 'Total', '% De cancelación'],
         rows: labels.map((s,i)=>[s, ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]).map(t=>Math.round((sem[s].cats[t]||0)*100)/100), Math.round(sem[s].c*100)/100, pcts[i].toFixed(1)]) }
-    : { nombre:'evolucion_semanal'+(PAGO!=='todas'?'_'+PAGO:''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas', (enHoras()?'Horas':'Sesiones')+' programadas', 'Recuperaciones dictadas', '% De cancelación'],
+    : { nombre:'evolucion_semanal'+sufPago(), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas', (enHoras()?'Horas':'Sesiones')+' programadas', 'Recuperaciones dictadas', '% De cancelación'],
         rows: labels.map((s,i)=>[s, Math.round(sem[s].cAll*100)/100, Math.round(sem[s].p*100)/100, Math.round(sem[s].rd*100)/100, pcts[i].toFixed(1)]) };
   const cTotArr = labels.map(s=>sem[s].c);
   const flip = ctx => {
@@ -1207,7 +1195,7 @@ function renderAnticipacion(canc){
   const tot = vals.reduce((a,b)=>a+b,0)||1;
   const COLOR_CAT = {'Posterior al inicio de la sesión':css('--coral'),'Con menos de 24 h':css('--amber'),'Con 24 h o más':css('--ink3'),'Sin dato':css('--ink4')};
   const colores = CATS.map(c=>COLOR_CAT[c]);
-  EXPORTS.antic = { nombre:'anticipacion_cancelacion'+(PAGO!=='todas'?'_'+PAGO:''),
+  EXPORTS.antic = { nombre:'anticipacion_cancelacion'+sufPago(),
     cols:['Anticipación','Sesiones','Horas académicas','% ('+(enHoras()?'horas':'sesiones')+')'],
     rows: CATS.map(c=>[c, agg[c].s, Math.round(agg[c].h*100)/100, (100*(enHoras()?agg[c].h:agg[c].s)/tot).toFixed(1)]) };
   mkChart('chAntic', { type:'bar', data:{ labels:CATS, datasets:[{ data:vals, backgroundColor:colores, borderRadius:3, maxBarThickness:26,
