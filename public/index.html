@@ -336,6 +336,12 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 
   <!-- VISTA SESIONES Y HORAS -->
   <div id="vistaSesiones">
+    <div class="panel" id="pSesComp" style="flex:none; height:225px; margin-bottom:10px;">
+      <div class="p-head"><span class="p-title" id="sesCompTitle">Composición por Proyecto</span>
+        <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesComp','chSesComp','composicion_por_dimension')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+      </div>
+      <div class="p-body"><canvas id="chSesComp"></canvas></div>
+    </div>
     <div class="panel" id="pSesiones">
       <div class="p-head">
         <span class="p-title">Sesiones y horas académicas</span>
@@ -349,10 +355,8 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
           <button class="scope-btn active" data-c="resumen">General</button>
           <button class="scope-btn" data-c="antic">Anticipación</button>
           <button class="scope-btn" data-c="pagadas">Pagadas</button>
-          <button class="scope-btn" data-c="cat">Categorías</button>
         </div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesiones','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
-      <div class="p-sub" id="sesStrip" style="margin:0 0 6px"></div>
       <div class="p-body scroll"><table class="t" id="tSesiones"></table></div>
       <div class="pag" style="justify-content:flex-start"><span class="dim" id="notaCobertura"></span></div>
     </div>
@@ -1239,7 +1243,6 @@ document.getElementById('dimTabs').addEventListener('click', e => {
   e.target.classList.add('active'); dimSesiones = e.target.dataset.d; renderSesiones(window._base||[]);
 });
 function renderSesiones(base){
-  if(colMode==='cat'){ renderSesionesCat(base); return; }
   const g = {};
   let sinHoras = 0, tot = 0;
   for(const r of base){
@@ -1293,8 +1296,23 @@ function renderSesiones(base){
     if(prev && prev.k===k && prev.dir==='asc') SORT['tSesiones'] = null;
     renderSesiones(window._base||[]);
   });
-  document.getElementById('sesStrip').textContent =
-    `Totales del alcance: ${nf.format(T.pS)} programadas · ${nf.format(T.dS)} dictadas · ${nf.format(T.fS)} futuras · ${nf.format(T.cS)} canceladas · ${totRow.pctS.toFixed(1)}% de cancelación`;
+  const top = Object.entries(g).map(([k,v])=>({k,...v})).sort((a,b)=>b.pS-a.pS).slice(0,10);
+  document.getElementById('sesCompTitle').textContent = `Composición por ${et} — sesiones (top ${top.length})`;
+  EXPORTS.sesComp = { nombre:'composicion_por_'+dimSesiones, cols:[et,'Dictadas','Canceladas','Futuras','Programadas'],
+    rows: top.map(r=>[r.k, r.dS, r.cS, r.fS, r.pS]) };
+  mkChart('chSesComp', { type:'bar', data:{ labels: top.map(r=>String(r.k).length>26?String(r.k).slice(0,25)+'…':r.k),
+    datasets:[
+      { label:'Dictadas', data:top.map(r=>r.dS), backgroundColor:hexA(css('--teal'),0.75), stack:'s', borderRadius:2 },
+      { label:'Canceladas', data:top.map(r=>r.cS), backgroundColor:hexA(css('--coral-l'),0.95), stack:'s', borderRadius:2 },
+      { label:'Futuras', data:top.map(r=>r.fS), backgroundColor:hexA(css('--ink4'),0.8), stack:'s', borderRadius:2 },
+    ]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:12}},
+        datalabels:{display:false},
+        tooltip:{callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.x)} sesiones` }} },
+      scales:{ x:{stacked:true,ticks:{color:css('--ink3'),font:{size:9.5}},grid:{color:css('--border2')}},
+               y:{stacked:true,ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
+    plugins:[ChartDataLabels] });
   document.getElementById('notaCobertura').textContent =
     `Las columnas "Horas" son horas académicas. El dato está cargado en el ${tot?Math.round(100*(tot-sinHoras)/tot):0}% de las sesiones de este alcance — donde falta, la sesión suma 0 horas.`;
 }
@@ -1382,34 +1400,6 @@ function renderReprog(base){
     { k:'profesor', label:'Profesor' },
     { k:'academic_hours', label:'Horas académicas', num:true },
   ], det.map(r=>({...r, res:resultado(r)})));
-}
-
-function renderSesionesCat(base){
-  const canc = base.filter(esCancelada);
-  const et = {proyecto:'Proyecto', ie:'Institución Educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
-  const g = {}, catTot = {};
-  for(const r of canc){
-    const k = r[dimSesiones] ?? '—', t = r.tag||'Sin categoría';
-    (g[k] ??= {}); g[k][t] = (g[k][t]||0) + 1;
-    catTot[t] = (catTot[t]||0) + 1;
-  }
-  const cats = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-  const filas = Object.entries(g).map(([k,vals])=>{
-    const row = { k, total: 0 };
-    for(const c of cats){ row[c] = vals[c]||0; row.total += vals[c]||0; }
-    return row;
-  }).sort((a,b)=>b.total-a.total);
-  EXPORTS.sesiones = { nombre:'canceladas_por_categoria_y_'+dimSesiones, cols:[et, ...cats, 'Total'],
-    rows: filas.map(r=>[r.k, ...cats.map(c=>r[c]), r.total]) };
-  renderTable('tSesiones', [
-    { k:'k', label:et, tip:'k' },
-    ...cats.map(c=>({ k:c, label:c.length>16?c.slice(0,15)+'…':c, num:true, fmt:r=>r[c]?nf.format(r[c]):'—' })),
-    { k:'total', label:'Total', num:true, fmt:r=>nf.format(r.total), style:()=>'font-weight:600' },
-  ], filas);
-  document.getElementById('sesStrip').textContent =
-    `Totales del alcance: ${nf.format(canc.length)} sesiones canceladas en ${filas.length} ${et.toLowerCase()}${filas.length===1?'':'s'}`;
-  document.getElementById('notaCobertura').textContent =
-    'Sesiones canceladas por categoría del motivo (conteo de sesiones, respeta los filtros activos).';
 }
 
 /* ============ modales / detalle / csv ============ */
