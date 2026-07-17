@@ -19,14 +19,14 @@
   --ink: #1A1916; --ink2: #5A5750; --ink3: #9A9790; --ink4: #C5C3BC;
   --border: #E0DDD6; --border2: rgba(26,25,22,0.06);
   --accent: #2D4A3E; --accent2: #8B5E3C;
-  --teal: #1D9E75; --teal-l: #5DCAA5; --coral: #D85A30; --coral-l: #F0997B; --amber: #BA7517; --slate: #4E6E8E; --burdeos: #7E2F33;
+  --teal: #1D9E75; --teal-l: #5DCAA5; --coral: #D85A30; --coral-l: #F0997B; --amber: #BA7517; --slate: #47709F; --burdeos: #7E2F33; --plum: #8A6FB1;
 }
 [data-theme="dark"] {
   --bg: #141412; --surface: #1E1D1B; --surface2: #282623;
   --ink: #F0EDE6; --ink2: #B5B2AA; --ink3: #787570; --ink4: #4A4845;
   --border: #2E2D2A; --border2: rgba(240,237,230,0.06);
   --accent: #5A8A70; --accent2: #C4845A;
-  --teal: #2DC48F; --teal-l: #1A8F68; --coral: #E87050; --coral-l: #C04820; --amber: #D4901A; --slate: #9DBBD6; --burdeos: #D98A8F;
+  --teal: #2DC48F; --teal-l: #1A8F68; --coral: #E87050; --coral-l: #C04820; --amber: #D4901A; --slate: #9DBBD6; --burdeos: #D98A8F; --plum: #B49BD6;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -352,6 +352,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
           <button class="scope-btn" data-c="cat">Categorías</button>
         </div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesiones','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
+      <div class="p-sub" id="sesStrip" style="margin:0 0 6px"></div>
       <div class="p-body scroll"><table class="t" id="tSesiones"></table></div>
       <div class="pag" style="justify-content:flex-start"><span class="dim" id="notaCobertura"></span></div>
     </div>
@@ -909,11 +910,12 @@ function renderSemanal(base){
         rows: labels.map((s,i)=>[s, ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]).map(t=>Math.round((sem[s].cats[t]||0)*100)/100), Math.round(sem[s].c*100)/100, pcts[i].toFixed(1)]) }
     : { nombre:'evolucion_semanal'+(semMode==='pagadas'?'_pagadas':''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas'+(semMode==='pagadas'?' pagadas':''), (enHoras()?'Horas':'Sesiones')+' programadas', 'Recuperaciones dictadas', semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación'],
         rows: labels.map((s,i)=>[s, Math.round(sem[s].cAll*100)/100, Math.round(sem[s].p*100)/100, Math.round(sem[s].rd*100)/100, pcts[i].toFixed(1)]) };
+  const cTotArr = labels.map(s=>sem[s].c);
   const flip = ctx => {
     try {
-      if(!ctx.chart.isDatasetVisible(1)) return false;
+      if(!ctx.chart.isDatasetVisible(ctx.chart.data.datasets.length-1)) return false;
       const i = ctx.dataIndex;
-      const yBar = ctx.chart.scales.y.getPixelForValue(ctx.chart.data.datasets[0].data[i]);
+      const yBar = ctx.chart.scales.y.getPixelForValue(cTotArr[i]);
       const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
       return (yPct - yBar) >= 0 && (yPct - yBar) < 42 && yPct < ctx.chart.scales.y.bottom - 26;
     } catch(e){ return false; }
@@ -926,7 +928,7 @@ function renderSemanal(base){
   const cats = catsAll.slice(0, 5);
   const catsResto = [...catsAll.slice(5), ...(catTot['Sin categoría'] ? ['Sin categoría'] : [])];
   const lineaDS = { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels: semVista==='cat' ? { display:false } : { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
+        datalabels: { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
   const totCat = labels.map(s=>sem[s].c);
   const barrasCat = [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
        ...(catsResto.length ? [{ type:'bar', order:2, label:'Resto', stack:'c', data:labels.map(s=>catsResto.reduce((a,t)=>a+(sem[s].cats[t]||0),0)), backgroundColor:hexA(css('--ink4'),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} }] : [])];
@@ -1049,7 +1051,7 @@ const hexA = (hex, a) => {
 };
 const TAG_COLOR = () => ({
   'IE': css('--coral'), 'Externo': css('--slate'), 'Docente CTC': css('--amber'),
-  'CTC': css('--accent'), 'Operativo': css('--teal'), 'Otro': css('--accent2'),
+  'CTC': css('--accent'), 'Operativo': css('--teal'), 'Otro': css('--plum'),
   'N/A': css('--ink3'), 'Sin categoría': css('--ink4'),
 });
 
@@ -1284,13 +1286,15 @@ function renderSesiones(base){
     GRUPOS.map(([lbl]) => `<th class="grp sep" colspan="2">${lbl}</th>`).join('') + `</tr>
     <tr>` + GRUPOS.map(([lbl,kS,kH]) =>
       `<th class="num sep" data-k="${kS}">Sesiones${flecha(kS)}</th><th class="num" data-k="${kH}">Horas${flecha(kH)}</th>`).join('') + `</tr>
-  </thead><tbody>` + arr.map(r=>celda(r)).join('') + celda(totRow, true) + '</tbody>';
+  </thead><tbody>` + celda(totRow, true) + arr.map(r=>celda(r)).join('') + '</tbody>';
   el.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
     const k = th.dataset.k, prev = SORT['tSesiones'];
     SORT['tSesiones'] = { k, dir: prev && prev.k===k && prev.dir==='desc' ? 'asc' : 'desc' };
     if(prev && prev.k===k && prev.dir==='asc') SORT['tSesiones'] = null;
     renderSesiones(window._base||[]);
   });
+  document.getElementById('sesStrip').textContent =
+    `Totales del alcance: ${nf.format(T.pS)} programadas · ${nf.format(T.dS)} dictadas · ${nf.format(T.fS)} futuras · ${nf.format(T.cS)} canceladas · ${totRow.pctS.toFixed(1)}% de cancelación`;
   document.getElementById('notaCobertura').textContent =
     `Las columnas "Horas" son horas académicas. El dato está cargado en el ${tot?Math.round(100*(tot-sinHoras)/tot):0}% de las sesiones de este alcance — donde falta, la sesión suma 0 horas.`;
 }
@@ -1402,6 +1406,8 @@ function renderSesionesCat(base){
     ...cats.map(c=>({ k:c, label:c.length>16?c.slice(0,15)+'…':c, num:true, fmt:r=>r[c]?nf.format(r[c]):'—' })),
     { k:'total', label:'Total', num:true, fmt:r=>nf.format(r.total), style:()=>'font-weight:600' },
   ], filas);
+  document.getElementById('sesStrip').textContent =
+    `Totales del alcance: ${nf.format(canc.length)} sesiones canceladas en ${filas.length} ${et.toLowerCase()}${filas.length===1?'':'s'}`;
   document.getElementById('notaCobertura').textContent =
     'Sesiones canceladas por categoría del motivo (conteo de sesiones, respeta los filtros activos).';
 }
