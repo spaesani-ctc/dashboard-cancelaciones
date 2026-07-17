@@ -598,7 +598,7 @@ function mkCombo(cfg){
     <button class="combo-btn ${sel.size?'active-f':''}"><span class="cv">${etiqueta()}</span> <span style="opacity:.5">▾</span></button>
     <div class="combo-pop">
       <input class="combo-search" placeholder="Buscar…">
-      <div class="combo-acciones"><button data-a="limpiar">${cfg.todos} (limpiar selección)</button></div>
+      <div class="combo-acciones"><button data-a="todos">Seleccionar ${cfg.todos.toLowerCase()}</button><button data-a="limpiar">Limpiar selección</button></div>
       <div class="combo-list"></div>
     </div>`;
   const btn = el.querySelector('.combo-btn'), popC = el.querySelector('.combo-pop'),
@@ -616,6 +616,7 @@ function mkCombo(cfg){
       btnLabel(); render();
     });
   };
+  el.querySelector('[data-a="todos"]').onclick = () => { cfg.vals().forEach(v=>sel.add(String(v))); pinta(search.value); btnLabel(); render(); };
   el.querySelector('[data-a="limpiar"]').onclick = () => { sel.clear(); pinta(search.value); btnLabel(); render(); };
   btn.onclick = e => { e.stopPropagation(); const abierto = popC.classList.contains('show'); cerrarPops(); if(!abierto){ popC.classList.add('show'); pinta(''); search.value=''; search.focus(); } };
   popC.onclick = e => e.stopPropagation();
