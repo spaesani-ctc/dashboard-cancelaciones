@@ -12,6 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3.1.0/dist/chartjs-chart-treemap.min.js"></script>
 <style>
 :root {
   --bg: #F5F3EE; --surface: #FDFCFA; --surface2: #ECEAE4;
@@ -307,10 +308,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pMotivos">
       <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
-        <div class="p-tabs"><button class="p-tab active" data-t="chart">Motivos</button><button class="p-tab" data-t="tabla">Tabla</button><button class="p-tab" data-t="cat">Categorías</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,motivosExportActivo(),motivosCanvasActivo(),motivosExportActivo()+'_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+        <div class="p-tabs"><button class="p-tab active" data-t="chart">Motivos</button><button class="p-tab" data-t="tabla">Tabla</button><button class="p-tab" data-t="cat">Categorías</button><button class="p-tab" data-t="tree">Treemap</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,motivosExportActivo(),motivosCanvasActivo(),motivosExportActivo()+'_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
       <div class="p-body" id="motivosCat" style="display:none"><canvas id="chCategorias"></canvas></div>
+      <div class="p-body" id="motivosTree" style="display:none"><canvas id="chTreeMotivos"></canvas></div>
       <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
     </div>
     <div class="panel" id="pAntic">
@@ -915,6 +917,46 @@ function renderMotivos(canc){
     { k:'v', label:enHoras()?'Horas':'Sesiones', num:true, fmt:r=>fmtU(r.v) },
     { k:'pct', label:'% del total', num:true, fmt:r=>r.pct.toFixed(1)+'%' },
   ], orden.map(([k,v])=>({motivo:k, tag:mTag[k]||'Sin categoría', v, pct:100*v/total})));
+  if(motivosTab==='tree') renderMotivosTree(canc);
+}
+
+function renderMotivosTree(canc){
+  const g = {};
+  for(const r of canc){
+    const t = r.tag||'Sin categoría', mo = r.motivo||'Sin especificar', k = t+'|'+mo;
+    (g[k] ??= {tag:t, motivo:mo, v:0}); g[k].v += val(r);
+  }
+  const tree = Object.values(g).filter(x=>x.v>0);
+  const total = tree.reduce((a,x)=>a+x.v,0)||1;
+  const TC = TAG_COLOR();
+  const fallback = [css('--teal'),css('--coral-l'),css('--amber'),css('--slate')];
+  let fi = 0; const colorTag = {};
+  const tc = t => colorTag[t] ??= (TC[t] || fallback[fi++ % fallback.length]);
+  mkChart('chTreeMotivos', { type:'treemap',
+    data:{ datasets:[{ tree, key:'v', groups:['tag','motivo'], spacing:1.5, borderWidth:1, borderColor:css('--surface'),
+      backgroundColor: ctx => {
+        if(ctx.type!=='data') return 'transparent';
+        return ctx.raw.l ? hexA(tc(ctx.raw._data.tag), 0.85) : hexA(tc(ctx.raw._data.tag), 0.22);
+      },
+      captions:{ display:true, color:css('--ink2'), font:{family:'Mulish',size:10,weight:600} },
+      labels:{ display: ctx => !!ctx.raw.l, color:'#fff', overflow:'hidden', font:[{family:'Mulish',size:10,weight:600},{family:'Mulish',size:9}],
+        formatter: ctx => {
+          if(!ctx.raw.l) return '';
+          const w = ctx.raw.w||0, h = ctx.raw.h||0;
+          const maxCh = Math.floor((w-8)/6.2);
+          if(maxCh < 5 || h < 18) return '';
+          const mo = ctx.raw._data.motivo || '';
+          const nom = mo.length>maxCh ? mo.slice(0,Math.max(1,maxCh-1))+'…' : mo;
+          const linea2 = fmtU(ctx.raw.v)+' · '+(100*ctx.raw.v/total).toFixed(1)+'%';
+          return (h>34 && linea2.length<=maxCh) ? [nom, linea2] : [nom];
+        } } }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, datalabels:{display:false},
+        tooltip:{ filter: i => i.raw.l === 1,
+          callbacks:{
+          title: items => items.length ? items[0].raw._data.motivo : '',
+          label: c => ` ${c.raw._data.tag} — ${fmtU(c.raw.v)} (${(100*c.raw.v/total).toFixed(1)}%)` } } } },
+    plugins:[] });
 }
 
 function renderCategorias(canc){
@@ -1021,16 +1063,18 @@ document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
   b.classList.add('active'); rankMode = b.dataset.r; renderRanking(window._base||[]);
 });
 let motivosTab = 'chart';
-const motivosCanvasActivo = () => motivosTab==='chart' ? 'chMotivos' : motivosTab==='cat' ? 'chCategorias' : '';
+const motivosCanvasActivo = () => motivosTab==='chart' ? 'chMotivos' : motivosTab==='cat' ? 'chCategorias' : motivosTab==='tree' ? 'chTreeMotivos' : '';
 const motivosExportActivo = () => motivosTab==='cat' ? 'categorias' : 'motivos';
 document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pMotivos .p-tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); motivosTab = b.dataset.t;
   document.getElementById('motivosChart').style.display = motivosTab==='chart'?'block':'none';
   document.getElementById('motivosCat').style.display   = motivosTab==='cat'?'block':'none';
+  document.getElementById('motivosTree').style.display  = motivosTab==='tree'?'block':'none';
   document.getElementById('motivosTabla').style.display = motivosTab==='tabla'?'block':'none';
   if(motivosTab==='chart') renderMotivos(window._canc||[]);
   if(motivosTab==='cat') renderCategorias(window._canc||[]);
+  if(motivosTab==='tree') renderMotivosTree(window._canc||[]);
 });
 
 let anticMode = 'todas';
