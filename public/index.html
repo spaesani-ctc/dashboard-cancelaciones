@@ -39,10 +39,10 @@ body { font-family:'Mulish',Calibri,sans-serif; background:var(--bg); color:var(
 .brand h1 { font-family:'Lora',Georgia,serif; font-size:1.2rem; font-weight:400; line-height:1; }
 .brand h1 em { font-style:italic; color:rgba(255,255,255,0.65); }
 .tabs { display:flex; gap:2px; margin-left:12px; }
-.tab { position:relative; font-size:11.5px; font-weight:500; padding:4px 12px 4px 19px; border-radius:6px; border:1px solid transparent; background:transparent; color:rgba(255,255,255,0.65); cursor:pointer; transition:background .15s,color .15s; }
+.tab { position:relative; font-size:11.5px; font-weight:500; padding:4px 9px 4px 16px; border-radius:6px; border:1px solid transparent; background:transparent; color:rgba(255,255,255,0.65); cursor:pointer; transition:background .15s,color .15s; }
 .tab:hover { color:#fff; background:rgba(255,255,255,0.08); }
 .tab.active { background:transparent; color:#fff; font-weight:600; }
-.tab.active::before { content:''; position:absolute; left:9px; top:50%; transform:translateY(-50%); width:3px; height:13px; border-radius:2px; background:#5DCAA5; }
+.tab.active::before { content:''; position:absolute; left:7px; top:50%; transform:translateY(-50%); width:3px; height:13px; border-radius:2px; background:#5DCAA5; }
 .top-meta { font-family:'Inter',Arial,sans-serif; font-size:10px; color:rgba(255,255,255,0.5); white-space:nowrap; margin-left:auto; }
 .top-right { margin-left:auto; display:flex; gap:6px; align-items:center; }
 .tb-btn { display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.08); cursor:pointer; color:#fff; font-family:'Mulish',Calibri,sans-serif; font-size:11.5px; font-weight:500; white-space:nowrap; transition:background .15s; }
@@ -922,15 +922,17 @@ function renderSemanal(base){
   const fallbackC = [css('--coral-l'),css('--slate'),css('--amber')];
   let fiC = 0; const colorTagC = {};
   const tcS = t => colorTagC[t] ??= (TC[t] || fallbackC[fiC++ % fallbackC.length]);
-  const catsAll = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+  const catsAll = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(t=>t!=='Sin categoría');
   const cats = catsAll.slice(0, 5);
-  const catsResto = catsAll.slice(5);
+  const catsResto = [...catsAll.slice(5), ...(catTot['Sin categoría'] ? ['Sin categoría'] : [])];
   const lineaDS = { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
         datalabels: semVista==='cat' ? { display:false } : { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
+  const totCat = labels.map(s=>sem[s].c);
+  const barrasCat = [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
+       ...(catsResto.length ? [{ type:'bar', order:2, label:'Resto', stack:'c', data:labels.map(s=>catsResto.reduce((a,t)=>a+(sem[s].cats[t]||0),0)), backgroundColor:hexA(css('--ink4'),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} }] : [])];
+  if(barrasCat.length) barrasCat[barrasCat.length-1].datalabels = { display:pocas, anchor:'end', align:'end', offset:-2, color:css('--ink2'), font:{family:'Mulish',size:8.5,weight:600}, formatter:(v,ctx)=> totCat[ctx.dataIndex] ? fmtN(totCat[ctx.dataIndex]) : '' };
   const datasets = semVista==='cat'
-    ? [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
-       ...(catsResto.length ? [{ type:'bar', order:2, label:'Resto', stack:'c', data:labels.map(s=>catsResto.reduce((a,t)=>a+(sem[s].cats[t]||0),0)), backgroundColor:hexA(css('--ink4'),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} }] : []),
-       lineaDS]
+    ? [...barrasCat, lineaDS]
     : [ { type:'bar', order:2, label:(enHoras()?'Horas canceladas':'Sesiones canceladas')+(semMode==='pagadas'?' pagadas':''), data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, minBarLength:3, yAxisID:'y',
         datalabels:{ display:pocas, anchor:'end',
           align: ctx => choca(ctx) ? 'start' : 'end',
@@ -939,7 +941,7 @@ function renderSemanal(base){
           font:{family:'Mulish',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } }, lineaDS ];
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets },
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
-      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:12}},
+      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:12, sort:(a,b)=>((a.text.startsWith('%')?1:0)-(b.text.startsWith('%')?1:0)) || (a.datasetIndex-b.datasetIndex)}},
                 tooltip:{callbacks:{
                   title: items => { const s = labels[items[0].dataIndex]; const d1 = new Date(s+'T00:00:00'); const d2 = new Date(d1.getTime()+6*86400000); const f = d => d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); return `Semana del ${f(d1)} al ${f(d2)}`; },
                   label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${fmtN(c.parsed.y)}`}} },
@@ -1047,7 +1049,7 @@ const hexA = (hex, a) => {
 };
 const TAG_COLOR = () => ({
   'IE': css('--coral'), 'Externo': css('--slate'), 'Docente CTC': css('--amber'),
-  'CTC': css('--burdeos'), 'Operativo': css('--teal'), 'Otro': css('--accent2'),
+  'CTC': css('--accent'), 'Operativo': css('--teal'), 'Otro': css('--accent2'),
   'N/A': css('--ink3'), 'Sin categoría': css('--ink4'),
 });
 
@@ -1109,7 +1111,7 @@ function tablaRank(id, arr, etiqueta){
 }
 const CFG_RANK = {
   proyecto: { titulo:'Cancelaciones por Proyecto',    et:'Proyecto',          min:1  },
-  ie:       { titulo:'Cancelaciones por Institución', et:'IE',                min:20 },
+  ie:       { titulo:'Cancelaciones por Institución', et:'Institución Educativa', min:20 },
   salon:    { titulo:'Cancelaciones por Salón',       et:'Salón',             min:10 },
   grado:    { titulo:'Cancelaciones por Grado',       et:'Grado',             min:1  },
   profesor: { titulo:'Cancelaciones por Profesor',    et:'Profesor (sesión)', min:10 },
