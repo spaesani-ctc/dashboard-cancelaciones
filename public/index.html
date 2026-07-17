@@ -941,7 +941,7 @@ function renderSemanal(base){
   const cats = catsAll.slice(0, 5);
   const catsResto = [...catsAll.slice(5), ...(catTot['Sin categoría'] ? ['Sin categoría'] : [])];
   const lineaDS = { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels: { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), textStrokeColor: css('--surface'), textStrokeWidth: 3, font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
+        datalabels: { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
   const totCat = labels.map(s=>sem[s].c);
   const barrasCat = [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
        ...(catsResto.length ? [{ type:'bar', order:2, label:'Resto', stack:'c', data:labels.map(s=>catsResto.reduce((a,t)=>a+(sem[s].cats[t]||0),0)), backgroundColor:hexA(css('--ink4'),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} }] : [])];
