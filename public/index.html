@@ -1010,13 +1010,19 @@ const colorPct = p => p>=20?css('--coral'):p>=10?css('--amber'):css('--teal');
 
 /* ==== tablas ordenables (click en encabezado) ==== */
 const SORT = {};
+const cmpVal = (x, y) => {
+  if(typeof x==='number' && typeof y==='number') return x - y;
+  const nx = /^\s*-?\d+([.,]\d+)?\s*$/.test(String(x??'')) ? parseFloat(String(x).replace(',','.')) : null;
+  const ny = /^\s*-?\d+([.,]\d+)?\s*$/.test(String(y??'')) ? parseFloat(String(y).replace(',','.')) : null;
+  if(nx!==null && ny!==null) return nx - ny;
+  return String(x??'').localeCompare(String(y??''), 'es');
+};
 function renderTable(id, cols, rows, totalHtml){
   const s = SORT[id];
   let data = [...rows];
   if(s){
     data.sort((a,b)=>{
-      const x=a[s.k], y=b[s.k];
-      const cmp = (typeof x==='number' && typeof y==='number') ? x-y : String(x??'').localeCompare(String(y??''), 'es');
+      const cmp = cmpVal(a[s.k], b[s.k]);
       return s.dir==='asc' ? cmp : -cmp;
     });
   }
@@ -1171,31 +1177,32 @@ function renderSesiones(base){
   let sinHoras = 0, tot = 0;
   for(const r of base){
     const k = r[dimSesiones] ?? '—';
-    (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0,pgS:0,pgH:0});
+    (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0,pgS:0,pgH:0,ppoS:0,ppoH:0,pu24S:0,pu24H:0,po24S:0,po24H:0});
     const h = r.academic_hours||0; tot++; if(r.academic_hours==null) sinHoras++;
     g[k].pS++; g[k].pH+=h;
     if(esDictada(r)){ g[k].dS++; g[k].dH+=h; if(esMakeUp(r)){ g[k].rdS++; g[k].rdH+=h; } }
     if(esFutura(r)){ g[k].fS++; g[k].fH+=h; }
     if(esCancelada(r)){
       g[k].cS++; g[k].cH+=h; if(!esMakeUp(r)){ g[k].coS++; g[k].coH+=h; }
-      if(PAGADA(r.is_paid_session)){ g[k].pgS++; g[k].pgH+=h; }
+      const pg = PAGADA(r.is_paid_session);
+      if(pg){ g[k].pgS++; g[k].pgH+=h; }
       const b = bucketAntic(r);
-      if(b==='Posterior al inicio de la sesión'){ g[k].poS++; g[k].poH+=h; }
-      else if(b==='Con menos de 24 h'){ g[k].u24S++; g[k].u24H+=h; }
-      else if(b==='Con 24 h o más'){ g[k].o24S++; g[k].o24H+=h; }
+      if(b==='Posterior al inicio de la sesión'){ g[k].poS++; g[k].poH+=h; if(pg){ g[k].ppoS++; g[k].ppoH+=h; } }
+      else if(b==='Con menos de 24 h'){ g[k].u24S++; g[k].u24H+=h; if(pg){ g[k].pu24S++; g[k].pu24H+=h; } }
+      else if(b==='Con 24 h o más'){ g[k].o24S++; g[k].o24H+=h; if(pg){ g[k].po24S++; g[k].po24H+=h; } }
     }
   }
   const arr = Object.entries(g).map(([k,v])=>({k,...v,pctS:v.pS?100*Math.max(0,v.coS-v.rdS)/v.pS:0,pctH:v.pH?100*Math.max(0,v.coH-v.rdH)/v.pH:0,npS:v.cS-v.pgS,npH:v.cH-v.pgH,pctPgS:v.cS?100*v.pgS/v.cS:0,pctPgH:v.cH?100*v.pgH/v.cH:0})).sort((a,b)=>b.pS-a.pS);
-  const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH,rdS:a.rdS+x.rdS,rdH:a.rdH+x.rdH,coS:a.coS+x.coS,coH:a.coH+x.coH,poS:a.poS+x.poS,poH:a.poH+x.poH,u24S:a.u24S+x.u24S,u24H:a.u24H+x.u24H,o24S:a.o24S+x.o24S,o24H:a.o24H+x.o24H,pgS:a.pgS+x.pgS,pgH:a.pgH+x.pgH}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0,pgS:0,pgH:0});
+  const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH,rdS:a.rdS+x.rdS,rdH:a.rdH+x.rdH,coS:a.coS+x.coS,coH:a.coH+x.coH,poS:a.poS+x.poS,poH:a.poH+x.poH,u24S:a.u24S+x.u24S,u24H:a.u24H+x.u24H,o24S:a.o24S+x.o24S,o24H:a.o24H+x.o24H,pgS:a.pgS+x.pgS,pgH:a.pgH+x.pgH,ppoS:a.ppoS+x.ppoS,ppoH:a.ppoH+x.ppoH,pu24S:a.pu24S+x.pu24S,pu24H:a.pu24H+x.pu24H,po24S:a.po24S+x.po24S,po24H:a.po24H+x.po24H}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0,pgS:0,pgH:0,ppoS:0,ppoH:0,pu24S:0,pu24H:0,po24S:0,po24H:0});
   const et = {proyecto:'Proyecto', ie:'Institución Educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
   const s = SORT['tSesiones'];
-  if(s) arr.sort((a,b)=>{ const x=a[s.k], y=b[s.k]; const cmp = (typeof x==='number'&&typeof y==='number')?x-y:String(x??'').localeCompare(String(y??''),'es'); return s.dir==='asc'?cmp:-cmp; });
+  if(s) arr.sort((a,b)=>{ const cmp = cmpVal(a[s.k], b[s.k]); return s.dir==='asc'?cmp:-cmp; });
   const flecha = k => s&&s.k===k ? (s.dir==='asc'?' ▲':' ▼') : '';
   const GRUPOS = colMode==='resumen'
     ? [['Programadas','pS','pH'],['Dictadas','dS','dH'],['Futuras','fS','fH'],['Canceladas','cS','cH'],['% De cancelación','pctS','pctH','pct']]
     : colMode==='antic'
     ? [['Canceladas','cS','cH'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% De cancelación','pctS','pctH','pct']]
-    : [['Canceladas','cS','cH'],['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
+    : [['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['Pag. posterior al inicio','ppoS','ppoH'],['Pag. aviso <24 h','pu24S','pu24H'],['Pag. aviso ≥24 h','po24S','po24H'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
   const celda = (r,bold) => `<tr${bold?' style="font-weight:600;border-top:2px solid var(--border)"':''}>
     <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
     GRUPOS.map(([lbl,kS,kH,esPct]) => esPct
@@ -1204,8 +1211,8 @@ function renderSesiones(base){
     ).join('') + '</tr>';
   const totRow = {k:'TOTAL',...T,pctS:T.pS?100*Math.max(0,T.coS-T.rdS)/T.pS:0,pctH:T.pH?100*Math.max(0,T.coH-T.rdH)/T.pH:0,npS:T.cS-T.pgS,npH:T.cH-T.pgH,pctPgS:T.cS?100*T.pgS/T.cS:0,pctPgH:T.cH?100*T.pgH/T.cH:0};
   EXPORTS.sesiones = { nombre:'sesiones_y_horas_por_'+dimSesiones,
-    cols:[et,'Programadas (sesiones)','Programadas (horas)','Dictadas (sesiones)','Dictadas (horas)','Futuras (sesiones)','Futuras (horas)','Canceladas (sesiones)','Canceladas (horas)','Canc. posterior al inicio (sesiones)','Canc. posterior al inicio (horas)','Canc. aviso <24 h (sesiones)','Canc. aviso <24 h (horas)','Canc. aviso >=24 h (sesiones)','Canc. aviso >=24 h (horas)','Canc. pagadas (sesiones)','Canc. pagadas (horas)','Canc. no pagadas (sesiones)','Canc. no pagadas (horas)','% canc. pagadas (sesiones)','% canc. pagadas (horas)','% canc. (sesiones)','% canc. (horas)'],
-    rows: [...arr, totRow].map(r=>[r.k, r.pS, Math.round(r.pH), r.dS, Math.round(r.dH), r.fS, Math.round(r.fH), r.cS, Math.round(r.cH), r.poS, Math.round(r.poH), r.u24S, Math.round(r.u24H), r.o24S, Math.round(r.o24H), r.pgS, Math.round(r.pgH), r.npS, Math.round(r.npH), r.pctPgS.toFixed(1), r.pctPgH.toFixed(1), r.pctS.toFixed(1), r.pH?r.pctH.toFixed(1):'s/d']) };
+    cols:[et,'Programadas (sesiones)','Programadas (horas)','Dictadas (sesiones)','Dictadas (horas)','Futuras (sesiones)','Futuras (horas)','Canceladas (sesiones)','Canceladas (horas)','Canc. posterior al inicio (sesiones)','Canc. posterior al inicio (horas)','Canc. aviso <24 h (sesiones)','Canc. aviso <24 h (horas)','Canc. aviso >=24 h (sesiones)','Canc. aviso >=24 h (horas)','Canc. pagadas (sesiones)','Canc. pagadas (horas)','Canc. no pagadas (sesiones)','Canc. no pagadas (horas)','Pag. posterior al inicio (sesiones)','Pag. posterior al inicio (horas)','Pag. aviso <24 h (sesiones)','Pag. aviso <24 h (horas)','Pag. aviso >=24 h (sesiones)','Pag. aviso >=24 h (horas)','% canc. pagadas (sesiones)','% canc. pagadas (horas)','% canc. (sesiones)','% canc. (horas)'],
+    rows: [...arr, totRow].map(r=>[r.k, r.pS, Math.round(r.pH), r.dS, Math.round(r.dH), r.fS, Math.round(r.fH), r.cS, Math.round(r.cH), r.poS, Math.round(r.poH), r.u24S, Math.round(r.u24H), r.o24S, Math.round(r.o24H), r.pgS, Math.round(r.pgH), r.npS, Math.round(r.npH), r.ppoS, Math.round(r.ppoH), r.pu24S, Math.round(r.pu24H), r.po24S, Math.round(r.po24H), r.pctPgS.toFixed(1), r.pctPgH.toFixed(1), r.pctS.toFixed(1), r.pH?r.pctH.toFixed(1):'s/d']) };
   const el = document.getElementById('tSesiones');
   el.innerHTML = `<thead>
     <tr><th rowspan="2" data-k="k">${et}${flecha('k')}</th>` +
@@ -1319,7 +1326,7 @@ function renderDetalle(){
   const s = SORT['tDetalle'] || { k:'fecha', dir:'desc' };
   const filas = [...(window._canc||[])].sort((a,b)=>{
     const x = s.k==='antic' ? bucketAntic(a) : a[s.k], y = s.k==='antic' ? bucketAntic(b) : b[s.k];
-    const cmp = (typeof x==='number' && typeof y==='number') ? x-y : String(x??'').localeCompare(String(y??''), 'es');
+    const cmp = cmpVal(x, y);
     return s.dir==='asc' ? cmp : -cmp;
   });
   const pags = Math.max(1, Math.ceil(filas.length/porPag));
