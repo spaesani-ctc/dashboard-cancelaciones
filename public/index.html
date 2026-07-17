@@ -922,11 +922,15 @@ function renderSemanal(base){
   const fallbackC = [css('--coral-l'),css('--slate'),css('--amber')];
   let fiC = 0; const colorTagC = {};
   const tcS = t => colorTagC[t] ??= (TC[t] || fallbackC[fiC++ % fallbackC.length]);
-  const cats = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+  const catsAll = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+  const cats = catsAll.slice(0, 5);
+  const catsResto = catsAll.slice(5);
   const lineaDS = { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
         datalabels: semVista==='cat' ? { display:false } : { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
   const datasets = semVista==='cat'
-    ? [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })), lineaDS]
+    ? [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
+       ...(catsResto.length ? [{ type:'bar', order:2, label:'Resto', stack:'c', data:labels.map(s=>catsResto.reduce((a,t)=>a+(sem[s].cats[t]||0),0)), backgroundColor:hexA(css('--ink4'),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} }] : []),
+       lineaDS]
     : [ { type:'bar', order:2, label:(enHoras()?'Horas canceladas':'Sesiones canceladas')+(semMode==='pagadas'?' pagadas':''), data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, minBarLength:3, yAxisID:'y',
         datalabels:{ display:pocas, anchor:'end',
           align: ctx => choca(ctx) ? 'start' : 'end',
