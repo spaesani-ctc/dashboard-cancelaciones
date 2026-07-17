@@ -921,8 +921,8 @@ function renderSemanal(base){
     ? { nombre:'evolucion_semanal_por_categoria'+sufPago(),
         cols:['Semana', ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]), 'Total', '% De cancelación'],
         rows: labels.map((s,i)=>[s, ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]).map(t=>Math.round((sem[s].cats[t]||0)*100)/100), Math.round(sem[s].c*100)/100, pcts[i].toFixed(1)]) }
-    : { nombre:'evolucion_semanal'+sufPago(), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas', (enHoras()?'Horas':'Sesiones')+' programadas', 'Recuperaciones dictadas', '% De cancelación'],
-        rows: labels.map((s,i)=>[s, Math.round(sem[s].cAll*100)/100, Math.round(sem[s].p*100)/100, Math.round(sem[s].rd*100)/100, pcts[i].toFixed(1)]) };
+    : { nombre:'evolucion_semanal'+sufPago(), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas', 'Canceladas originales', 'Recuperaciones dictadas', (enHoras()?'Horas':'Sesiones')+' programadas', '% De cancelación'],
+        rows: labels.map((s,i)=>[s, Math.round(sem[s].c*100)/100, Math.round(sem[s].cAll*100)/100, Math.round(sem[s].rd*100)/100, Math.round(sem[s].p*100)/100, pcts[i].toFixed(1)]) };
   const cTotArr = labels.map(s=>sem[s].c);
   const flip = ctx => {
     try {
@@ -1072,16 +1072,15 @@ const TAG_COLOR = () => ({
 function filaAgg(filas, clave, minProg){
   const g = {};
   for(const r of filas){
-    const k=r[clave] ?? '\u2014'; (g[k] ??= {p:0,c:0,rd:0,c24:0,pSes:0}); g[k].pSes++; g[k].p += val(r);
-    if(esCancOriginal(r)){
-      g[k].c += val(r);
-      const b = bucketAntic(r);
-      if(b==='Con menos de 24 h' || b==='Posterior al inicio de la sesión') g[k].c24 += val(r);
+    const k=r[clave] ?? '\u2014'; (g[k] ??= {p:0,c:0,co:0,rd:0,pSes:0}); g[k].pSes++; g[k].p += val(r);
+    if(esCancelada(r)){
+      g[k].c += val(r);                       // brutas (lo que se muestra)
+      if(!esMakeUp(r)) g[k].co += val(r);     // originales (para el % neto)
     }
     else if(esDictada(r) && esMakeUp(r)) g[k].rd += val(r);
   }
   return Object.entries(g).filter(([,v])=>v.pSes>=minProg)
-    .map(([k,v])=>({k,...v,pct:v.p?100*Math.max(0,v.c-v.rd)/v.p:0})).sort((a,b)=>b.pct-a.pct);
+    .map(([k,v])=>({k,...v,pct:v.p?100*Math.max(0,v.co-v.rd)/v.p:0})).sort((a,b)=>b.pct-a.pct);
 }
 const colorPct = p => p>=20?css('--coral'):p>=10?css('--amber'):css('--teal');
 
@@ -1137,8 +1136,8 @@ function renderRanking(base){
   document.getElementById('rankTitle').textContent = cfg.titulo;
   const filas = rankMode==='profesor' ? base.filter(r=>r.profesor && r.profesor!==', ') : base;
   const arr = filaAgg(filas, rankMode, cfg.min);
-  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', '% De cancelación'],
-    rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, r.pct.toFixed(1)]) };
+  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', 'Canceladas originales', 'Recuperaciones dictadas', '% De cancelación'],
+    rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, Math.round(r.co*100)/100, Math.round(r.rd*100)/100, r.pct.toFixed(1)]) };
   tablaRank('tRanking', arr, cfg.et);
 }
 document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
@@ -1419,7 +1418,7 @@ function renderReprog(base){
   const tR = v(cancOrig) ? 100*v(mk)/v(cancOrig) : 0;
   const tRec = v(cancOrig) ? 100*v(mkD)/v(cancOrig) : 0;
   document.getElementById('reprogResumen').innerHTML = mk.length
-    ? `${fmtU(v(mk))} intentos · tasa de reprogramación ${tR.toFixed(1)}% · tasa de recuperación ${tRec.toFixed(1)}% (sobre ${fmtU(v(cancOrig))} canceladas)`
+    ? `${fmtU(v(mk))} intentos · tasa de reprogramación ${tR.toFixed(1)}% · tasa de recuperación ${tRec.toFixed(1)}% (sobre ${fmtU(v(cancOrig))} canceladas originales — no cuenta recuperaciones canceladas)`
     : 'Sin recuperaciones registradas en el período y filtros elegidos. Los intentos aparecen cuando el backoffice marca una sesión como clase de recuperación.';
   const wrap = document.getElementById('reprogChartWrap');
   wrap.style.display = mk.length ? 'block' : 'none';
