@@ -346,10 +346,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <div class="p-head">
         <span class="p-title">Sesiones y horas académicas</span>
         <div class="p-tabs" id="dimTabs" style="margin-left:12px; margin-right:auto;">
-          <button class="p-tab active" data-d="proyecto">Proyecto</button>
-          <button class="p-tab" data-d="ie">IE</button>
-          <button class="p-tab" data-d="grado">Grado</button>
-          <button class="p-tab" data-d="salon">Salón</button>
+          <button class="p-tab active" data-d="proyecto">Proyectos</button>
+          <button class="p-tab" data-d="ie">IEs</button>
+          <button class="p-tab" data-d="salon">Salones</button>
+          <button class="p-tab" data-d="grado">Grados</button>
+          <button class="p-tab" data-d="profesor">Profesores</button>
         </div>
         <div class="scope" id="colTabs" title="Qué columnas muestra la tabla">
           <button class="scope-btn active" data-c="resumen">General</button>
@@ -1292,7 +1293,8 @@ function renderSesiones(base){
   const g = {};
   let sinHoras = 0, tot = 0;
   for(const r of base){
-    const k = r[dimSesiones] ?? '—';
+    let k = r[dimSesiones] ?? '—';
+    if(dimSesiones==='profesor' && (!k || k===', ')) k = '—';
     (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0,pgS:0,pgH:0,ppoS:0,ppoH:0,pu24S:0,pu24H:0,po24S:0,po24H:0});
     const h = r.academic_hours||0; tot++; if(r.academic_hours==null) sinHoras++;
     g[k].pS++; g[k].pH+=h;
@@ -1311,7 +1313,7 @@ function renderSesiones(base){
   }
   const arr = Object.entries(g).map(([k,v])=>({k,...v,pctS:v.pS?100*Math.max(0,v.coS-v.rdS)/v.pS:0,pctH:v.pH?100*Math.max(0,v.coH-v.rdH)/v.pH:0,npS:v.cS-v.pgS,npH:v.cH-v.pgH,pctPgS:v.cS?100*v.pgS/v.cS:0,pctPgH:v.cH?100*v.pgH/v.cH:0})).sort((a,b)=>b.pS-a.pS);
   const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH,rdS:a.rdS+x.rdS,rdH:a.rdH+x.rdH,coS:a.coS+x.coS,coH:a.coH+x.coH,poS:a.poS+x.poS,poH:a.poH+x.poH,u24S:a.u24S+x.u24S,u24H:a.u24H+x.u24H,o24S:a.o24S+x.o24S,o24H:a.o24H+x.o24H,pgS:a.pgS+x.pgS,pgH:a.pgH+x.pgH,ppoS:a.ppoS+x.ppoS,ppoH:a.ppoH+x.ppoH,pu24S:a.pu24S+x.pu24S,pu24H:a.pu24H+x.pu24H,po24S:a.po24S+x.po24S,po24H:a.po24H+x.po24H}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0,pgS:0,pgH:0,ppoS:0,ppoH:0,pu24S:0,pu24H:0,po24S:0,po24H:0});
-  const et = {proyecto:'Proyecto', ie:'Institución Educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
+  const et = {proyecto:'Proyecto', ie:'Institución Educativa', grado:'Grado', salon:'Salón', profesor:'Profesor (sesión)'}[dimSesiones];
   const s = SORT['tSesiones'];
   if(s) arr.sort((a,b)=>{ const cmp = cmpVal(a[s.k], b[s.k]); return s.dir==='asc'?cmp:-cmp; });
   const flecha = k => s&&s.k===k ? (s.dir==='asc'?' ▲':' ▼') : '';
