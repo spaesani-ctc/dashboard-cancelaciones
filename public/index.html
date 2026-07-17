@@ -241,7 +241,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   </div>
   <div class="tabs" id="vistas">
     <button class="tab active" data-v="resumen">Resumen</button>
-    <button class="tab" data-v="sesiones">Detalles</button>
+    <button class="tab" data-v="sesiones">Detalle</button>
     <button class="tab" data-v="reprog">Reprogramaciones</button>
   </div>
   <div class="top-right">
@@ -1284,13 +1284,17 @@ function renderSesGraficos(g, et){
     labels = top.map(r=>trunca(r.k));
     titulo = `Anticipación del aviso · canceladas (top ${top.length})`;
     const sums = top.map(r=>(r.poS+r.u24S+r.o24S)||1);
-    const segLbl = { display: ctx => { const v = ctx.dataset.data[ctx.dataIndex]; return v>0 && v >= sums[ctx.dataIndex]*0.09; },
-      color:'#fff', font:{family:'Mulish',size:8.5,weight:600}, formatter:v=>nf.format(v) };
+    const pct = (v,i) => 100*v/sums[i];
+    const segLbl = { display: ctx => ctx.dataset.data[ctx.dataIndex] >= 8,
+      color:'#fff', font:{family:'Mulish',size:8.5,weight:600}, formatter:v=>v.toFixed(0)+'%' };
+    const nums = { 'Posterior al inicio': top.map(r=>r.poS), 'Aviso <24 h': top.map(r=>r.u24S), 'Aviso ≥24 h': top.map(r=>r.o24S) };
     datasets = [
-      { label:'Posterior al inicio', data:top.map(r=>r.poS), backgroundColor:hexA(css('--burdeos'),0.85), stack:'s', datalabels:segLbl },
-      { label:'Aviso <24 h', data:top.map(r=>r.u24S), backgroundColor:hexA(css('--coral'),0.85), stack:'s', datalabels:segLbl },
-      { label:'Aviso ≥24 h', data:top.map(r=>r.o24S), backgroundColor:hexA(css('--ink3'),0.7), stack:'s', datalabels:segLbl },
+      { label:'Posterior al inicio', data:top.map((r,i)=>pct(r.poS,i)), backgroundColor:hexA(css('--burdeos'),0.85), stack:'s', datalabels:segLbl },
+      { label:'Aviso <24 h', data:top.map((r,i)=>pct(r.u24S,i)), backgroundColor:hexA(css('--coral'),0.85), stack:'s', datalabels:segLbl },
+      { label:'Aviso ≥24 h', data:top.map((r,i)=>pct(r.o24S,i)), backgroundColor:hexA(css('--ink3'),0.7), stack:'s', datalabels:segLbl },
     ];
+    base.plugins.tooltip = { callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(nums[c.dataset.label][c.dataIndex])} sesiones (${c.parsed.x.toFixed(1)}%)` } };
+    base.scales.x = { stacked:true, max:100, ticks:{color:css('--ink3'),font:{size:9},callback:v=>v+'%'}, grid:{display:false} };
     exp = { nombre:'anticipacion_por_'+dimSesiones, cols:[et,'Posterior al inicio','Aviso <24 h','Aviso ≥24 h','Canceladas'],
       rows: top.map(r=>[r.k, r.poS, r.u24S, r.o24S, r.cS]) };
   } else if(colMode==='pagadas'){
@@ -1298,12 +1302,15 @@ function renderSesGraficos(g, et){
     labels = top.map(r=>trunca(r.k));
     titulo = `Canceladas pagadas vs no pagadas (top ${top.length})`;
     const sums = top.map(r=>r.cS||1);
-    const segLbl = { display: ctx => { const v = ctx.dataset.data[ctx.dataIndex]; return v>0 && v >= sums[ctx.dataIndex]*0.09; },
-      color:'#fff', font:{family:'Mulish',size:8.5,weight:600}, formatter:v=>nf.format(v) };
+    const segLbl = { display: ctx => ctx.dataset.data[ctx.dataIndex] >= 8,
+      color:'#fff', font:{family:'Mulish',size:8.5,weight:600}, formatter:v=>v.toFixed(0)+'%' };
+    const nums = { 'Pagadas': top.map(r=>r.pgS), 'No pagadas': top.map(r=>r.cS-r.pgS) };
     datasets = [
-      { label:'Pagadas', data:top.map(r=>r.pgS), backgroundColor:hexA(css('--coral'),0.9), stack:'s', datalabels:segLbl },
-      { label:'No pagadas', data:top.map(r=>r.cS-r.pgS), backgroundColor:hexA(css('--coral-l'),0.55), stack:'s', datalabels:segLbl },
+      { label:'Pagadas', data:top.map((r,i)=>100*r.pgS/sums[i]), backgroundColor:hexA(css('--coral'),0.9), stack:'s', datalabels:segLbl },
+      { label:'No pagadas', data:top.map((r,i)=>100*(r.cS-r.pgS)/sums[i]), backgroundColor:hexA(css('--coral-l'),0.55), stack:'s', datalabels:segLbl },
     ];
+    base.plugins.tooltip = { callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(nums[c.dataset.label][c.dataIndex])} sesiones (${c.parsed.x.toFixed(1)}%)` } };
+    base.scales.x = { stacked:true, max:100, ticks:{color:css('--ink3'),font:{size:9},callback:v=>v+'%'}, grid:{display:false} };
     exp = { nombre:'canceladas_pagadas_por_'+dimSesiones, cols:[et,'Pagadas','No pagadas','% pagadas'],
       rows: top.map(r=>[r.k, r.pgS, r.cS-r.pgS, r.cS?(100*r.pgS/r.cS).toFixed(1):0]) };
   }
