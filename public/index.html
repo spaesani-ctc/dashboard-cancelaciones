@@ -288,7 +288,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="kpi"><div class="kpi-label" id="kProgL">Sesiones programadas</div><div class="kpi-value" id="kProg">—</div><div class="kpi-sub" id="kProgSub"></div></div>
     <div class="kpi"><div class="kpi-label" id="kDictL">Sesiones dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
     <div class="kpi"><div class="kpi-label" id="kCancL">Sesiones canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
-    <div class="kpi" title="Neto: a las canceladas se les descuentan las recuperaciones ya dictadas. Ver Metodología."><div class="kpi-label">% Cancelación (neta)</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
+    <div class="kpi" title="Neto: a las canceladas se les descuentan las recuperaciones ya dictadas. Ver Metodología."><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
     <div class="kpi"><div class="kpi-label" id="kPagadasL">% De sesiones canceladas pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
     <div class="kpi" id="kFlexCard"></div>
   </div>
@@ -308,7 +308,6 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
           <button class="p-tab" data-r="salon">Salones</button>
           <button class="p-tab" data-r="grado">Grados</button>
           <button class="p-tab" data-r="profesor">Profesores</button>
-          <button class="p-tab" data-r="matriz">IE × Categoría</button>
         </div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'ranking','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body scroll"><table class="t" id="tRanking"></table></div>
@@ -350,6 +349,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
           <button class="scope-btn active" data-c="resumen">General</button>
           <button class="scope-btn" data-c="antic">Anticipación</button>
           <button class="scope-btn" data-c="pagadas">Pagadas</button>
+          <button class="scope-btn" data-c="cat">Categorías</button>
         </div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesiones','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body scroll"><table class="t" id="tSesiones"></table></div>
@@ -601,7 +601,8 @@ function etiquetaMas(){
 /* combos multi-choice con buscador */
 const COMBOS = [
   { id:'cbCanal', k:'canal', label:'Canal', plural:'Canales', todos:'Todos', vals: () => uniqDe('canal','canal') },
-  { id:'cbProyecto', k:'proyecto', label:'Proyecto', plural:'Proyectos', todos:'Todos', vals: () => uniqDe('proyecto','proyecto') },
+  { id:'cbProyecto', k:'proyecto', label:'Proyecto', plural:'Proyectos', todos:'Todos',
+    vals: () => [...new Set(ROWS.filter(r=>pasaFiltros(r,'proyecto')).map(r=>r.project_id+' · '+(r.proyecto||''))) ].sort((a,b)=>a.localeCompare(b,'es',{numeric:true})) },
   { id:'cbIe', k:'ie', label:'Institución Educativa', plural:'Instituciones Educativas', todos:'Todas', vals: () => uniqDe('ie','ie') },
   { id:'cbAutonomia', k:'autonomia', label:'Nivel de autonomía', plural:'Niveles de autonomía', todos:'Todos', vals: () => uniqDe('autonomia','autonomia') },
   { id:'cbCurricula', k:'curricula', label:'Nivel de currícula', plural:'Niveles de currícula', todos:'Todos', vals: () => uniqDe('curricula','curricula') },
@@ -703,7 +704,7 @@ function poblarFiltros(){
 function pasaFiltros(r, omitir){
   const chk = (k, val) => omitir===k || F[k].size===0 || F[k].has(String(val));
   if(!chk('canal', r.canal)) return false;
-  if(!chk('proyecto', r.proyecto)) return false;
+  if(omitir!=='proyecto' && F.proyecto.size>0 && !F.proyecto.has(r.project_id+' · '+(r.proyecto||''))) return false;
   if(!chk('ie', r.ie)) return false;
   if(!chk('autonomia', r.autonomia)) return false;
   if(!chk('curricula', r.curricula)) return false;
@@ -906,7 +907,7 @@ function renderSemanal(base){
     ? { nombre:'evolucion_semanal_por_categoria'+(semMode==='pagadas'?'_pagadas':''),
         cols:['Semana', ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]), 'Total', '% De cancelación'],
         rows: labels.map((s,i)=>[s, ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]).map(t=>Math.round((sem[s].cats[t]||0)*100)/100), Math.round(sem[s].c*100)/100, pcts[i].toFixed(1)]) }
-    : { nombre:'evolucion_semanal'+(semMode==='pagadas'?'_pagadas':''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas'+(semMode==='pagadas'?' pagadas':''), (enHoras()?'Horas':'Sesiones')+' programadas', 'Recuperaciones dictadas', semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación (neto)'],
+    : { nombre:'evolucion_semanal'+(semMode==='pagadas'?'_pagadas':''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas'+(semMode==='pagadas'?' pagadas':''), (enHoras()?'Horas':'Sesiones')+' programadas', 'Recuperaciones dictadas', semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación'],
         rows: labels.map((s,i)=>[s, Math.round(sem[s].cAll*100)/100, Math.round(sem[s].p*100)/100, Math.round(sem[s].rd*100)/100, pcts[i].toFixed(1)]) };
   const flip = ctx => {
     try {
@@ -918,11 +919,11 @@ function renderSemanal(base){
     } catch(e){ return false; }
   };
   const TC = TAG_COLOR();
-  const fallbackC = [css('--teal'),css('--coral-l'),css('--amber'),css('--slate')];
+  const fallbackC = [css('--coral-l'),css('--slate'),css('--amber')];
   let fiC = 0; const colorTagC = {};
   const tcS = t => colorTagC[t] ??= (TC[t] || fallbackC[fiC++ % fallbackC.length]);
   const cats = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-  const lineaDS = { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación (neto)', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+  const lineaDS = { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
         datalabels: semVista==='cat' ? { display:false } : { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
   const datasets = semVista==='cat'
     ? [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })), lineaDS]
@@ -983,7 +984,7 @@ function renderMotivosTree(canc){
   const tree = Object.values(g).filter(x=>x.v>0);
   const total = tree.reduce((a,x)=>a+x.v,0)||1;
   const TC = TAG_COLOR();
-  const fallback = [css('--teal'),css('--coral-l'),css('--amber'),css('--slate')];
+  const fallback = [css('--coral-l'),css('--slate'),css('--amber')];
   let fi = 0; const colorTag = {};
   const tc = t => colorTag[t] ??= (TC[t] || fallback[fi++ % fallback.length]);
   mkChart('chTreeMotivos', { type:'treemap',
@@ -1019,7 +1020,7 @@ function renderCategorias(canc){
   const orden = Object.entries(g).sort((a,b)=>b[1]-a[1]);
   const total = orden.reduce((a,x)=>a+x[1],0)||1;
   const TC = TAG_COLOR();
-  const fallback = [css('--teal'),css('--coral-l'),css('--amber'),css('--slate')];
+  const fallback = [css('--coral-l'),css('--slate'),css('--amber')];
   let fi = 0; const colorTag = {};
   const tc = t => colorTag[t] ??= (TC[t] || fallback[fi++ % fallback.length]);
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
@@ -1042,7 +1043,8 @@ const hexA = (hex, a) => {
 };
 const TAG_COLOR = () => ({
   'IE': css('--coral'), 'Externo': css('--slate'), 'Docente CTC': css('--amber'),
-  'CTC': css('--burdeos'), 'Operativo': css('--accent2'), 'Otro': css('--ink3'), 'N/A': css('--ink4'),
+  'CTC': css('--burdeos'), 'Operativo': css('--teal'), 'Otro': css('--accent2'),
+  'N/A': css('--ink3'), 'Sin categoría': css('--ink4'),
 });
 
 function filaAgg(filas, clave, minProg){
@@ -1098,46 +1100,22 @@ function tablaRank(id, arr, etiqueta){
     { k:'k', label:etiqueta, tip:'k' },
     { k:'p', label:'Programadas', num:true, fmt:r=>fmtU(r.p) },
     { k:'c', label:'Canceladas', num:true, fmt:r=>fmtU(r.c) },
-    { k:'pct', label:'% De cancelación (neto)', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
+    { k:'pct', label:'% De cancelación', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
   ], arr);
 }
-function renderMatriz(canc){
-  const g = {}, catTot = {};
-  for(const r of canc){
-    const ie = r.ie||'Sin IE', t = r.tag||'Sin categoría';
-    (g[ie] ??= {}); g[ie][t] = (g[ie][t]||0) + val(r);
-    catTot[t] = (catTot[t]||0) + val(r);
-  }
-  const cats = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-  const filas = Object.entries(g).map(([ie,vals])=>{
-    const row = { k: ie, total: 0 };
-    for(const c of cats){ row[c] = vals[c]||0; row.total += vals[c]||0; }
-    return row;
-  }).sort((a,b)=>b.total-a.total);
-  EXPORTS.ranking = { nombre:'matriz_ie_categoria', cols:['IE', ...cats, 'Total'],
-    rows: filas.map(r=>[r.k, ...cats.map(c=>Math.round(r[c]*100)/100), Math.round(r.total*100)/100]) };
-  renderTable('tRanking', [
-    { k:'k', label:'IE', tip:'k' },
-    ...cats.map(c=>({ k:c, label:c.length>14?c.slice(0,13)+'…':c, num:true, fmt:r=>r[c]?fmtU(r[c]):'—' })),
-    { k:'total', label:'Total', num:true, fmt:r=>fmtU(r.total), style:()=> 'font-weight:600' },
-  ], filas);
-}
-
 const CFG_RANK = {
   proyecto: { titulo:'Cancelaciones por Proyecto',    et:'Proyecto',          min:1  },
   ie:       { titulo:'Cancelaciones por Institución', et:'IE',                min:20 },
   salon:    { titulo:'Cancelaciones por Salón',       et:'Salón',             min:10 },
   grado:    { titulo:'Cancelaciones por Grado',       et:'Grado',             min:1  },
   profesor: { titulo:'Cancelaciones por Profesor',    et:'Profesor (sesión)', min:10 },
-  matriz:   { titulo:'Cancelaciones por IE × Categoría', et:'IE', min:0 },
 };
 function renderRanking(base){
   const cfg = CFG_RANK[rankMode];
   document.getElementById('rankTitle').textContent = cfg.titulo;
-  if(rankMode==='matriz'){ renderMatriz(base.filter(esCancelada)); return; }
   const filas = rankMode==='profesor' ? base.filter(r=>r.profesor && r.profesor!==', ') : base;
   const arr = filaAgg(filas, rankMode, cfg.min);
-  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', '% De cancelación (neto)'],
+  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', '% De cancelación'],
     rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, r.pct.toFixed(1)]) };
   tablaRank('tRanking', arr, cfg.et);
 }
@@ -1253,6 +1231,7 @@ document.getElementById('dimTabs').addEventListener('click', e => {
   e.target.classList.add('active'); dimSesiones = e.target.dataset.d; renderSesiones(window._base||[]);
 });
 function renderSesiones(base){
+  if(colMode==='cat'){ renderSesionesCat(base); return; }
   const g = {};
   let sinHoras = 0, tot = 0;
   for(const r of base){
@@ -1279,9 +1258,9 @@ function renderSesiones(base){
   if(s) arr.sort((a,b)=>{ const cmp = cmpVal(a[s.k], b[s.k]); return s.dir==='asc'?cmp:-cmp; });
   const flecha = k => s&&s.k===k ? (s.dir==='asc'?' ▲':' ▼') : '';
   const GRUPOS = colMode==='resumen'
-    ? [['Programadas','pS','pH'],['Dictadas','dS','dH'],['Futuras','fS','fH'],['Canceladas','cS','cH'],['% De cancelación (neto)','pctS','pctH','pct']]
+    ? [['Programadas','pS','pH'],['Dictadas','dS','dH'],['Futuras','fS','fH'],['Canceladas','cS','cH'],['% De cancelación','pctS','pctH','pct']]
     : colMode==='antic'
-    ? [['Canceladas','cS','cH'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% De cancelación (neto)','pctS','pctH','pct']]
+    ? [['Canceladas','cS','cH'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% De cancelación','pctS','pctH','pct']]
     : [['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['Pag. posterior al inicio','ppoS','ppoH'],['Pag. aviso <24 h','pu24S','pu24H'],['Pag. aviso ≥24 h','po24S','po24H'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
   const celda = (r,bold) => `<tr${bold?' style="font-weight:600;border-top:2px solid var(--border)"':''}>
     <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
@@ -1393,6 +1372,32 @@ function renderReprog(base){
     { k:'profesor', label:'Profesor' },
     { k:'academic_hours', label:'Horas académicas', num:true },
   ], det.map(r=>({...r, res:resultado(r)})));
+}
+
+function renderSesionesCat(base){
+  const canc = base.filter(esCancelada);
+  const et = {proyecto:'Proyecto', ie:'Institución Educativa', grado:'Grado', salon:'Salón'}[dimSesiones];
+  const g = {}, catTot = {};
+  for(const r of canc){
+    const k = r[dimSesiones] ?? '—', t = r.tag||'Sin categoría';
+    (g[k] ??= {}); g[k][t] = (g[k][t]||0) + 1;
+    catTot[t] = (catTot[t]||0) + 1;
+  }
+  const cats = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+  const filas = Object.entries(g).map(([k,vals])=>{
+    const row = { k, total: 0 };
+    for(const c of cats){ row[c] = vals[c]||0; row.total += vals[c]||0; }
+    return row;
+  }).sort((a,b)=>b.total-a.total);
+  EXPORTS.sesiones = { nombre:'canceladas_por_categoria_y_'+dimSesiones, cols:[et, ...cats, 'Total'],
+    rows: filas.map(r=>[r.k, ...cats.map(c=>r[c]), r.total]) };
+  renderTable('tSesiones', [
+    { k:'k', label:et, tip:'k' },
+    ...cats.map(c=>({ k:c, label:c.length>16?c.slice(0,15)+'…':c, num:true, fmt:r=>r[c]?nf.format(r[c]):'—' })),
+    { k:'total', label:'Total', num:true, fmt:r=>nf.format(r.total), style:()=>'font-weight:600' },
+  ], filas);
+  document.getElementById('notaCobertura').textContent =
+    'Sesiones canceladas por categoría del motivo (conteo de sesiones, respeta los filtros activos).';
 }
 
 /* ============ modales / detalle / csv ============ */
