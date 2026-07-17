@@ -54,6 +54,7 @@ body { font-family:'Mulish',Calibri,sans-serif; background:var(--bg); color:var(
 .f-select.active-f { font-weight:600; }
 .scope { display:flex; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:2px; flex-shrink:0; }
 .scope.deshabilitado { opacity:.45; pointer-events:none; }
+.p-tabs.deshabilitado { opacity:.4; pointer-events:none; }
 .scope-btn { font-family:'Mulish',Calibri,sans-serif; font-size:10.5px; font-weight:500; padding:2px 8px; border:none; background:transparent; color:var(--ink2); border-radius:5px; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
 .scope-btn:hover { color:var(--ink); }
 .scope-btn.active { background:var(--surface); color:var(--ink); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
@@ -1278,19 +1279,21 @@ function renderSesGraficos(g, et){
     exp = { nombre:'canceladas_pagadas_por_'+dimSesiones, cols:[et,'Pagadas','No pagadas','% pagadas'],
       rows: top.map(r=>[r.k, r.pgS, r.cS-r.pgS, r.cS?(100*r.pgS/r.cS).toFixed(1):0]) };
   } else {
-    const top = [...filasG].sort((a,b)=>b.pS-a.pS).slice(0,8);
+    const conPct = filasG.map(r=>({...r, pct: r.pS ? 100*Math.max(0,(r.coS||0)-(r.rdS||0))/r.pS : 0}));
+    const top = conPct.sort((a,b)=>b.pS-a.pS).slice(0,10).sort((a,b)=>b.pct-a.pct);
     labels = top.map(r=>trunca(r.k));
-    titulo = `Composición · % de sesiones (top ${top.length})`;
-    pctX = true;
-    datasets = [
-      { label:'Dictadas', data:top.map(r=>r.pS?100*r.dS/r.pS:0), backgroundColor:hexA(css('--teal'),0.75), stack:'s' },
-      { label:'Canceladas', data:top.map(r=>r.pS?100*r.cS/r.pS:0), backgroundColor:hexA(css('--coral-l'),0.95), stack:'s' },
-      { label:'Futuras', data:top.map(r=>r.pS?100*r.fS/r.pS:0), backgroundColor:hexA(css('--ink4'),0.8), stack:'s' },
-    ];
-    base.plugins.tooltip = { callbacks:{ label:c=>{ const r=top[c.dataIndex]; const n={'Dictadas':r.dS,'Canceladas':r.cS,'Futuras':r.fS}[c.dataset.label]; return ` ${c.dataset.label}: ${c.parsed.x.toFixed(1)}% (${nf.format(n)} sesiones)`; } } };
-    base.scales.x = { stacked:true, max:100, ticks:{color:css('--ink3'),font:{size:9},callback:v=>v+'%'}, grid:{display:false} };
-    exp = { nombre:'composicion_100_por_'+dimSesiones, cols:[et,'% Dictadas','% Canceladas','% Futuras','Dictadas','Canceladas','Futuras','Programadas'],
-      rows: top.map(r=>[r.k, r.pS?(100*r.dS/r.pS).toFixed(1):0, r.pS?(100*r.cS/r.pS).toFixed(1):0, r.pS?(100*r.fS/r.pS).toFixed(1):0, r.dS, r.cS, r.fS, r.pS]) };
+    titulo = `% de cancelación (top ${top.length} por volumen, ordenado por %)`;
+    datasets = [{ label:'% de cancelación', data:top.map(r=>r.pct),
+      backgroundColor:top.map(r=>hexA(colorPct(r.pct),0.9)), borderRadius:3, maxBarThickness:16,
+      datalabels:{ display:true, anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } }];
+    base.plugins.legend = { display:false };
+    base.plugins.datalabels = undefined;
+    base.plugins.tooltip = { callbacks:{ label:c=>{ const r=top[c.dataIndex]; return ` ${c.parsed.x.toFixed(1)}% — ${nf.format(r.cS)} canceladas de ${nf.format(r.pS)} programadas`; } } };
+    base.scales.x = { ticks:{color:css('--ink3'),font:{size:9},callback:v=>v+'%'}, grid:{color:css('--border2')} };
+    base.scales.y.stacked = false;
+    base.layout = { padding:{right:44} };
+    exp = { nombre:'pct_cancelacion_por_'+dimSesiones, cols:[et,'% de cancelación','Canceladas','Programadas'],
+      rows: top.map(r=>[r.k, r.pct.toFixed(1), r.cS, r.pS]) };
   }
   base.plugins.tooltip = base.plugins.tooltip || { callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.x)} sesiones` } };
   document.getElementById('sesVizTitle').textContent = titulo;
@@ -1367,7 +1370,7 @@ document.getElementById('reprogVistaTabs').addEventListener('click', e => {
   e.target.classList.add('active'); reprogVista = e.target.dataset.rv;
   document.getElementById('reprogBodyDim').style.display = reprogVista==='dim'?'block':'none';
   document.getElementById('reprogBodyDet').style.display = reprogVista==='det'?'block':'none';
-  document.getElementById('reprogTabs').style.display = reprogVista==='dim'?'flex':'none';
+  document.getElementById('reprogTabs').classList.toggle('deshabilitado', reprogVista!=='dim');
 });
 document.getElementById('reprogTabs').addEventListener('click', e => {
   if(!e.target.dataset.d) return;
