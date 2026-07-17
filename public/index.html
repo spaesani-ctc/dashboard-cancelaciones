@@ -254,11 +254,6 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <button class="scope-btn active" data-u="ses">Sesiones</button>
     <button class="scope-btn" data-u="hrs">Horas académicas</button>
   </div>
-  <div class="scope" id="fPago" title="Qué cancelaciones cuentan en todo el dashboard (no afecta dictadas ni futuras)" style="margin-right:10px;">
-    <button class="scope-btn active" data-p="todas">Todas</button>
-    <button class="scope-btn" data-p="pagadas">Pagadas</button>
-    <button class="scope-btn" data-p="nopagadas">No pagadas</button>
-  </div>
   <span style="width:1px; align-self:stretch; background:var(--border); margin-right:6px;"></span>
   <div class="periodo">
     <button class="periodo-btn" id="periodoBtn"><span class="cal">📅</span> <span id="periodoLabel">Últimos 3 meses</span> <span style="opacity:.5">▾</span></button>
@@ -281,6 +276,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <div class="combo" id="cbMotivos"></div>
   <button class="combo-btn" id="btnMasFiltros">Más filtros <span style="opacity:.5">▾</span></button>
   <div id="masFiltros" style="display:none; gap:6px; align-items:center;">
+    <div class="scope" id="fPago" title="Qué cancelaciones cuentan en todo el dashboard (no afecta dictadas ni futuras)">
+      <button class="scope-btn active" data-p="todas">Todas</button>
+      <button class="scope-btn" data-p="pagadas">Pagadas</button>
+      <button class="scope-btn" data-p="nopagadas">No pagadas</button>
+    </div>
     <div class="combo" id="cbCanal"></div>
     <div class="combo" id="cbAutonomia"></div>
     <div class="combo" id="cbCurricula"></div>
@@ -569,7 +569,7 @@ document.getElementById('fPago').addEventListener('click', e => {
   if(!e.target.dataset.p) return;
   document.querySelectorAll('#fPago .scope-btn').forEach(b=>b.classList.remove('active'));
   e.target.classList.add('active');
-  PAGO = e.target.dataset.p; render();
+  PAGO = e.target.dataset.p; etiquetaMas(); render();
 });
 
 /* ============ unidad ============ */
@@ -619,7 +619,7 @@ document.getElementById('btnMasFiltros').onclick = () => {
   etiquetaMas();
 };
 function etiquetaMas(){
-  const n = F.canal.size + F.autonomia.size + F.curricula.size;
+  const n = F.canal.size + F.autonomia.size + F.curricula.size + (PAGO!=='todas' ? 1 : 0);
   document.getElementById('btnMasFiltros').innerHTML =
     (n ? `Más filtros · ${n} ` : 'Más filtros ') + `<span style="opacity:.5">${masAbierto?'▴':'▾'}</span>`;
   document.getElementById('btnMasFiltros').classList.toggle('active-f', n>0);
