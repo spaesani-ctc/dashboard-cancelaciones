@@ -29,6 +29,12 @@ SELECT
   COALESCE(p.internal_name, p.name, 'B2C') AS proyecto,
   COALESCE(p.type, 'B2C') AS canal,
   COALESCE(NULLIF(TRIM(ei.name), ''), 'Sin IE') AS ie,
+  CASE ei.autonomy_level_id
+    WHEN 1 THEN '1. Co-Enseñanza' WHEN 2 THEN '2. Autonomía Moderada'
+    WHEN 3 THEN '3. Autonomía Avanzada' WHEN 5 THEN '5. No aplica'
+    ELSE 'Sin asignar' END AS autonomia,
+  CASE WHEN ei.categorization_level_id IN (1, 2) THEN CAST(ei.categorization_level_id AS VARCHAR)
+       ELSE 'Sin asignar' END AS curricula,
   COALESCE(rr.college_grade, '-') AS grado,
   rr.id AS room_id,
   rr.name AS salon,

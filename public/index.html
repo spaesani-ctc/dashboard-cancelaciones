@@ -269,6 +269,8 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <div class="combo" id="cbCanal"></div>
   <div class="combo" id="cbProyecto"></div>
   <div class="combo" id="cbIe"></div>
+  <div class="combo" id="cbAutonomia"></div>
+  <div class="combo" id="cbCurricula"></div>
   <div class="combo" id="cbGrado"></div>
   <div class="combo" id="cbRoomId"></div>
   <div class="combo" id="cbSalon"></div>
@@ -552,7 +554,7 @@ const fmtU = v => enHoras() ? nf.format(Math.round(v))+' h' : nf.format(v);
 const PAGADA = v => /^paid/.test(String(v)) || String(v)==='True';
 
 /* ============ filtros ============ */
-const F = { canal:new Set(), proyecto:new Set(), ie:new Set(), grado:new Set(), salon:new Set(), roomId:new Set(), categoria:new Set() };
+const F = { canal:new Set(), proyecto:new Set(), ie:new Set(), grado:new Set(), salon:new Set(), roomId:new Set(), categoria:new Set(), autonomia:new Set(), curricula:new Set() };
 let MOTIVOS_EXCL = null;                 // Set de nombres de motivo excluidos
 const DEFAULT_EXCL_IDS = [26, 33, 34, 35];   // Inicio de proyecto atrasado · Cambio operativo BO · Feriado · Vacaciones
 function defaultExcl(){
@@ -580,6 +582,8 @@ const COMBOS = [
   { id:'cbCanal', k:'canal', label:'Canal', plural:'Canales', todos:'Todos', vals: () => uniqDe('canal','canal') },
   { id:'cbProyecto', k:'proyecto', label:'Proyecto', plural:'Proyectos', todos:'Todos', vals: () => uniqDe('proyecto','proyecto') },
   { id:'cbIe', k:'ie', label:'Institución Educativa', plural:'Instituciones Educativas', todos:'Todas', vals: () => uniqDe('ie','ie') },
+  { id:'cbAutonomia', k:'autonomia', label:'Nivel de autonomía', plural:'Niveles de autonomía', todos:'Todos', vals: () => uniqDe('autonomia','autonomia') },
+  { id:'cbCurricula', k:'curricula', label:'Nivel de currícula', plural:'Niveles de currícula', todos:'Todos', vals: () => uniqDe('curricula','curricula') },
   { id:'cbGrado', k:'grado', label:'Grado', plural:'Grados', todos:'Todos', vals: () => gradoDesc(uniqDe('grado','grado')) },
   { id:'cbRoomId', k:'roomId', label:'ID Salón', plural:'IDs de Salón', todos:'Todos', vals: () => uniqDe('roomId','room_id') },
   { id:'cbSalon', k:'salon', label:'Salón', plural:'Salones', todos:'Todos', vals: () => uniqDe('salon','salon') },
@@ -678,6 +682,8 @@ function pasaFiltros(r, omitir){
   if(!chk('canal', r.canal)) return false;
   if(!chk('proyecto', r.proyecto)) return false;
   if(!chk('ie', r.ie)) return false;
+  if(!chk('autonomia', r.autonomia)) return false;
+  if(!chk('curricula', r.curricula)) return false;
   if(!chk('grado', r.grado)) return false;
   if(!chk('roomId', r.room_id)) return false;
   if(!chk('salon', r.salon)) return false;
@@ -1400,7 +1406,7 @@ function renderDetalle(){
 
 document.getElementById('btnCSV').onclick = () => {
   const canc = window._canc||[];
-  const cols = ['fecha','semana','dia','hora','proyecto','canal','ie','grado','room_id','salon','reason_id','motivo','tag','profesor','make_up_class','given_by_external','academic_hours','duracion_min','cancelada_el_bogota','anticipacion'];
+  const cols = ['fecha','semana','dia','hora','proyecto','canal','ie','autonomia','curricula','grado','room_id','salon','reason_id','motivo','tag','profesor','make_up_class','given_by_external','academic_hours','duracion_min','cancelada_el_bogota','anticipacion'];
   const ws = XLSX.utils.aoa_to_sheet([cols, ...canc.map(r=>cols.map(c=>
     c==='cancelada_el_bogota' ? fmtCancEl(r.cancellation_at) :
     c==='anticipacion' ? bucketAntic(r) : (r[c]??'')))]);
