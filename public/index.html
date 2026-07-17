@@ -335,19 +335,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 
   <!-- VISTA SESIONES Y HORAS -->
   <div id="vistaSesiones">
-    <div style="flex:none; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:10px; height:230px;">
-      <div class="panel" style="min-width:0">
-        <div class="p-head"><span class="p-title" id="sesCompTitle">Composición</span><div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesComp','chSesComp','composicion_100')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
-        <div class="p-body"><canvas id="chSesComp"></canvas></div>
+    <div class="panel" style="flex:none; height:225px; margin-bottom:10px;">
+      <div class="p-head"><span class="p-title" id="sesVizTitle">Composición</span>
+        <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesViz','chSesViz','grafico_sesiones')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
-      <div class="panel" style="min-width:0">
-        <div class="p-head"><span class="p-title" id="sesPagTitle">Canceladas pagadas</span><div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesPag','chSesPag','canceladas_pagadas')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
-        <div class="p-body"><canvas id="chSesPag"></canvas></div>
-      </div>
-      <div class="panel" style="min-width:0">
-        <div class="p-head"><span class="p-title" id="sesRepTitle">Reprogramadas</span><div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesRep','chSesRep','reprogramadas_resultado')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
-        <div class="p-body"><canvas id="chSesRep"></canvas><div id="sesRepVacio" class="p-sub" style="display:none; padding-top:24px; text-align:center;">Sin recuperaciones registradas en este alcance.</div></div>
-      </div>
+      <div class="p-body"><canvas id="chSesViz"></canvas></div>
     </div>
     <div class="panel" id="pSesiones">
       <div class="p-head">
@@ -378,22 +370,21 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <div class="p-body" id="reprogChartWrap" style="flex:none; height:auto"><div id="reprogStrip"></div></div>
     </div>
     <div class="panel" id="pReprogDim" style="flex:1; min-height:0">
-      <div class="p-head"><span class="p-title">Recuperaciones por dimensión</span>
-        <div class="p-tabs" id="reprogTabs">
+      <div class="p-head"><span class="p-title" id="reprogPanelTitle">Recuperaciones por dimensión</span><span class="p-sub" id="reprogDetN"></span>
+        <div class="p-tabs" id="reprogVistaTabs" style="margin-left:auto">
+          <button class="p-tab active" data-rv="dim">Por dimensión</button>
+          <button class="p-tab" data-rv="det">Detalle</button>
+        </div>
+        <div class="p-tabs" id="reprogTabs" style="margin-left:6px">
           <button class="p-tab active" data-d="proyecto">Proyecto</button>
           <button class="p-tab" data-d="ie">IE</button>
           <button class="p-tab" data-d="salon">Salón</button>
           <button class="p-tab" data-d="grado">Grado</button>
         </div>
-        <div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'reprogDim','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+        <div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event, reprogVista==='dim'?'reprogDim':'reprogDet','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
-      <div class="p-body scroll"><table class="t" id="tReprogDim"></table></div>
-    </div>
-    <div class="panel" id="pReprogDet" style="flex:1; min-height:0">
-      <div class="p-head"><span class="p-title">Detalle de recuperaciones</span><span class="p-sub" id="reprogDetN"></span>
-        <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'reprogDet','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
-      </div>
-      <div class="p-body scroll"><table class="t" id="tReprogDet"></table></div>
+      <div class="p-body scroll" id="reprogBodyDim"><table class="t" id="tReprogDim"></table></div>
+      <div class="p-body scroll" id="reprogBodyDet" style="display:none"><table class="t" id="tReprogDet"></table></div>
     </div>
   </div>
 </div>
@@ -1258,63 +1249,53 @@ document.getElementById('dimTabs').addEventListener('click', e => {
 });
 function renderSesGraficos(g, et){
   const filasG = Object.entries(g).map(([k,v])=>({k,...v}));
-  const trunca = k => String(k).length>18 ? String(k).slice(0,17)+'…' : k;
+  const trunca = k => String(k).length>24 ? String(k).slice(0,23)+'…' : k;
   const ejeY = { stacked:true, ticks:{color:css('--ink2'),font:{size:9.5}}, grid:{display:false} };
-  // 1) composición al 100% (proporciones comparables, sin efecto escala)
-  const top = [...filasG].sort((a,b)=>b.pS-a.pS).slice(0,8);
-  document.getElementById('sesCompTitle').textContent = `Composición · % de sesiones (top ${top.length})`;
-  EXPORTS.sesComp = { nombre:'composicion_100_por_'+dimSesiones, cols:[et,'% Dictadas','% Canceladas','% Futuras','Dictadas','Canceladas','Futuras','Programadas'],
-    rows: top.map(r=>[r.k, r.pS?(100*r.dS/r.pS).toFixed(1):0, r.pS?(100*r.cS/r.pS).toFixed(1):0, r.pS?(100*r.fS/r.pS).toFixed(1):0, r.dS, r.cS, r.fS, r.pS]) };
-  mkChart('chSesComp', { type:'bar', data:{ labels: top.map(r=>trunca(r.k)),
-    datasets:[
+  const base = { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:11}}, datalabels:{display:false},
+      tooltip:{callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.x)}${c.chart.options._pctX?'%':' sesiones'}` }} },
+    scales:{ x:{stacked:true,ticks:{color:css('--ink3'),font:{size:9}},grid:{color:css('--border2')}}, y:ejeY } };
+  let titulo, datasets, labels, exp, pctX=false;
+  if(colMode==='antic'){
+    const top = [...filasG].filter(r=>r.cS>0).sort((a,b)=>b.cS-a.cS).slice(0,8);
+    labels = top.map(r=>trunca(r.k));
+    titulo = `Anticipación del aviso · canceladas (top ${top.length})`;
+    datasets = [
+      { label:'Posterior al inicio', data:top.map(r=>r.poS), backgroundColor:hexA(css('--burdeos'),0.85), stack:'s' },
+      { label:'Aviso <24 h', data:top.map(r=>r.u24S), backgroundColor:hexA(css('--coral'),0.85), stack:'s' },
+      { label:'Aviso ≥24 h', data:top.map(r=>r.o24S), backgroundColor:hexA(css('--ink3'),0.7), stack:'s' },
+    ];
+    exp = { nombre:'anticipacion_por_'+dimSesiones, cols:[et,'Posterior al inicio','Aviso <24 h','Aviso ≥24 h','Canceladas'],
+      rows: top.map(r=>[r.k, r.poS, r.u24S, r.o24S, r.cS]) };
+  } else if(colMode==='pagadas'){
+    const top = [...filasG].filter(r=>r.cS>0).sort((a,b)=>b.cS-a.cS).slice(0,8);
+    labels = top.map(r=>trunca(r.k));
+    titulo = `Canceladas pagadas vs no pagadas (top ${top.length})`;
+    datasets = [
+      { label:'Pagadas', data:top.map(r=>r.pgS), backgroundColor:hexA(css('--coral'),0.9), stack:'s' },
+      { label:'No pagadas', data:top.map(r=>r.cS-r.pgS), backgroundColor:hexA(css('--coral-l'),0.55), stack:'s' },
+    ];
+    exp = { nombre:'canceladas_pagadas_por_'+dimSesiones, cols:[et,'Pagadas','No pagadas','% pagadas'],
+      rows: top.map(r=>[r.k, r.pgS, r.cS-r.pgS, r.cS?(100*r.pgS/r.cS).toFixed(1):0]) };
+  } else {
+    const top = [...filasG].sort((a,b)=>b.pS-a.pS).slice(0,8);
+    labels = top.map(r=>trunca(r.k));
+    titulo = `Composición · % de sesiones (top ${top.length})`;
+    pctX = true;
+    datasets = [
       { label:'Dictadas', data:top.map(r=>r.pS?100*r.dS/r.pS:0), backgroundColor:hexA(css('--teal'),0.75), stack:'s' },
       { label:'Canceladas', data:top.map(r=>r.pS?100*r.cS/r.pS:0), backgroundColor:hexA(css('--coral-l'),0.95), stack:'s' },
       { label:'Futuras', data:top.map(r=>r.pS?100*r.fS/r.pS:0), backgroundColor:hexA(css('--ink4'),0.8), stack:'s' },
-    ]},
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:9.5},boxWidth:10}}, datalabels:{display:false},
-        tooltip:{callbacks:{ label:c=>{ const r=top[c.dataIndex]; const n={'Dictadas':r.dS,'Canceladas':r.cS,'Futuras':r.fS}[c.dataset.label]; return ` ${c.dataset.label}: ${c.parsed.x.toFixed(1)}% (${nf.format(n)} sesiones)`; } }} },
-      scales:{ x:{stacked:true,max:100,ticks:{color:css('--ink3'),font:{size:9},callback:v=>v+'%'},grid:{display:false}}, y:ejeY } },
-    plugins:[ChartDataLabels] });
-  // 2) canceladas pagadas vs no pagadas
-  const topC = [...filasG].filter(r=>r.cS>0).sort((a,b)=>b.cS-a.cS).slice(0,8);
-  document.getElementById('sesPagTitle').textContent = 'Canceladas pagadas · sesiones';
-  EXPORTS.sesPag = { nombre:'canceladas_pagadas_por_'+dimSesiones, cols:[et,'Pagadas','No pagadas','% pagadas'],
-    rows: topC.map(r=>[r.k, r.pgS, r.cS-r.pgS, r.cS?(100*r.pgS/r.cS).toFixed(1):0]) };
-  mkChart('chSesPag', { type:'bar', data:{ labels: topC.map(r=>trunca(r.k)),
-    datasets:[
-      { label:'Pagadas', data:topC.map(r=>r.pgS), backgroundColor:hexA(css('--coral'),0.9), stack:'s' },
-      { label:'No pagadas', data:topC.map(r=>r.cS-r.pgS), backgroundColor:hexA(css('--coral-l'),0.55), stack:'s' },
-    ]},
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:9.5},boxWidth:10}},
-        datalabels:{ display: ctx => ctx.datasetIndex===1, anchor:'end', align:'end', offset:2, color:css('--ink3'), font:{family:'Mulish',size:8.5,weight:600},
-          formatter:(v,ctx)=>{ const r=topC[ctx.dataIndex]; return r.cS?`${(100*r.pgS/r.cS).toFixed(0)}% pag.`:''; } },
-        tooltip:{callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.x)} sesiones` }} },
-      scales:{ x:{stacked:true,ticks:{color:css('--ink3'),font:{size:9}},grid:{color:css('--border2')}}, y:ejeY },
-      layout:{padding:{right:46}} },
-    plugins:[ChartDataLabels] });
-  // 3) reprogramadas: dictadas vs canceladas
-  const topR = filasG.filter(r=>(r.rdS||0)+(r.mkCS||0)+(r.mkFS||0) > 0).sort((a,b)=>((b.rdS||0)+(b.mkCS||0))-((a.rdS||0)+(a.mkCS||0))).slice(0,8);
-  const hayR = topR.length>0;
-  document.getElementById('chSesRep').style.display = hayR?'block':'none';
-  document.getElementById('sesRepVacio').style.display = hayR?'none':'block';
-  document.getElementById('sesRepTitle').textContent = 'Reprogramadas · resultado';
-  if(hayR){
-    EXPORTS.sesRep = { nombre:'reprogramadas_por_'+dimSesiones, cols:[et,'Dictadas','Canceladas','Programadas (futuras)'],
-      rows: topR.map(r=>[r.k, r.rdS||0, r.mkCS||0, r.mkFS||0]) };
-    mkChart('chSesRep', { type:'bar', data:{ labels: topR.map(r=>trunca(r.k)),
-      datasets:[
-        { label:'Dictadas', data:topR.map(r=>r.rdS||0), backgroundColor:hexA(css('--teal'),0.85), stack:'s' },
-        { label:'Canceladas', data:topR.map(r=>r.mkCS||0), backgroundColor:hexA(css('--coral'),0.85), stack:'s' },
-        { label:'Futuras', data:topR.map(r=>r.mkFS||0), backgroundColor:hexA(css('--ink4'),0.8), stack:'s' },
-      ]},
-      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:9.5},boxWidth:10}}, datalabels:{display:false},
-          tooltip:{callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.x)}` }} },
-        scales:{ x:{stacked:true,ticks:{color:css('--ink3'),font:{size:9,stepSize:1}},grid:{color:css('--border2')}}, y:ejeY } },
-      plugins:[ChartDataLabels] });
-  } else if(charts['chSesRep']){ charts['chSesRep'].destroy(); delete charts['chSesRep']; }
+    ];
+    base.plugins.tooltip = { callbacks:{ label:c=>{ const r=top[c.dataIndex]; const n={'Dictadas':r.dS,'Canceladas':r.cS,'Futuras':r.fS}[c.dataset.label]; return ` ${c.dataset.label}: ${c.parsed.x.toFixed(1)}% (${nf.format(n)} sesiones)`; } } };
+    base.scales.x = { stacked:true, max:100, ticks:{color:css('--ink3'),font:{size:9},callback:v=>v+'%'}, grid:{display:false} };
+    exp = { nombre:'composicion_100_por_'+dimSesiones, cols:[et,'% Dictadas','% Canceladas','% Futuras','Dictadas','Canceladas','Futuras','Programadas'],
+      rows: top.map(r=>[r.k, r.pS?(100*r.dS/r.pS).toFixed(1):0, r.pS?(100*r.cS/r.pS).toFixed(1):0, r.pS?(100*r.fS/r.pS).toFixed(1):0, r.dS, r.cS, r.fS, r.pS]) };
+  }
+  base.plugins.tooltip = base.plugins.tooltip || { callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.x)} sesiones` } };
+  document.getElementById('sesVizTitle').textContent = titulo;
+  EXPORTS.sesViz = exp;
+  mkChart('chSesViz', { type:'bar', data:{ labels, datasets }, options: base, plugins:[ChartDataLabels] });
 }
 
 function renderSesiones(base){
@@ -1379,6 +1360,15 @@ function renderSesiones(base){
 
 /* ============ vista reprogramaciones ============ */
 let dimReprog = 'proyecto';
+let reprogVista = 'dim';
+document.getElementById('reprogVistaTabs').addEventListener('click', e => {
+  if(!e.target.dataset.rv) return;
+  document.querySelectorAll('#reprogVistaTabs .p-tab').forEach(x=>x.classList.remove('active'));
+  e.target.classList.add('active'); reprogVista = e.target.dataset.rv;
+  document.getElementById('reprogBodyDim').style.display = reprogVista==='dim'?'block':'none';
+  document.getElementById('reprogBodyDet').style.display = reprogVista==='det'?'block':'none';
+  document.getElementById('reprogTabs').style.display = reprogVista==='dim'?'flex':'none';
+});
 document.getElementById('reprogTabs').addEventListener('click', e => {
   if(!e.target.dataset.d) return;
   document.querySelectorAll('#reprogTabs .p-tab').forEach(x=>x.classList.remove('active'));
@@ -1424,8 +1414,7 @@ function renderReprog(base){
   const arr = Object.entries(g).map(([k,x])=>({k,...x,
       tR: x.co?100*x.int/x.co:0, tRec: x.co?100*x.d/x.co:0}))
     .filter(x=>x.int>0).sort((a,b)=>b.int-a.int || b.co-a.co);
-  document.getElementById('pReprogDim').style.display = arr.length ? 'flex' : 'none';
-  document.getElementById('pReprogDet').style.display = mk.length ? 'flex' : 'none';
+  document.getElementById('pReprogDim').style.display = mk.length ? 'flex' : 'none';
   const et = {proyecto:'Proyecto', ie:'Institución Educativa', salon:'Salón', grado:'Grado'}[dimReprog];
   EXPORTS.reprogDim = { nombre:'recuperaciones_por_'+dimReprog,
     cols:[et,'Intentos','Dictadas','Canceladas','Futuras','Canceladas originales','Tasa reprogramación %','Tasa recuperación %'],
@@ -1435,10 +1424,7 @@ function renderReprog(base){
     { k:'int', label:'Intentos', num:true, fmt:r=>fmtU(r.int) },
     { k:'d', label:'Dictadas', num:true, fmt:r=>fmtU(r.d), style:()=>`color:${css('--teal')}` },
     { k:'c', label:'Canceladas', num:true, fmt:r=>fmtU(r.c), style:()=>`color:${css('--coral')}` },
-    { k:'f', label:'Futuras', num:true, fmt:r=>fmtU(r.f) },
-    { k:'co', label:'Canceladas originales', num:true, fmt:r=>fmtU(r.co) },
-    { k:'tR', label:'Tasa reprogramación', num:true, fmt:r=>r.co?r.tR.toFixed(1)+'%':'—' },
-    { k:'tRec', label:'Tasa recuperación', num:true, fmt:r=>r.co?r.tRec.toFixed(1)+'%':'—' },
+    { k:'tRec', label:'Tasa de recuperación', num:true, fmt:r=>r.co?r.tRec.toFixed(1)+'%':'—' },
   ], arr);
   // detalle de cada intento
   const det = [...mk].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
