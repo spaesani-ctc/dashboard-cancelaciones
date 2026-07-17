@@ -77,7 +77,7 @@ body { font-family:'Mulish',Calibri,sans-serif; background:var(--bg); color:var(
 
 /* ===== LAYOUT ===== */
 .wrap { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 16px 8px; gap:10px; }
-.kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; flex-shrink:0; }
+.kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; flex-shrink:0; }
 .kpi { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 14px; display:flex; flex-direction:column; justify-content:center; }
 .kpi-label { font-family:'Gabarito',Arial,sans-serif; font-size:8.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink3); }
 .kpi-value { font-family:'Poppins',Arial,sans-serif; font-weight:700; font-size:1.45rem; line-height:1.2; color:var(--ink); }
@@ -291,10 +291,9 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 <div class="wrap">
   <div class="kpis">
     <div class="kpi"><div class="kpi-label" id="kProgL">Sesiones programadas</div><div class="kpi-value" id="kProg">—</div><div class="kpi-sub" id="kProgSub"></div></div>
-    <div class="kpi"><div class="kpi-label" id="kDictL">Sesiones dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
-    <div class="kpi"><div class="kpi-label" id="kCancL">Sesiones canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
-    <div class="kpi" title="Neto: a las canceladas se les descuentan las recuperaciones ya dictadas. Ver Metodología."><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
-    <div class="kpi"><div class="kpi-label" id="kPagadasL">% De sesiones canceladas pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
+    <div class="kpi" title="Dictadas sobre programadas del período"><div class="kpi-label" id="kDictL">% Dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
+    <div class="kpi" title="Neto: a las canceladas se les descuentan las recuperaciones ya dictadas. Ver Metodología."><div class="kpi-label" id="kCancL">% Canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
+    <div class="kpi" title="De las canceladas, cuántas igual se pagaron"><div class="kpi-label" id="kPagadasL">% Canceladas pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
     <div class="kpi" id="kFlexCard"></div>
   </div>
 
@@ -800,27 +799,28 @@ function renderKPIs(base, canc){
   const secundario = s => enHoras() ? `${nf.format(s.ses)} sesiones` : `${nf.format(Math.round(s.hrs))} horas académicas`;
   const u = enHoras() ? 'Horas' : 'Sesiones';
   const fR = x => { const d=new Date(x+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}); };
+  const nominal = st => `${nf.format(st.ses)} sesiones · ${nf.format(Math.round(st.hrs))} horas académicas`;
   document.getElementById('kProgL').textContent = `${u} programadas del ${fR(fDesde.value)} al ${fR(fHasta.value)}`;
-  document.getElementById('kDictL').textContent = u + ' dictadas';
-  document.getElementById('kCancL').textContent = u + ' canceladas';
   document.getElementById('kProg').textContent = principal(sProg);
   document.getElementById('kProgSub').textContent = secundario(sProg);
-  document.getElementById('kDict').textContent = principal(sDict);
-  document.getElementById('kDictSub').textContent = secundario(sDict);
-  document.getElementById('kCanc').textContent = principal(sCanc);
-  document.getElementById('kCancSub').textContent = secundario(sCanc);
+  // % dictadas
+  const pdSes = sProg.ses ? 100*sDict.ses/sProg.ses : 0;
+  const pdHrs = sProg.hrs ? 100*sDict.hrs/sProg.hrs : 0;
+  document.getElementById('kDictL').textContent = enHoras() ? '% Horas dictadas' : '% Sesiones dictadas';
+  document.getElementById('kDict').textContent = (enHoras()?pdHrs:pdSes).toFixed(1)+'%';
+  document.getElementById('kDictSub').textContent = nominal(sDict);
+  // % canceladas (neto)
   const neto = netoPct(base);
-  const pctSes = neto.ses, pctHrs = neto.hrs;
-  document.getElementById('kPct').textContent = (enHoras()?pctHrs:pctSes).toFixed(1)+'%';
-  document.getElementById('kPctSub').textContent = enHoras() ? `en sesiones: ${pctSes.toFixed(1)}%` : `en horas académicas: ${sProg.hrs?pctHrs.toFixed(1)+'%':'s/d'}`;
+  document.getElementById('kCancL').textContent = enHoras() ? '% Horas canceladas' : '% Sesiones canceladas';
+  document.getElementById('kCanc').textContent = (enHoras()?neto.hrs:neto.ses).toFixed(1)+'%';
+  document.getElementById('kCancSub').textContent = nominal(sCanc);
+  // % canceladas pagadas
   const pagadas = canc.filter(r=>PAGADA(r.is_paid_session));
   const sPag = sumas(pagadas);
-  document.getElementById('kPagadasL').textContent = enHoras() ? '% De horas canceladas pagadas' : '% De sesiones canceladas pagadas';
+  document.getElementById('kPagadasL').textContent = '% Canceladas pagadas';
   const pctPag = enHoras() ? (sCanc.hrs ? 100*sPag.hrs/sCanc.hrs : 0) : (sCanc.ses ? 100*sPag.ses/sCanc.ses : 0);
-  document.getElementById('kPagadas').textContent = (canc.length ? pctPag.toFixed(1) : '—') + (canc.length ? '%' : '');
-  const pctPagSes = sCanc.ses ? 100*sPag.ses/sCanc.ses : 0;
-  const pctPagHrs = sCanc.hrs ? 100*sPag.hrs/sCanc.hrs : 0;
-  document.getElementById('kPagadasSub').textContent = enHoras() ? `en sesiones: ${pctPagSes.toFixed(1)}%` : `en horas académicas: ${sCanc.hrs?pctPagHrs.toFixed(1)+'%':'s/d'}`;
+  document.getElementById('kPagadas').textContent = (canc.length ? pctPag.toFixed(1)+'%' : '—');
+  document.getElementById('kPagadasSub').textContent = canc.length ? nominal(sPag) : '';
   // intentos de reprogramación: make-ups del período, abiertas por resultado
   const mk = base.filter(esMakeUp);
   const mkDict = sumas(mk.filter(esDictada)), mkCanc = sumas(mk.filter(esCancelada)), mkFut = sumas(mk.filter(esFutura));
@@ -834,10 +834,11 @@ function renderKPIs(base, canc){
     flexCard.innerHTML = `<div class="kpi-label">Intentos de reprogramación</div><div class="kpi-value">${principal(sMk)}</div>
       <div class="kpi-sub"><span style="color:var(--teal)">✓ ${fmtU(enHoras()?mkDict.hrs:mkDict.ses)} dictadas</span> · <span style="color:var(--coral)">✗ ${fmtU(enHoras()?mkCanc.hrs:mkCanc.ses)} canceladas</span><br>reprogramación ${tReprog.toFixed(1)}% · recuperación ${tRecup.toFixed(1)}%</div>`;
   } else {
-    const pdSes = sProg.ses ? 100*sDict.ses/sProg.ses : 0;
-    const pdHrs = sProg.hrs ? 100*sDict.hrs/sProg.hrs : 0;
-    flexCard.innerHTML = `<div class="kpi-label">% Dictadas</div><div class="kpi-value teal">${(enHoras()?pdHrs:pdSes).toFixed(1)}%</div>
-      <div class="kpi-sub">${enHoras() ? `en sesiones: ${pdSes.toFixed(1)}%` : `en horas académicas: ${sProg.hrs?pdHrs.toFixed(1)+'%':'s/d'}`}</div>`;
+    const sFut = sumas(base.filter(esFutura));
+    const pfSes = sProg.ses ? 100*sFut.ses/sProg.ses : 0;
+    const pfHrs = sProg.hrs ? 100*sFut.hrs/sProg.hrs : 0;
+    flexCard.innerHTML = `<div class="kpi-label">${enHoras()?'% Horas futuras':'% Sesiones futuras'}</div><div class="kpi-value">${(enHoras()?pfHrs:pfSes).toFixed(1)}%</div>
+      <div class="kpi-sub">${nominal(sFut)}</div>`;
   }
 }
 
