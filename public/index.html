@@ -333,15 +333,15 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="panel" id="pSesiones">
       <div class="p-head">
         <span class="p-title">Sesiones y horas académicas</span>
-        <div class="p-tabs" id="dimTabs">
+        <div class="p-tabs" id="dimTabs" style="margin-left:12px; margin-right:auto;">
           <button class="p-tab active" data-d="proyecto">Proyecto</button>
           <button class="p-tab" data-d="ie">IE</button>
           <button class="p-tab" data-d="grado">Grado</button>
           <button class="p-tab" data-d="salon">Salón</button>
         </div>
-        <div class="p-tabs" id="colTabs" style="margin-left:8px; border-left:1px solid var(--border); padding-left:8px;">
-          <button class="p-tab active" data-c="resumen">Resumen</button>
-          <button class="p-tab" data-c="antic">Anticipación</button>
+        <div class="scope" id="colTabs" title="Qué columnas muestra la tabla">
+          <button class="scope-btn active" data-c="resumen">General</button>
+          <button class="scope-btn" data-c="antic">Anticipación</button>
         </div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesiones','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body scroll"><table class="t" id="tSesiones"></table></div>
@@ -1157,7 +1157,7 @@ function renderHeatmap(canc){
 let colMode = 'resumen';
 document.getElementById('colTabs').addEventListener('click', e => {
   if(!e.target.dataset.c) return;
-  document.querySelectorAll('#colTabs .p-tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('#colTabs .scope-btn').forEach(x=>x.classList.remove('active'));
   e.target.classList.add('active'); colMode = e.target.dataset.c; renderSesiones(window._base||[]);
 });
 document.getElementById('dimTabs').addEventListener('click', e => {
