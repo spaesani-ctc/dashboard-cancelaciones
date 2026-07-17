@@ -254,6 +254,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <button class="scope-btn active" data-u="ses">Sesiones</button>
     <button class="scope-btn" data-u="hrs">Horas académicas</button>
   </div>
+  <div class="scope" id="fPago" title="Qué cancelaciones cuentan en todo el dashboard (no afecta dictadas ni futuras)" style="margin-right:10px;">
+    <button class="scope-btn active" data-p="todas">Todas</button>
+    <button class="scope-btn" data-p="pagadas">Pagadas</button>
+    <button class="scope-btn" data-p="nopagadas">No pagadas</button>
+  </div>
   <span style="width:1px; align-self:stretch; background:var(--border); margin-right:6px;"></span>
   <div class="periodo">
     <button class="periodo-btn" id="periodoBtn"><span class="cal">📅</span> <span id="periodoLabel">Últimos 3 meses</span> <span style="opacity:.5">▾</span></button>
@@ -297,7 +302,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <div class="grid" id="vistaResumen">
     <div class="panel" id="pSemanal">
       <div class="p-head"><span class="p-title">Evolución semanal</span>
-        <div class="p-tabs" id="semVistaTabs" style="margin-left:auto"><button class="p-tab active" data-s2="total">Total</button><button class="p-tab" data-s2="cat">Por categoría</button></div><div class="p-tabs" id="semTabs" style="margin-left:6px"><button class="p-tab active" data-s="todas">Todas</button><button class="p-tab" data-s="pagadas">Pagadas</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'semanal','chSemanal','evolucion_semanal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
+        <div class="p-tabs" id="semVistaTabs" style="margin-left:auto"><button class="p-tab active" data-s2="total">Total</button><button class="p-tab" data-s2="cat">Por categoría</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'semanal','chSemanal','evolucion_semanal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
     <div class="panel" id="pRanking">
@@ -323,7 +328,6 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pAntic">
       <div class="p-head"><span class="p-title">Anticipación de la cancelación</span>
-        <div class="p-tabs" id="anticTabs"><button class="p-tab active" data-a="todas">Todas</button><button class="p-tab" data-a="pagadas">Pagadas</button></div>
         <div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'antic','chAntic','anticipacion_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body"><canvas id="chAntic"></canvas></div>
@@ -422,6 +426,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="modal-body nota">
       <p><strong>¿Qué muestra este dashboard?</strong> Las clases canceladas: cuántas fueron, por qué motivo, en qué proyectos, instituciones y salones, y cuándo. Todo se puede ver en cantidad de sesiones o en horas académicas (el switch de arriba a la izquierda).</p>
       <p><strong>¿Cómo se calcula el % de cancelación?</strong> Es un porcentaje neto: a las clases canceladas se les descuentan las recuperaciones ya dictadas, y el resultado se divide por el total de clases programadas del período. Una recuperación que a su vez se cancela no suma como clase perdida adicional — la clase perdida sigue siendo la original hasta que se recupere. Si se recuperó más de lo que se canceló, se muestra 0%.</p>
+      <p><strong>Filtro Pagadas / No pagadas:</strong> restringe únicamente qué cancelaciones cuentan — las clases dictadas y futuras no se ven afectadas.</p>
       <p><strong>Motivos que no se cuentan por defecto:</strong> Feriado, Vacaciones, Cambio operativo e Inicio de proyecto atrasado — son movimientos de calendario, no cancelaciones reales. Si querés incluirlos, están en el filtro de Motivos.</p>
       <p><strong>Horas académicas:</strong> se muestran solo donde el dato está cargado en el sistema; siempre te indicamos qué porcentaje de cobertura tiene.</p>
       <p>Cualquier duda, puedes contactar a <strong>@Data</strong> :)</p>
@@ -560,6 +565,14 @@ document.getElementById('vistas').addEventListener('click', e => {
   if(ROWS.length) render();
 });
 
+/* ============ pago (global) ============ */
+document.getElementById('fPago').addEventListener('click', e => {
+  if(!e.target.dataset.p) return;
+  document.querySelectorAll('#fPago .scope-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  PAGO = e.target.dataset.p; render();
+});
+
 /* ============ unidad ============ */
 document.getElementById('unidad').addEventListener('click', e => {
   if(!e.target.dataset.u) return;
@@ -575,6 +588,8 @@ const PAGADA = v => /^paid/.test(String(v)) || String(v)==='True';
 
 /* ============ filtros ============ */
 const F = { canal:new Set(), proyecto:new Set(), ie:new Set(), grado:new Set(), salon:new Set(), categoria:new Set(), autonomia:new Set(), curricula:new Set() };
+let PAGO = 'todas';                      // 'todas' | 'pagadas' | 'nopagadas' — solo restringe canceladas
+const pasaPago = r => PAGO==='todas' || (PAGO==='pagadas') === PAGADA(r.is_paid_session);
 let MOTIVOS_EXCL = null;                 // Set de nombres de motivo excluidos
 const DEFAULT_EXCL_IDS = [26, 33, 34, 35];   // Inicio de proyecto atrasado · Cambio operativo BO · Feriado · Vacaciones
 function defaultExcl(){
@@ -706,6 +721,8 @@ document.addEventListener('click', cerrarPops);
 document.getElementById('btnLimpiar').onclick = () => {
   Object.values(F).forEach(s=>s.clear());
   MOTIVOS_EXCL = defaultExcl();
+  PAGO = 'todas';
+  document.querySelectorAll('#fPago .scope-btn').forEach(b=>b.classList.toggle('active', b.dataset.p==='todas'));
   poblarFiltros(); render();
 };
 
@@ -729,10 +746,12 @@ function pasaFiltros(r, omitir){
 function esCancelada(r){
   if(r.state!=='false') return false;
   if(MOTIVOS_EXCL && MOTIVOS_EXCL.has(r.motivo||'Sin especificar')) return false;
+  if(!pasaPago(r)) return false;
   return true;
 }
 function esValida(r){
   if(r.state==='false' && MOTIVOS_EXCL && MOTIVOS_EXCL.has(r.motivo||'Sin especificar')) return false;
+  if(r.state==='false' && !pasaPago(r)) return false;
   return true;
 }
 const esDictada = r => r.state==='true' && r.fecha < HOY && r.reason_id==null;
@@ -879,11 +898,10 @@ function dlPNG(canvasId, nombre){
 function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
 
 const showProg = true;
-let semMode = 'todas';
 let semVista = 'total';
 function renderSemanal(base){
   const sem = {};
-  const cuenta = r => esCancelada(r) && (semMode!=='pagadas' || PAGADA(r.is_paid_session));
+  const cuenta = esCancelada;
   const catTot = {};
   for(const r of base){
     (sem[r.semana] ??= {c:0, cAll:0, p:0, rd:0, cats:{}});
@@ -898,7 +916,7 @@ function renderSemanal(base){
     else if(esDictada(r) && esMakeUp(r)) sem[r.semana].rd += val(r);
   }
   // % neto semanal: max(0, canceladas orig. − recuperaciones dictadas) / programadas de la semana
-  const pctDe = o => o.p ? 100*(semMode==='pagadas' ? o.c : Math.max(0,o.cAll-o.rd))/o.p : 0;
+  const pctDe = o => o.p ? 100*Math.max(0,o.cAll-o.rd)/o.p : 0;
   const labels = Object.keys(sem).sort();
   const pocas = labels.length <= 15;
   const fmt = s => { const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); };
@@ -917,10 +935,10 @@ function renderSemanal(base){
     } catch(e){ return false; }
   };
   EXPORTS.semanal = semVista==='cat'
-    ? { nombre:'evolucion_semanal_por_categoria'+(semMode==='pagadas'?'_pagadas':''),
+    ? { nombre:'evolucion_semanal_por_categoria'+(PAGO!=='todas'?'_'+PAGO:''),
         cols:['Semana', ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]), 'Total', '% De cancelación'],
         rows: labels.map((s,i)=>[s, ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]).map(t=>Math.round((sem[s].cats[t]||0)*100)/100), Math.round(sem[s].c*100)/100, pcts[i].toFixed(1)]) }
-    : { nombre:'evolucion_semanal'+(semMode==='pagadas'?'_pagadas':''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas'+(semMode==='pagadas'?' pagadas':''), (enHoras()?'Horas':'Sesiones')+' programadas', 'Recuperaciones dictadas', semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación'],
+    : { nombre:'evolucion_semanal'+(PAGO!=='todas'?'_'+PAGO:''), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas', (enHoras()?'Horas':'Sesiones')+' programadas', 'Recuperaciones dictadas', '% De cancelación'],
         rows: labels.map((s,i)=>[s, Math.round(sem[s].cAll*100)/100, Math.round(sem[s].p*100)/100, Math.round(sem[s].rd*100)/100, pcts[i].toFixed(1)]) };
   const cTotArr = labels.map(s=>sem[s].c);
   const flip = ctx => {
@@ -939,7 +957,7 @@ function renderSemanal(base){
   const catsAll = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(t=>t!=='Sin categoría');
   const cats = catsAll.slice(0, 5);
   const catsResto = [...catsAll.slice(5), ...(catTot['Sin categoría'] ? ['Sin categoría'] : [])];
-  const lineaDS = { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+  const lineaDS = { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
         datalabels: { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
   const totCat = labels.map(s=>sem[s].c);
   const barrasCat = [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
@@ -947,7 +965,7 @@ function renderSemanal(base){
   if(barrasCat.length) barrasCat[barrasCat.length-1].datalabels = { display:pocas, anchor:'end', align:'end', offset:-2, color:css('--ink2'), font:{family:'Mulish',size:8.5,weight:600}, formatter:(v,ctx)=> totCat[ctx.dataIndex] ? fmtN(totCat[ctx.dataIndex]) : '' };
   const datasets = semVista==='cat'
     ? [...barrasCat, lineaDS]
-    : [ { type:'bar', order:2, label:(enHoras()?'Horas canceladas':'Sesiones canceladas')+(semMode==='pagadas'?' pagadas':''), data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, minBarLength:3, yAxisID:'y',
+    : [ { type:'bar', order:2, label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, minBarLength:3, yAxisID:'y',
         datalabels:{ display:pocas, anchor:'end',
           align: ctx => choca(ctx) ? 'start' : 'end',
           offset: ctx => choca(ctx) ? 2 : -2,
@@ -1158,7 +1176,6 @@ document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
   if(motivosTab==='tree') renderMotivosTree(window._canc||[]);
 });
 
-let anticMode = 'todas';
 function parseCanc(raw){
   if(!raw) return null;
   let x = String(raw).replace(' ','T').replace(/\.(\d{3})\d+/, '.$1');
@@ -1180,7 +1197,7 @@ function bucketAntic(r){
   return (sched - canc)/3.6e6 < 24 ? 'Con menos de 24 h' : 'Con 24 h o más';
 }
 function renderAnticipacion(canc){
-  const filas = anticMode==='pagadas' ? canc.filter(r=>PAGADA(r.is_paid_session)) : canc;
+  const filas = canc;
   const TODAS_CATS = ['Posterior al inicio de la sesión','Con menos de 24 h','Con 24 h o más','Sin dato'];
   const agg = {}; for(const c of TODAS_CATS) agg[c] = {s:0,h:0};
   for(const r of filas){ const b = bucketAntic(r); agg[b].s++; agg[b].h += r.academic_hours||0; }
@@ -1189,7 +1206,7 @@ function renderAnticipacion(canc){
   const tot = vals.reduce((a,b)=>a+b,0)||1;
   const COLOR_CAT = {'Posterior al inicio de la sesión':css('--coral'),'Con menos de 24 h':css('--amber'),'Con 24 h o más':css('--ink3'),'Sin dato':css('--ink4')};
   const colores = CATS.map(c=>COLOR_CAT[c]);
-  EXPORTS.antic = { nombre:'anticipacion_cancelacion'+(anticMode==='pagadas'?'_pagadas':''),
+  EXPORTS.antic = { nombre:'anticipacion_cancelacion'+(PAGO!=='todas'?'_'+PAGO:''),
     cols:['Anticipación','Sesiones','Horas académicas','% ('+(enHoras()?'horas':'sesiones')+')'],
     rows: CATS.map(c=>[c, agg[c].s, Math.round(agg[c].h*100)/100, (100*(enHoras()?agg[c].h:agg[c].s)/tot).toFixed(1)]) };
   mkChart('chAntic', { type:'bar', data:{ labels:CATS, datasets:[{ data:vals, backgroundColor:colores, borderRadius:3, maxBarThickness:26,
@@ -1203,14 +1220,6 @@ function renderAnticipacion(canc){
 document.querySelectorAll('#semVistaTabs .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#semVistaTabs .p-tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); semVista = b.dataset.s2; renderSemanal(window._base||[]);
-});
-document.querySelectorAll('#semTabs .p-tab').forEach(b => b.onclick = () => {
-  document.querySelectorAll('#semTabs .p-tab').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active'); semMode = b.dataset.s; renderSemanal(window._base||[]);
-});
-document.querySelectorAll('#pAntic .p-tab').forEach(b => b.onclick = () => {
-  document.querySelectorAll('#pAntic .p-tab').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active'); anticMode = b.dataset.a; renderAnticipacion(window._canc||[]);
 });
 
 let hmMode = 'nom';
