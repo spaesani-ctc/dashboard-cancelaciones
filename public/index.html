@@ -298,7 +298,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <div class="grid" id="vistaResumen">
     <div class="panel" id="pSemanal">
       <div class="p-head"><span class="p-title">Evolución semanal</span>
-        <div class="p-tabs" id="semVistaTabs" style="margin-left:auto"><button class="p-tab active" data-s2="total">Total</button><button class="p-tab" data-s2="cat">Por categoría</button><button class="p-tab" data-s2="motivo">Por motivo</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'semanal','chSemanal','evolucion_semanal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
+        <div class="p-tabs" id="semVistaTabs" style="margin-left:auto"><button class="p-tab active" data-s2="total">Total</button><button class="p-tab" data-s2="cat">Por categoría</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'semanal','chSemanal','evolucion_semanal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
     <div class="panel" id="pRanking">
@@ -356,6 +356,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
           <button class="scope-btn active" data-c="resumen">General</button>
           <button class="scope-btn" data-c="antic">Anticipación</button>
           <button class="scope-btn" data-c="pagadas">Pagadas</button>
+          <button class="scope-btn" data-c="motmes">Motivos por mes</button>
         </div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesiones','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body scroll"><table class="t" id="tSesiones"></table></div>
@@ -884,18 +885,15 @@ let semVista = 'total';
 function renderSemanal(base){
   const sem = {};
   const cuenta = esCancelada;
-  const catTot = {}, motTot = {};
+  const catTot = {};
   for(const r of base){
-    (sem[r.semana] ??= {c:0, cAll:0, p:0, rd:0, cats:{}, mots:{}});
+    (sem[r.semana] ??= {c:0, cAll:0, p:0, rd:0, cats:{}});
     sem[r.semana].p += val(r);
     if(cuenta(r)){
       sem[r.semana].c += val(r);
       const t = r.tag||'Sin categoría';
       sem[r.semana].cats[t] = (sem[r.semana].cats[t]||0) + val(r);
       catTot[t] = (catTot[t]||0) + val(r);
-      const mo = r.motivo||'Sin especificar';
-      sem[r.semana].mots[mo] = (sem[r.semana].mots[mo]||0) + val(r);
-      motTot[mo] = (motTot[mo]||0) + val(r);
     }
     if(esCancOriginal(r)) sem[r.semana].cAll += val(r);
     else if(esDictada(r) && esMakeUp(r)) sem[r.semana].rd += val(r);
@@ -919,11 +917,7 @@ function renderSemanal(base){
       return yPct < yBar && (yBar - yPct) < 30;   // % por encima del tope → nominal adentro
     } catch(e){ return false; }
   };
-  EXPORTS.semanal = semVista==='motivo'
-    ? { nombre:'evolucion_semanal_por_motivo'+sufPago(),
-        cols:['Semana', ...Object.keys(motTot).sort((a,b)=>motTot[b]-motTot[a]), 'Total', '% De cancelación'],
-        rows: labels.map((s,i)=>[s, ...Object.keys(motTot).sort((a,b)=>motTot[b]-motTot[a]).map(t=>Math.round((sem[s].mots[t]||0)*100)/100), Math.round(sem[s].c*100)/100, pcts[i].toFixed(1)]) }
-    : semVista==='cat'
+  EXPORTS.semanal = semVista==='cat'
     ? { nombre:'evolucion_semanal_por_categoria'+sufPago(),
         cols:['Semana', ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]), 'Total', '% De cancelación'],
         rows: labels.map((s,i)=>[s, ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]).map(t=>Math.round((sem[s].cats[t]||0)*100)/100), Math.round(sem[s].c*100)/100, pcts[i].toFixed(1)]) }
@@ -951,20 +945,10 @@ function renderSemanal(base){
   const totCat = labels.map(s=>sem[s].c);
   const barrasCat = [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
        ...(catsResto.length ? [{ type:'bar', order:2, label:'Resto', stack:'c', data:labels.map(s=>catsResto.reduce((a,t)=>a+(sem[s].cats[t]||0),0)), backgroundColor:hexA(css('--ink4'),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} }] : [])];
-  const motsAll = Object.entries(motTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-  const motsTop = motsAll.slice(0, 5);
-  const motsResto = motsAll.slice(5);
-  const PALM = ['--coral','--slate','--amber','--plum','--teal'];
-  const truncaM = t => t.length>26 ? t.slice(0,25)+'…' : t;
-  const barrasMot = [...motsTop.map((t,i)=>({ type:'bar', order:2, label:truncaM(t), stack:'c', data:labels.map(s=>sem[s].mots[t]||0), backgroundColor:hexA(css(PALM[i]),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
-       ...(motsResto.length ? [{ type:'bar', order:2, label:'Resto', stack:'c', data:labels.map(s=>motsResto.reduce((a,t)=>a+(sem[s].mots[t]||0),0)), backgroundColor:hexA(css('--ink4'),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} }] : [])];
   const etiquetaTotal = { display:pocas, anchor:'end', align:'end', offset:-2, color:css('--ink2'), font:{family:'Mulish',size:8.5,weight:600}, formatter:(v,ctx)=> totCat[ctx.dataIndex] ? fmtN(totCat[ctx.dataIndex]) : '' };
   if(barrasCat.length) barrasCat[barrasCat.length-1].datalabels = etiquetaTotal;
-  if(barrasMot.length) barrasMot[barrasMot.length-1].datalabels = etiquetaTotal;
   const datasets = semVista==='cat'
     ? [...barrasCat, lineaDS]
-    : semVista==='motivo'
-    ? [...barrasMot, lineaDS]
     : [ { type:'bar', order:2, label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, minBarLength:3, yAxisID:'y',
         datalabels:{ display:pocas, anchor:'end',
           align: ctx => choca(ctx) ? 'start' : 'end',
@@ -1260,16 +1244,45 @@ let colMode = 'resumen';
 document.getElementById('colTabs').addEventListener('click', e => {
   if(!e.target.dataset.c) return;
   document.querySelectorAll('#colTabs .scope-btn').forEach(x=>x.classList.remove('active'));
-  e.target.classList.add('active'); colMode = e.target.dataset.c; renderSesiones(window._base||[]);
+  e.target.classList.add('active'); colMode = e.target.dataset.c;
+  document.getElementById('dimTabs').classList.toggle('deshabilitado', colMode==='motmes');
+  renderSesiones(window._base||[]);
 });
 document.getElementById('dimTabs').addEventListener('click', e => {
   if(!e.target.dataset.d) return;
   document.querySelectorAll('#dimTabs .p-tab').forEach(x=>x.classList.remove('active'));
   e.target.classList.add('active'); dimSesiones = e.target.dataset.d; renderSesiones(window._base||[]);
 });
+function renderMotivosMes(base){
+  const canc = base.filter(esCancelada);
+  const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const fmtMes = m => `${MES[parseInt(m.slice(5,7),10)-1]} ${m.slice(2,4)}`;
+  const g = {}, mesTot = {};
+  for(const r of canc){
+    const mo = r.motivo||'Sin especificar', m = String(r.fecha).slice(0,7);
+    (g[mo] ??= {}); g[mo][m] = (g[mo][m]||0) + 1;
+    mesTot[m] = (mesTot[m]||0) + 1;
+  }
+  const meses = Object.keys(mesTot).sort();
+  const filas = Object.entries(g).map(([mo,vals])=>{
+    const row = { k: mo, total: 0 };
+    for(const m of meses){ row[m] = vals[m]||0; row.total += vals[m]||0; }
+    return row;
+  }).sort((a,b)=>b.total-a.total);
+  EXPORTS.sesiones = { nombre:'cancelaciones_por_motivo_y_mes', cols:['Motivo', ...meses.map(fmtMes), 'Total'],
+    rows: filas.map(r=>[r.k, ...meses.map(m=>r[m]), r.total]) };
+  renderTable('tSesiones', [
+    { k:'k', label:'Motivo', tip:'k' },
+    ...meses.map(m=>({ k:m, label:fmtMes(m), num:true, fmt:r=>r[m]?nf.format(r[m]):'—' })),
+    { k:'total', label:'Total', num:true, fmt:r=>nf.format(r.total), style:()=>'font-weight:600' },
+  ], filas);
+  document.getElementById('notaCobertura').textContent =
+    'Sesiones canceladas por motivo, mes a mes (conteo de sesiones; respeta los filtros activos).';
+}
+
 function renderSesGraficos(g, et){
   const panel = document.getElementById('pSesViz');
-  if(colMode==='resumen'){ panel.style.display='none'; return; }
+  if(colMode==='resumen' || colMode==='motmes'){ panel.style.display='none'; return; }
   panel.style.display='flex';
   const filasG = Object.entries(g).map(([k,v])=>({k,...v}));
   const trunca = k => String(k).length>24 ? String(k).slice(0,23)+'…' : k;
@@ -1321,6 +1334,7 @@ function renderSesGraficos(g, et){
 }
 
 function renderSesiones(base){
+  if(colMode==='motmes'){ renderSesGraficos(null,null); renderMotivosMes(base); return; }
   const g = {};
   let sinHoras = 0, tot = 0;
   for(const r of base){
