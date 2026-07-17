@@ -53,6 +53,7 @@ body { font-family:'Mulish',Calibri,sans-serif; background:var(--bg); color:var(
 .f-select { font-family:'Mulish',Calibri,sans-serif; font-size:11.5px; padding:4px 7px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--ink); max-width:150px; cursor:pointer; }
 .f-select.active-f { font-weight:600; }
 .scope { display:flex; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:2px; flex-shrink:0; }
+.scope.deshabilitado { opacity:.45; pointer-events:none; }
 .scope-btn { font-family:'Mulish',Calibri,sans-serif; font-size:10.5px; font-weight:500; padding:2px 8px; border:none; background:transparent; color:var(--ink2); border-radius:5px; cursor:pointer; white-space:nowrap; transition:background .15s,color .15s; }
 .scope-btn:hover { color:var(--ink); }
 .scope-btn.active { background:var(--surface); color:var(--ink); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
@@ -267,16 +268,18 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       </div>
     </div>
   </div>
-  <div class="combo" id="cbCanal"></div>
   <div class="combo" id="cbProyecto"></div>
   <div class="combo" id="cbIe"></div>
-  <div class="combo" id="cbAutonomia"></div>
-  <div class="combo" id="cbCurricula"></div>
   <div class="combo" id="cbGrado"></div>
-  <div class="combo" id="cbRoomId"></div>
   <div class="combo" id="cbSalon"></div>
   <div class="combo" id="cbCategoria"></div>
   <div class="combo" id="cbMotivos"></div>
+  <button class="combo-btn" id="btnMasFiltros">Más filtros <span style="opacity:.5">▾</span></button>
+  <div id="masFiltros" style="display:none; gap:6px; align-items:center;">
+    <div class="combo" id="cbCanal"></div>
+    <div class="combo" id="cbAutonomia"></div>
+    <div class="combo" id="cbCurricula"></div>
+  </div>
   <button class="f-icon" id="btnLimpiar" title="Limpiar filtros"><svg width="15" height="15" viewBox="0 0 100 100"><path d="M8 10 h84 v16 L60 60 v30 l-20 -12 V60 L8 26 z" fill="%23FFC107" style="fill:#FFC107"/><path d="M8 10 h84 v16 h-84 z" fill="#FF9800"/><circle cx="72" cy="72" r="22" fill="#F0505A"/><path d="M63 63 L81 81 M81 63 L63 81" stroke="#fff" stroke-width="8" stroke-linecap="round"/></svg></button>
 </div>
 
@@ -285,9 +288,9 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="kpi"><div class="kpi-label" id="kProgL">Sesiones programadas</div><div class="kpi-value" id="kProg">—</div><div class="kpi-sub" id="kProgSub"></div></div>
     <div class="kpi"><div class="kpi-label" id="kDictL">Sesiones dictadas</div><div class="kpi-value teal" id="kDict">—</div><div class="kpi-sub" id="kDictSub"></div></div>
     <div class="kpi"><div class="kpi-label" id="kCancL">Sesiones canceladas</div><div class="kpi-value coral" id="kCanc">—</div><div class="kpi-sub" id="kCancSub"></div></div>
-    <div class="kpi"><div class="kpi-label">% Cancelación</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
+    <div class="kpi" title="Neto: a las canceladas se les descuentan las recuperaciones ya dictadas. Ver Metodología."><div class="kpi-label">% Cancelación (neta)</div><div class="kpi-value coral" id="kPct">—</div><div class="kpi-sub" id="kPctSub"></div></div>
     <div class="kpi"><div class="kpi-label" id="kPagadasL">% De sesiones canceladas pagadas</div><div class="kpi-value coral" id="kPagadas">—</div><div class="kpi-sub" id="kPagadasSub"></div></div>
-    <div class="kpi"><div class="kpi-label" id="kReprogL">Intentos de reprogramación</div><div class="kpi-value" id="kReprog">—</div><div class="kpi-sub" id="kReprogSub"></div></div>
+    <div class="kpi" id="kFlexCard"></div>
   </div>
 
   <!-- VISTA RESUMEN -->
@@ -538,6 +541,9 @@ document.getElementById('vistas').addEventListener('click', e => {
   document.getElementById('vistaSesiones').style.display = VISTA==='sesiones'?'flex':'none';
   document.getElementById('vistaReprog').style.display = VISTA==='reprog'?'flex':'none';
   document.querySelector('.kpis').style.display = VISTA==='resumen'?'grid':'none';
+  const uni = document.getElementById('unidad');
+  uni.classList.toggle('deshabilitado', VISTA==='sesiones');
+  uni.title = VISTA==='sesiones' ? 'Esta pestaña muestra sesiones y horas a la vez' : 'Unidad de medida de todo el dashboard';
   if(ROWS.length) render();
 });
 
@@ -555,7 +561,7 @@ const fmtU = v => enHoras() ? nf.format(Math.round(v))+' h' : nf.format(v);
 const PAGADA = v => /^paid/.test(String(v)) || String(v)==='True';
 
 /* ============ filtros ============ */
-const F = { canal:new Set(), proyecto:new Set(), ie:new Set(), grado:new Set(), salon:new Set(), roomId:new Set(), categoria:new Set(), autonomia:new Set(), curricula:new Set() };
+const F = { canal:new Set(), proyecto:new Set(), ie:new Set(), grado:new Set(), salon:new Set(), categoria:new Set(), autonomia:new Set(), curricula:new Set() };
 let MOTIVOS_EXCL = null;                 // Set de nombres de motivo excluidos
 const DEFAULT_EXCL_IDS = [26, 33, 34, 35];   // Inicio de proyecto atrasado · Cambio operativo BO · Feriado · Vacaciones
 function defaultExcl(){
@@ -578,6 +584,20 @@ const gradoDesc = arr => arr.sort((a,b)=>{
   return String(a).localeCompare(String(b));
 });
 
+/* más filtros (secundarios) */
+let masAbierto = false;
+document.getElementById('btnMasFiltros').onclick = () => {
+  masAbierto = !masAbierto;
+  document.getElementById('masFiltros').style.display = masAbierto ? 'flex' : 'none';
+  etiquetaMas();
+};
+function etiquetaMas(){
+  const n = F.canal.size + F.autonomia.size + F.curricula.size;
+  document.getElementById('btnMasFiltros').innerHTML =
+    (n ? `Más filtros · ${n} ` : 'Más filtros ') + `<span style="opacity:.5">${masAbierto?'▴':'▾'}</span>`;
+  document.getElementById('btnMasFiltros').classList.toggle('active-f', n>0);
+}
+
 /* combos multi-choice con buscador */
 const COMBOS = [
   { id:'cbCanal', k:'canal', label:'Canal', plural:'Canales', todos:'Todos', vals: () => uniqDe('canal','canal') },
@@ -586,8 +606,8 @@ const COMBOS = [
   { id:'cbAutonomia', k:'autonomia', label:'Nivel de autonomía', plural:'Niveles de autonomía', todos:'Todos', vals: () => uniqDe('autonomia','autonomia') },
   { id:'cbCurricula', k:'curricula', label:'Nivel de currícula', plural:'Niveles de currícula', todos:'Todos', vals: () => uniqDe('curricula','curricula') },
   { id:'cbGrado', k:'grado', label:'Grado', plural:'Grados', todos:'Todos', vals: () => gradoDesc(uniqDe('grado','grado')) },
-  { id:'cbRoomId', k:'roomId', label:'ID Salón', plural:'IDs de Salón', todos:'Todos', vals: () => uniqDe('roomId','room_id') },
-  { id:'cbSalon', k:'salon', label:'Salón', plural:'Salones', todos:'Todos', vals: () => uniqDe('salon','salon') },
+  { id:'cbSalon', k:'salon', label:'Salón', plural:'Salones', todos:'Todos',
+    vals: () => [...new Set(ROWS.filter(r=>pasaFiltros(r,'salon')).map(r=>r.room_id+' · '+(r.salon||''))) ].sort((a,b)=>a.localeCompare(b,'es',{numeric:true})) },
   { id:'cbCategoria', k:'categoria', label:'Categoría', plural:'Categorías', todos:'Todas', vals: () =>
       [...new Set(ROWS.filter(r=>pasaFiltros(r,'categoria') && r.state==='false').map(r=>r.tag||'Sin categoría'))].sort((a,b)=>a.localeCompare(b,'es')) },
 ];
@@ -678,6 +698,7 @@ document.getElementById('btnLimpiar').onclick = () => {
 function poblarFiltros(){
   for(const c of COMBOS) mkCombo(c);
   mkComboMotivos();
+  etiquetaMas();
 }
 function pasaFiltros(r, omitir){
   const chk = (k, val) => omitir===k || F[k].size===0 || F[k].has(String(val));
@@ -687,8 +708,7 @@ function pasaFiltros(r, omitir){
   if(!chk('autonomia', r.autonomia)) return false;
   if(!chk('curricula', r.curricula)) return false;
   if(!chk('grado', r.grado)) return false;
-  if(!chk('roomId', r.room_id)) return false;
-  if(!chk('salon', r.salon)) return false;
+  if(omitir!=='salon' && F.salon.size>0 && !F.salon.has(r.room_id+' · '+(r.salon||''))) return false;
   if(omitir!=='categoria' && F.categoria.size>0 && r.state==='false' && !F.categoria.has(r.tag||'Sin categoría')) return false;
   return true;
 }
@@ -776,10 +796,16 @@ function renderKPIs(base, canc){
   const den = enHoras() ? cancOrig.hrs : cancOrig.ses;
   const tReprog = den ? 100*(enHoras()?sMk.hrs:sMk.ses)/den : 0;
   const tRecup  = den ? 100*(enHoras()?mkDict.hrs:mkDict.ses)/den : 0;
-  document.getElementById('kReprog').textContent = principal(sMk);
-  document.getElementById('kReprogSub').innerHTML = sMk.ses
-    ? `<span style="color:var(--teal)">✓ ${fmtU(enHoras()?mkDict.hrs:mkDict.ses)} dictadas</span> · <span style="color:var(--coral)">✗ ${fmtU(enHoras()?mkCanc.hrs:mkCanc.ses)} canceladas</span>${(enHoras()?mkFut.hrs:mkFut.ses)?` · ${fmtU(enHoras()?mkFut.hrs:mkFut.ses)} futuras`:''}<br>reprogramación ${tReprog.toFixed(1)}% · recuperación ${tRecup.toFixed(1)}%`
-    : 'sin recuperaciones en el período';
+  const flexCard = document.getElementById('kFlexCard');
+  if(sMk.ses){
+    flexCard.innerHTML = `<div class="kpi-label">Intentos de reprogramación</div><div class="kpi-value">${principal(sMk)}</div>
+      <div class="kpi-sub"><span style="color:var(--teal)">✓ ${fmtU(enHoras()?mkDict.hrs:mkDict.ses)} dictadas</span> · <span style="color:var(--coral)">✗ ${fmtU(enHoras()?mkCanc.hrs:mkCanc.ses)} canceladas</span><br>reprogramación ${tReprog.toFixed(1)}% · recuperación ${tRecup.toFixed(1)}%</div>`;
+  } else {
+    const pdSes = sProg.ses ? 100*sDict.ses/sProg.ses : 0;
+    const pdHrs = sProg.hrs ? 100*sDict.hrs/sProg.hrs : 0;
+    flexCard.innerHTML = `<div class="kpi-label">% Dictadas</div><div class="kpi-value teal">${(enHoras()?pdHrs:pdSes).toFixed(1)}%</div>
+      <div class="kpi-sub">${enHoras() ? `en sesiones: ${pdSes.toFixed(1)}%` : `en horas académicas: ${sProg.hrs?pdHrs.toFixed(1)+'%':'s/d'}`}</div>`;
+  }
 }
 
 const EXPORTS = {};
@@ -896,7 +922,7 @@ function renderSemanal(base){
   let fiC = 0; const colorTagC = {};
   const tcS = t => colorTagC[t] ??= (TC[t] || fallbackC[fiC++ % fallbackC.length]);
   const cats = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-  const lineaDS = { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
+  const lineaDS = { type:'line', order:1, label:semMode==='pagadas'?'% De cancelaciones pagadas':'% De cancelación (neto)', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
         datalabels: semVista==='cat' ? { display:false } : { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, color: css('--burdeos'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
   const datasets = semVista==='cat'
     ? [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })), lineaDS]
@@ -999,14 +1025,14 @@ function renderCategorias(canc){
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
   EXPORTS.categorias = { nombre:'categorias_cancelacion', cols:['Categoría', enHoras()?'Horas':'Sesiones', '% del total'],
     rows: orden.map(([k,v])=>[k, Math.round(v*100)/100, (100*v/total).toFixed(1)]) };
-  mkChart('chCategorias', { type:'doughnut', data:{
-    labels:orden.map(([k,v])=>`${k} · ${(100*v/total).toFixed(1)}%`),
-    datasets:[{ data:orden.map(x=>x[1]), backgroundColor:orden.map(([k])=>hexA(tc(k),0.88)),
-      borderColor:css('--surface'), borderWidth:2 }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'45%',
-      plugins:{ legend:{ position:'right', labels:{ color:css('--ink2'), font:{family:'Mulish',size:10.5}, boxWidth:11, padding:8 } },
-        tooltip:{ callbacks:{ title: items => orden[items[0].dataIndex][0], label: c => ` ${fmtU(c.parsed)}` } },
-        datalabels:{ color:'#fff', font:{family:'Mulish',size:10,weight:600}, formatter: v => (100*v/total)>=5 ? (100*v/total).toFixed(1)+'%' : '' } } },
+  mkChart('chCategorias', { type:'bar', data:{ labels:orden.map(x=>x[0]),
+    datasets:[{ data:orden.map(x=>x[1]), backgroundColor:orden.map(([k])=>hexA(tc(k),0.88)), borderRadius:3, maxBarThickness:26,
+      datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'Mulish',size:9.5,weight:600},
+        formatter:(v)=>`${fmtN(v)} · ${(100*v/total).toFixed(1)}%` } }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:80}},
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label:c=>` ${fmtU(c.parsed.x)} (${(100*c.parsed.x/total).toFixed(1)}%)` } } },
+      scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10.5}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
 }
 
@@ -1072,8 +1098,7 @@ function tablaRank(id, arr, etiqueta){
     { k:'k', label:etiqueta, tip:'k' },
     { k:'p', label:'Programadas', num:true, fmt:r=>fmtU(r.p) },
     { k:'c', label:'Canceladas', num:true, fmt:r=>fmtU(r.c) },
-    { k:'c24', label:'Canc. aviso <24 h', num:true, fmt:r=>fmtU(r.c24) },
-    { k:'pct', label:'% De cancelación', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
+    { k:'pct', label:'% De cancelación (neto)', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
   ], arr);
 }
 function renderMatriz(canc){
@@ -1112,8 +1137,8 @@ function renderRanking(base){
   if(rankMode==='matriz'){ renderMatriz(base.filter(esCancelada)); return; }
   const filas = rankMode==='profesor' ? base.filter(r=>r.profesor && r.profesor!==', ') : base;
   const arr = filaAgg(filas, rankMode, cfg.min);
-  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', 'Canceladas aviso <24 h', '% De cancelación (neto)'],
-    rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, Math.round(r.c24*100)/100, r.pct.toFixed(1)]) };
+  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', '% De cancelación (neto)'],
+    rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, r.pct.toFixed(1)]) };
   tablaRank('tRanking', arr, cfg.et);
 }
 document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
@@ -1254,9 +1279,9 @@ function renderSesiones(base){
   if(s) arr.sort((a,b)=>{ const cmp = cmpVal(a[s.k], b[s.k]); return s.dir==='asc'?cmp:-cmp; });
   const flecha = k => s&&s.k===k ? (s.dir==='asc'?' ▲':' ▼') : '';
   const GRUPOS = colMode==='resumen'
-    ? [['Programadas','pS','pH'],['Dictadas','dS','dH'],['Futuras','fS','fH'],['Canceladas','cS','cH'],['% De cancelación','pctS','pctH','pct']]
+    ? [['Programadas','pS','pH'],['Dictadas','dS','dH'],['Futuras','fS','fH'],['Canceladas','cS','cH'],['% De cancelación (neto)','pctS','pctH','pct']]
     : colMode==='antic'
-    ? [['Canceladas','cS','cH'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% De cancelación','pctS','pctH','pct']]
+    ? [['Canceladas','cS','cH'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% De cancelación (neto)','pctS','pctH','pct']]
     : [['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['Pag. posterior al inicio','ppoS','ppoH'],['Pag. aviso <24 h','pu24S','pu24H'],['Pag. aviso ≥24 h','po24S','po24H'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
   const celda = (r,bold) => `<tr${bold?' style="font-weight:600;border-top:2px solid var(--border)"':''}>
     <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
