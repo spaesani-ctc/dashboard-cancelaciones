@@ -336,7 +336,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 
   <!-- VISTA SESIONES Y HORAS -->
   <div id="vistaSesiones">
-    <div class="panel" style="flex:none; height:225px; margin-bottom:10px;">
+    <div class="panel" id="pSesViz" style="flex:none; height:225px; margin-bottom:10px; display:none;">
       <div class="p-head"><span class="p-title" id="sesVizTitle">Composición</span>
         <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'sesViz','chSesViz','grafico_sesiones')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
@@ -1249,6 +1249,9 @@ document.getElementById('dimTabs').addEventListener('click', e => {
   e.target.classList.add('active'); dimSesiones = e.target.dataset.d; renderSesiones(window._base||[]);
 });
 function renderSesGraficos(g, et){
+  const panel = document.getElementById('pSesViz');
+  if(colMode==='resumen'){ panel.style.display='none'; return; }
+  panel.style.display='flex';
   const filasG = Object.entries(g).map(([k,v])=>({k,...v}));
   const trunca = k => String(k).length>24 ? String(k).slice(0,23)+'…' : k;
   const ejeY = { stacked:true, ticks:{color:css('--ink2'),font:{size:9.5}}, grid:{display:false} };
@@ -1256,7 +1259,7 @@ function renderSesGraficos(g, et){
     plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:11}}, datalabels:{display:false},
       tooltip:{callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.x)}${c.chart.options._pctX?'%':' sesiones'}` }} },
     scales:{ x:{stacked:true,ticks:{color:css('--ink3'),font:{size:9}},grid:{color:css('--border2')}}, y:ejeY } };
-  let titulo, datasets, labels, exp, pctX=false;
+  let titulo, datasets, labels, exp;
   if(colMode==='antic'){
     const top = [...filasG].filter(r=>r.cS>0).sort((a,b)=>b.cS-a.cS).slice(0,8);
     labels = top.map(r=>trunca(r.k));
@@ -1278,22 +1281,6 @@ function renderSesGraficos(g, et){
     ];
     exp = { nombre:'canceladas_pagadas_por_'+dimSesiones, cols:[et,'Pagadas','No pagadas','% pagadas'],
       rows: top.map(r=>[r.k, r.pgS, r.cS-r.pgS, r.cS?(100*r.pgS/r.cS).toFixed(1):0]) };
-  } else {
-    const conPct = filasG.map(r=>({...r, pct: r.pS ? 100*Math.max(0,(r.coS||0)-(r.rdS||0))/r.pS : 0}));
-    const top = conPct.sort((a,b)=>b.pS-a.pS).slice(0,10).sort((a,b)=>b.pct-a.pct);
-    labels = top.map(r=>trunca(r.k));
-    titulo = `% de cancelación (top ${top.length} por volumen, ordenado por %)`;
-    datasets = [{ label:'% de cancelación', data:top.map(r=>r.pct),
-      backgroundColor:top.map(r=>hexA(colorPct(r.pct),0.9)), borderRadius:3, maxBarThickness:16,
-      datalabels:{ display:true, anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } }];
-    base.plugins.legend = { display:false };
-    base.plugins.datalabels = undefined;
-    base.plugins.tooltip = { callbacks:{ label:c=>{ const r=top[c.dataIndex]; return ` ${c.parsed.x.toFixed(1)}% — ${nf.format(r.cS)} canceladas de ${nf.format(r.pS)} programadas`; } } };
-    base.scales.x = { ticks:{color:css('--ink3'),font:{size:9},callback:v=>v+'%'}, grid:{color:css('--border2')} };
-    base.scales.y.stacked = false;
-    base.layout = { padding:{right:44} };
-    exp = { nombre:'pct_cancelacion_por_'+dimSesiones, cols:[et,'% de cancelación','Canceladas','Programadas'],
-      rows: top.map(r=>[r.k, r.pct.toFixed(1), r.cS, r.pS]) };
   }
   base.plugins.tooltip = base.plugins.tooltip || { callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.x)} sesiones` } };
   document.getElementById('sesVizTitle').textContent = titulo;
