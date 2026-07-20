@@ -396,7 +396,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 <div class="statusbar">
   <button id="btnDetalle">Ver detalle de canceladas</button>
   <button id="btnCSV">Exportar Excel</button>
-  <button id="btnMet" style="display:inline-flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex:none"><circle cx="12" cy="12" r="9.5"/><line x1="12" y1="10.8" x2="12" y2="16.2"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor" stroke="none"/></svg>Metodología</button>
+  <button id="btnMet">Metodología</button>
   <span style="margin-left:auto"><span class="dot"></span><span id="metaUpdated">—</span></span>
 </div>
 
@@ -412,7 +412,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 <!-- MODAL METODOLOGÍA -->
 <div class="modal" id="mMet">
   <div class="modal-box" style="width:min(680px,94vw)">
-    <div class="modal-head"><span class="modal-title">Metodología</span><button class="modal-close" data-close="mMet">✕</button></div>
+    <div class="modal-head"><span class="modal-title" style="display:inline-flex;align-items:center;gap:10px"><svg width="22" height="22" viewBox="0 0 24 24" style="flex:none"><circle cx="12" cy="12" r="11" fill="var(--accent)"/><circle cx="12" cy="7.3" r="1.5" fill="#fff"/><rect x="10.7" y="10.4" width="2.6" height="7.4" rx="1.3" fill="#fff"/></svg>Metodología</span><button class="modal-close" data-close="mMet">✕</button></div>
     <div class="modal-body nota">
       <p><strong>¿Qué muestra este dashboard?</strong> Las clases canceladas: cuántas fueron, por qué motivo, en qué proyectos, instituciones y salones, y cuándo. Todo se puede ver en cantidad de sesiones o en horas académicas (el switch de arriba a la izquierda).</p>
       <p><strong>¿Cómo se calcula el % de cancelación?</strong></p>
