@@ -1460,7 +1460,7 @@ function renderReprog(base){
   document.getElementById('reprogDetN').textContent = det.length ? `${nf.format(det.length)} sesiones reprogramadas` : '';
   const resultado = r => esDictada(r) ? 'Recuperada' : esCancelada(r) ? 'Cancelada de nuevo' : esFutura(r) ? 'Programada' : '—';
   EXPORTS.reprogDet = { nombre:'detalle_recuperaciones',
-    cols:['Fecha y hora','Resultado','Cancelada el (Bogotá)','Proyecto','IE','Salón','Grado','Motivo (si cancelada)','Profesor','Horas académicas'],
+    cols:['Fecha y hora','Resultado','Cancelada el (Bogotá)','Proyecto','IE','Salón','Grado','Motivo (si fue cancelada)','Profesor','Horas académicas'],
     rows: det.map(r=>[r.fecha + (r.hora_inicio?` ${String(r.hora_inicio).slice(0,5)}`:''), resultado(r), esCancelada(r)?fmtCancEl(r.cancellation_at):'', r.proyecto, r.ie, r.salon, r.grado, r.motivo||'', r.profesor||'', r.academic_hours??'']) };
   renderTable('tReprogDet', [
     { k:'fecha', label:'Fecha y hora', fmt:r=>`<span style="white-space:nowrap">${r.fecha}${r.hora_inicio?` · ${String(r.hora_inicio).slice(0,5)}`:''}</span>` },
@@ -1472,7 +1472,7 @@ function renderReprog(base){
     { k:'ie', label:'IE', tip:'ie' },
     { k:'salon', label:'Salón', tip:'salon' },
     { k:'grado', label:'Grado' },
-    { k:'motivo', label:'Motivo (si cancelada)', tip:'motivo' },
+    { k:'motivo', label:'Motivo (si fue cancelada)', tip:'motivo' },
     { k:'profesor', label:'Profesor' },
     { k:'academic_hours', label:'Horas académicas', num:true },
   ], det.map(r=>({...r, res:resultado(r), cancEl: esCancelada(r)?fmtCancEl(r.cancellation_at):''})));
