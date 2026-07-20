@@ -365,13 +365,13 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <!-- VISTA REPROGRAMACIONES -->
   <div id="vistaReprog" style="display:none; flex:1; min-height:0; flex-direction:column; gap:10px;">
     <div class="panel" style="flex:none">
-      <div class="p-head"><span class="p-title">Intentos de reprogramación</span><span class="p-sub" id="reprogResumen"></span>
+      <div class="p-head"><span class="p-title">Sesiones reprogramadas</span><span class="p-sub" id="reprogResumen"></span>
         <div class="p-dl solo"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'reprogRes','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
       <div class="p-body" id="reprogChartWrap" style="flex:none; height:auto"><div id="reprogStrip"></div></div>
     </div>
     <div class="panel" id="pReprogDim" style="flex:1; min-height:0">
-      <div class="p-head"><span class="p-title" id="reprogPanelTitle">Recuperaciones por dimensión</span><span class="p-sub" id="reprogDetN"></span>
+      <div class="p-head"><span class="p-title" id="reprogPanelTitle">Reprogramadas por dimensión</span><span class="p-sub" id="reprogDetN"></span>
         <div class="p-tabs" id="reprogVistaTabs" style="margin-left:auto">
           <button class="p-tab active" data-rv="dim">Por dimensión</button>
           <button class="p-tab" data-rv="det">Detalle</button>
@@ -796,8 +796,8 @@ function renderKPIs(base, canc){
   const tRecup  = den ? 100*(enHoras()?mkDict.hrs:mkDict.ses)/den : 0;
   const flexCard = document.getElementById('kFlexCard');
   if(sMk.ses){
-    flexCard.innerHTML = `<div class="kpi-label">Intentos de reprogramación</div><div class="kpi-value">${principal(sMk)}</div>
-      <div class="kpi-sub"><span style="color:var(--teal)">✓ ${fmtU(enHoras()?mkDict.hrs:mkDict.ses)} dictadas</span> · <span style="color:var(--coral)">✗ ${fmtU(enHoras()?mkCanc.hrs:mkCanc.ses)} canceladas</span><br>reprogramación ${tReprog.toFixed(1)}% · recuperación ${tRecup.toFixed(1)}%</div>`;
+    flexCard.innerHTML = `<div class="kpi-label">Sesiones reprogramadas</div><div class="kpi-value">${principal(sMk)}</div>
+      <div class="kpi-sub"><span style="color:var(--teal)">✓ ${fmtU(enHoras()?mkDict.hrs:mkDict.ses)} recuperadas</span> · <span style="color:var(--coral)">✗ ${fmtU(enHoras()?mkCanc.hrs:mkCanc.ses)} canceladas de nuevo</span><br>reprogramación ${tReprog.toFixed(1)}% · recuperación ${tRecup.toFixed(1)}%</div>`;
   } else {
     const sFut = sumas(base.filter(esFutura));
     const pfSes = sProg.ses ? 100*sFut.ses/sProg.ses : 0;
@@ -1411,14 +1411,14 @@ function renderReprog(base){
   const tR = v(cancOrig) ? 100*v(mk)/v(cancOrig) : 0;
   const tRec = v(cancOrig) ? 100*v(mkD)/v(cancOrig) : 0;
   document.getElementById('reprogResumen').innerHTML = mk.length
-    ? `${fmtU(v(mk))} intentos · tasa de reprogramación ${tR.toFixed(1)}% · tasa de recuperación ${tRec.toFixed(1)}% (sobre ${fmtU(v(cancOrig))} canceladas originales — no cuenta recuperaciones canceladas)`
-    : 'Sin recuperaciones registradas en el período y filtros elegidos. Los intentos aparecen cuando el backoffice marca una sesión como clase de recuperación.';
+    ? `${fmtU(v(mk))} reprogramadas · tasa de reprogramación ${tR.toFixed(1)}% · tasa de recuperación ${tRec.toFixed(1)}% (sobre ${fmtU(v(cancOrig))} canceladas originales)`
+    : 'Sin sesiones reprogramadas en el período y filtros elegidos. Aparecen cuando el backoffice marca una sesión como clase de recuperación.';
   const wrap = document.getElementById('reprogChartWrap');
   wrap.style.display = mk.length ? 'block' : 'none';
   if(mk.length){
     const tot = v(mk)||1;
-    const CATS_R = [['Dictadas', v(mkD), css('--teal')], ['Canceladas', v(mkC), css('--coral')], ['Programadas (futuras)', v(mkF), css('--ink4')]].filter(x=>x[1]>0);
-    EXPORTS.reprogRes = { nombre:'intentos_reprogramacion', cols:['Resultado', enHoras()?'Horas':'Sesiones', '% de los intentos'],
+    const CATS_R = [['Recuperadas (dictadas)', v(mkD), css('--teal')], ['Canceladas de nuevo', v(mkC), css('--coral')], ['Aún programadas', v(mkF), css('--ink4')]].filter(x=>x[1]>0);
+    EXPORTS.reprogRes = { nombre:'sesiones_reprogramadas', cols:['Resultado', enHoras()?'Horas':'Sesiones', '% de las reprogramadas'],
       rows: CATS_R.map(([n,x])=>[n, Math.round(x*100)/100, (100*x/tot).toFixed(1)]) };
     document.getElementById('reprogStrip').innerHTML =
       '<div style="display:flex;height:26px;border-radius:6px;overflow:hidden;gap:1px;max-width:560px">' +
@@ -1446,26 +1446,26 @@ function renderReprog(base){
   document.getElementById('pReprogDim').style.display = mk.length ? 'flex' : 'none';
   const et = {proyecto:'Proyecto', ie:'Institución Educativa', salon:'Salón', grado:'Grado'}[dimReprog];
   EXPORTS.reprogDim = { nombre:'recuperaciones_por_'+dimReprog,
-    cols:[et,'Intentos','Dictadas','Canceladas','Futuras','Canceladas originales','Tasa reprogramación %','Tasa recuperación %'],
+    cols:[et,'Reprogramadas','Recuperadas (dictadas)','Canceladas de nuevo','Aún programadas','Canceladas originales','Tasa reprogramación %','Tasa recuperación %'],
     rows: arr.map(x=>[x.k, x.int, x.d, x.c, x.f, x.co, x.tR.toFixed(1), x.tRec.toFixed(1)]) };
   renderTable('tReprogDim', [
     { k:'k', label:et, tip:'k' },
-    { k:'int', label:'Intentos', num:true, fmt:r=>fmtU(r.int) },
-    { k:'d', label:'Dictadas', num:true, fmt:r=>fmtU(r.d), style:()=>`color:${css('--teal')}` },
-    { k:'c', label:'Canceladas', num:true, fmt:r=>fmtU(r.c), style:()=>`color:${css('--coral')}` },
+    { k:'int', label:'Reprogramadas', num:true, fmt:r=>fmtU(r.int) },
+    { k:'d', label:'Recuperadas', num:true, fmt:r=>fmtU(r.d), style:()=>`color:${css('--teal')}` },
+    { k:'c', label:'Canceladas de nuevo', num:true, fmt:r=>fmtU(r.c), style:()=>`color:${css('--coral')}` },
     { k:'tRec', label:'Tasa de recuperación', num:true, fmt:r=>r.co?r.tRec.toFixed(1)+'%':'—' },
   ], arr);
   // detalle de cada intento
   const det = [...mk].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
-  document.getElementById('reprogDetN').textContent = det.length ? `${nf.format(det.length)} sesiones de recuperación` : '';
-  const resultado = r => esDictada(r) ? 'Dictada' : esCancelada(r) ? 'Cancelada' : esFutura(r) ? 'Programada' : '—';
+  document.getElementById('reprogDetN').textContent = det.length ? `${nf.format(det.length)} sesiones reprogramadas` : '';
+  const resultado = r => esDictada(r) ? 'Recuperada' : esCancelada(r) ? 'Cancelada de nuevo' : esFutura(r) ? 'Programada' : '—';
   EXPORTS.reprogDet = { nombre:'detalle_recuperaciones',
     cols:['Fecha','Resultado','Proyecto','IE','Salón','Grado','Motivo (si cancelada)','Profesor','Horas académicas'],
     rows: det.map(r=>[r.fecha, resultado(r), r.proyecto, r.ie, r.salon, r.grado, r.motivo||'', r.profesor||'', r.academic_hours??'']) };
   renderTable('tReprogDet', [
     { k:'fecha', label:'Fecha' },
     { k:'res', label:'Resultado', fmt:r=>{
-        const col = r.res==='Dictada'?'--teal':r.res==='Cancelada'?'--coral':'--ink3';
+        const col = r.res==='Recuperada'?'--teal':r.res==='Cancelada de nuevo'?'--coral':'--ink3';
         return `<span style="color:var(${col});font-weight:600">${r.res}</span>`; } },
     { k:'proyecto', label:'Proyecto', tip:'proyecto' },
     { k:'ie', label:'IE', tip:'ie' },
