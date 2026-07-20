@@ -372,15 +372,16 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pReprogDim" style="flex:1; min-height:0">
       <div class="p-head"><span class="p-title" id="reprogPanelTitle">Reprogramadas por dimensión</span><span class="p-sub" id="reprogDetN"></span>
-        <div class="p-tabs" id="reprogVistaTabs" style="margin-left:auto">
-          <button class="p-tab active" data-rv="dim">Por dimensión</button>
-          <button class="p-tab" data-rv="det">Detalle</button>
-        </div>
-        <div class="p-tabs" id="reprogTabs" style="margin-left:6px">
+        <div class="p-tabs" id="reprogTabs" style="margin-left:auto">
           <button class="p-tab active" data-d="proyecto">Proyecto</button>
           <button class="p-tab" data-d="ie">IE</button>
           <button class="p-tab" data-d="salon">Salón</button>
           <button class="p-tab" data-d="grado">Grado</button>
+        </div>
+        <span style="width:1px;height:16px;background:var(--line);margin:0 12px;flex:none"></span>
+        <div class="p-tabs" id="reprogVistaTabs">
+          <button class="p-tab active" data-rv="dim">Por dimensión</button>
+          <button class="p-tab" data-rv="det">Detalle</button>
         </div>
         <div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event, reprogVista==='dim'?'reprogDim':'reprogDet','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
@@ -1411,7 +1412,7 @@ function renderReprog(base){
   const tR = v(cancOrig) ? 100*v(mk)/v(cancOrig) : 0;
   const tRec = v(cancOrig) ? 100*v(mkD)/v(cancOrig) : 0;
   document.getElementById('reprogResumen').innerHTML = mk.length
-    ? `${fmtU(v(mk))} reprogramadas · tasa de reprogramación ${tR.toFixed(1)}% · tasa de recuperación ${tRec.toFixed(1)}% (sobre ${fmtU(v(cancOrig))} canceladas originales)`
+    ? ''
     : 'Sin sesiones reprogramadas en el período y filtros elegidos. Aparecen cuando el backoffice marca una sesión como clase de recuperación.';
   const wrap = document.getElementById('reprogChartWrap');
   wrap.style.display = mk.length ? 'block' : 'none';
