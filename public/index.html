@@ -415,13 +415,10 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="modal-head"><span class="modal-title">Metodología</span><button class="modal-close" data-close="mMet">✕</button></div>
     <div class="modal-body nota">
       <p><strong>¿Qué muestra este dashboard?</strong> Las clases canceladas: cuántas fueron, por qué motivo, en qué proyectos, instituciones y salones, y cuándo. Todo se puede ver en cantidad de sesiones o en horas académicas (el switch de arriba a la izquierda).</p>
-      <p><strong>¿Cómo se calcula el % de cancelación?</strong></p>
-      <p style="text-align:center; font-family:'Gabarito',Arial,sans-serif; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; margin:6px 0;">% de cancelación&nbsp;=&nbsp;(clases canceladas&nbsp;−&nbsp;recuperaciones ya dictadas)&nbsp;÷&nbsp;clases programadas del período</p>
-      <p>Es decir: de las clases canceladas se descuentan las que ya se recuperaron con una clase dictada, y eso se divide por todas las programadas del período (incluidas las futuras). Una recuperación que a su vez se cancela no suma como clase perdida adicional — la clase perdida sigue siendo la original hasta que se recupere. Si se recuperó más de lo que se canceló, se muestra 0%.</p>
+      <p><strong>¿Cómo se calcula el % de cancelación?</strong> Se toman las clases canceladas, se les restan las que ya se recuperaron con una clase dictada, y ese resultado se divide por todas las clases programadas del período. Una recuperación que a su vez se cancela no suma como clase perdida adicional — la clase perdida sigue siendo la original hasta que se recupere. Si se recuperó más de lo que se canceló, se muestra 0%.</p>
       <p><strong>Filtro Pagadas / No pagadas:</strong> restringe únicamente qué cancelaciones cuentan — las clases dictadas y futuras no se ven afectadas.</p>
       <p><strong>Motivos que no se cuentan por defecto:</strong> Feriado, Vacaciones, Cambio operativo e Inicio de proyecto atrasado — son movimientos de calendario, no cancelaciones reales. Si querés incluirlos, están en el filtro de Motivos.</p>
       <p><strong>Horas académicas:</strong> se muestran solo donde el dato está cargado en el sistema; siempre te indicamos qué porcentaje de cobertura tiene.</p>
-      <p><strong>Horas:</strong> todas las horas del dashboard — la hora de la sesión y la hora en que se registró la cancelación ("Cancelada el") — están en hora real de Colombia (America/Bogotá).</p>
       <p>Cualquier duda, puedes contactar a <strong>@Data</strong>.</p>
     </div>
   </div>
