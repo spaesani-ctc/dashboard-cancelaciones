@@ -269,19 +269,17 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       </div>
     </div>
   </div>
+  <div class="combo" id="cbCanal"></div>
   <div class="combo" id="cbProyecto"></div>
   <div class="combo" id="cbIe"></div>
+  <div class="combo" id="cbAutonomia"></div>
+  <div class="combo" id="cbCurricula"></div>
   <div class="combo" id="cbGrado"></div>
   <div class="combo" id="cbSalon"></div>
+  <div class="combo" id="cbPago"></div>
   <div class="combo" id="cbCategoria"></div>
   <div class="combo" id="cbMotivos"></div>
-  <button class="combo-btn" id="btnMasFiltros">Más filtros <span style="opacity:.5">▾</span></button>
-  <div id="masFiltros" style="display:none; gap:6px; align-items:center;">
-    <div class="combo" id="cbPago"></div>
-    <div class="combo" id="cbCanal"></div>
-    <div class="combo" id="cbAutonomia"></div>
-    <div class="combo" id="cbCurricula"></div>
-  </div>
+
   <button class="f-icon" id="btnLimpiar" title="Limpiar filtros"><svg width="15" height="15" viewBox="0 0 100 100"><path d="M8 10 h84 v16 L60 60 v30 l-20 -12 V60 L8 26 z" fill="%23FFC107" style="fill:#FFC107"/><path d="M8 10 h84 v16 h-84 z" fill="#FF9800"/><circle cx="72" cy="72" r="22" fill="#F0505A"/><path d="M63 63 L81 81 M81 63 L63 81" stroke="#fff" stroke-width="8" stroke-linecap="round"/></svg></button>
 </div>
 
@@ -594,20 +592,6 @@ const gradoDesc = arr => arr.sort((a,b)=>{
   return String(a).localeCompare(String(b));
 });
 
-/* más filtros (secundarios) */
-let masAbierto = false;
-document.getElementById('btnMasFiltros').onclick = () => {
-  masAbierto = !masAbierto;
-  document.getElementById('masFiltros').style.display = masAbierto ? 'flex' : 'none';
-  etiquetaMas();
-};
-function etiquetaMas(){
-  const n = F.canal.size + F.autonomia.size + F.curricula.size + (F.pago.size===1 ? 1 : 0);
-  document.getElementById('btnMasFiltros').innerHTML =
-    (n ? `Más filtros · ${n} ` : 'Más filtros ') + `<span style="opacity:.5">${masAbierto?'▴':'▾'}</span>`;
-  document.getElementById('btnMasFiltros').classList.toggle('active-f', n>0);
-}
-
 /* combos multi-choice con buscador */
 const COMBOS = [
   { id:'cbPago', k:'pago', label:'Pago', plural:'Pago', todos:'Todas', vals: () => ['Pagadas','No pagadas'] },
@@ -615,8 +599,8 @@ const COMBOS = [
   { id:'cbProyecto', k:'proyecto', label:'Proyecto', plural:'Proyectos', todos:'Todos',
     vals: () => [...new Set(ROWS.filter(r=>pasaFiltros(r,'proyecto')).map(r=>r.project_id+' · '+(r.proyecto||''))) ].sort((a,b)=>a.localeCompare(b,'es',{numeric:true})) },
   { id:'cbIe', k:'ie', label:'Institución Educativa', plural:'Instituciones Educativas', todos:'Todas', vals: () => uniqDe('ie','ie') },
-  { id:'cbAutonomia', k:'autonomia', label:'Nivel de autonomía', plural:'Niveles de autonomía', todos:'Todos', vals: () => uniqDe('autonomia','autonomia') },
-  { id:'cbCurricula', k:'curricula', label:'Nivel de currícula', plural:'Niveles de currícula', todos:'Todos', vals: () => uniqDe('curricula','curricula') },
+  { id:'cbAutonomia', k:'autonomia', label:'Autonomía', plural:'Autonomías', todos:'Todos', vals: () => uniqDe('autonomia','autonomia') },
+  { id:'cbCurricula', k:'curricula', label:'Currícula', plural:'Currículas', todos:'Todos', vals: () => uniqDe('curricula','curricula') },
   { id:'cbGrado', k:'grado', label:'Grado', plural:'Grados', todos:'Todos', vals: () => gradoDesc(uniqDe('grado','grado')) },
   { id:'cbSalon', k:'salon', label:'Salón', plural:'Salones', todos:'Todos',
     vals: () => [...new Set(ROWS.filter(r=>pasaFiltros(r,'salon')).map(r=>r.room_id+' · '+(r.salon||''))) ].sort((a,b)=>a.localeCompare(b,'es',{numeric:true})) },
@@ -646,7 +630,7 @@ function mkCombo(cfg){
     }).join('') || '<div class="combo-item" style="cursor:default">Sin opciones</div>';
     list.querySelectorAll('input[type=checkbox]').forEach(c => c.onchange = () => {
       if(c.checked) sel.add(c.dataset.v); else sel.delete(c.dataset.v);
-      btnLabel(); if(cfg.k==='pago'||cfg.k==='canal'||cfg.k==='autonomia'||cfg.k==='curricula') etiquetaMas(); render();
+      btnLabel(); render();
     });
   };
   el.querySelector('[data-a="todos"]').onclick = () => { cfg.vals().forEach(v=>sel.add(String(v))); pinta(search.value); btnLabel(); render(); };
@@ -710,7 +694,6 @@ document.getElementById('btnLimpiar').onclick = () => {
 function poblarFiltros(){
   for(const c of COMBOS) mkCombo(c);
   mkComboMotivos();
-  etiquetaMas();
 }
 function pasaFiltros(r, omitir){
   const chk = (k, val) => omitir===k || F[k].size===0 || F[k].has(String(val));
