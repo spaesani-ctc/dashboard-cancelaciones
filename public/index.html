@@ -1288,14 +1288,18 @@ function renderSesGraficos(g, et){
   let titulo, datasets, labels, exp;
   // apiladas verticales en absolutos: se ve el volumen, la composición (% en cada tramo) y el total arriba
   base.indexAxis = 'x';
-  base.layout = { padding:{ top:20 } };
+  base.layout = { padding:{ top:8 } };
   base.scales = { x:{ stacked:true, ticks:{color:css('--ink2'),font:{size:9.5}}, grid:{display:false} },
                   y:{ stacked:true, ticks:{color:css('--ink3'),font:{size:9}}, grid:{color:css('--border2')} } };
-  const totLbl = den => ({ anchor:'end', align:'end', offset:-2, clamp:true, color:css('--ink2'),
-    font:{family:'Gabarito',size:10,weight:600}, formatter:(v,ctx)=>nf.format(den[ctx.dataIndex]) });
-  const segLblDe = den => ({ display: ctx => den[ctx.dataIndex] && ctx.dataset.data[ctx.dataIndex]/den[ctx.dataIndex] >= 0.09,
+  const segLblDe = den => ({ display: ctx => {
+      const v = ctx.dataset.data[ctx.dataIndex]; if(!v || !den[ctx.dataIndex]) return false;
+      const sc = ctx.chart.scales.y;
+      return Math.abs(sc.getPixelForValue(v) - sc.getPixelForValue(0)) >= 14;   // alto real del tramo
+    },
     color:'#fff', font:{family:'Mulish',size:9,weight:600},
     formatter:(v,ctx)=>(100*v/den[ctx.dataIndex]).toFixed(0)+'%' });
+  const ejeConTotal = den => { base.scales.x.ticks.callback = function(v,i){
+    const n = this.getLabelForValue(v); return [n, `${nf.format(den[i])} canceladas`]; }; };
   if(colMode==='antic'){
     const top = [...filasG].filter(r=>r.cS>0).sort((a,b)=>b.cS-a.cS).slice(0,8);
     labels = top.map(r=>trunca(r.k));
@@ -1305,9 +1309,9 @@ function renderSesGraficos(g, et){
     datasets = [
       { label:'Aviso ≥24 h', data:top.map(r=>r.o24S), backgroundColor:hexA(css('--ink3'),0.7), stack:'s', maxBarThickness:54, datalabels:segLbl },
       { label:'Aviso <24 h', data:top.map(r=>r.u24S), backgroundColor:hexA(css('--coral'),0.85), stack:'s', maxBarThickness:54, datalabels:segLbl },
-      { label:'Posterior al inicio', data:top.map(r=>r.poS), backgroundColor:hexA(css('--burdeos'),0.85), stack:'s', maxBarThickness:54,
-        datalabels:{ labels:{ seg: segLbl, tot: totLbl(den) } } },
+      { label:'Posterior al inicio', data:top.map(r=>r.poS), backgroundColor:hexA(css('--burdeos'),0.85), stack:'s', maxBarThickness:54, datalabels:segLbl },
     ];
+    ejeConTotal(den);
     base.plugins.tooltip = { callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.y)} sesiones (${den[c.dataIndex]?(100*c.parsed.y/den[c.dataIndex]).toFixed(1):0}%)` } };
     exp = { nombre:'anticipacion_por_'+dimSesiones, cols:[et,'Aviso ≥24 h','Aviso <24 h','Posterior al inicio','Canceladas','% aviso ≥24 h'],
       rows: top.map((r,i)=>[r.k, r.o24S, r.u24S, r.poS, r.cS, den[i]?(100*r.o24S/den[i]).toFixed(1):0]) };
@@ -1319,9 +1323,9 @@ function renderSesGraficos(g, et){
     const segLbl = segLblDe(den);
     datasets = [
       { label:'Pagadas', data:top.map(r=>r.pgS), backgroundColor:hexA(css('--coral'),0.9), stack:'s', maxBarThickness:54, datalabels:segLbl },
-      { label:'No pagadas', data:top.map(r=>r.cS-r.pgS), backgroundColor:hexA(css('--coral-l'),0.55), stack:'s', maxBarThickness:54,
-        datalabels:{ labels:{ seg: segLbl, tot: totLbl(den) } } },
+      { label:'No pagadas', data:top.map(r=>r.cS-r.pgS), backgroundColor:hexA(css('--coral-l'),0.55), stack:'s', maxBarThickness:54, datalabels:segLbl },
     ];
+    ejeConTotal(den);
     base.plugins.tooltip = { callbacks:{ label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.y)} sesiones (${den[c.dataIndex]?(100*c.parsed.y/den[c.dataIndex]).toFixed(1):0}%)` } };
     exp = { nombre:'canceladas_pagadas_por_'+dimSesiones, cols:[et,'Pagadas','No pagadas','Canceladas','% pagadas'],
       rows: top.map(r=>[r.k, r.pgS, r.cS-r.pgS, r.cS, r.cS?(100*r.pgS/r.cS).toFixed(1):0]) };
