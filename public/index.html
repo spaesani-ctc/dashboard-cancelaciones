@@ -118,6 +118,7 @@ table.t td.num, table.t th.num { text-align:center; font-variant-numeric:tabular
 table.t thead tr:nth-child(2) th { top:22px; }
 table.t th.grp { text-align:center; border-bottom:none; }
 table.t th.sep, table.t td.sep { border-left:1px solid var(--border); }
+table.t tfoot td { position:sticky; bottom:0; background:var(--surface2); font-weight:700; border-top:2px solid var(--border); border-bottom:none; z-index:2; }
 a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(--accent); }
 [data-theme="dark"] a.lk { color:var(--teal); border-color:var(--teal); }
 .badge { display:inline-block; font-size:9px; padding:0 6px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--ink2); }
@@ -1370,7 +1371,7 @@ function renderSesiones(base){
     : colMode==='antic'
     ? [['Canceladas','cS','cH'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% De cancelación','pctS','pctH','pct']]
     : [['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['Pag. posterior al inicio','ppoS','ppoH'],['Pag. aviso <24 h','pu24S','pu24H'],['Pag. aviso ≥24 h','po24S','po24H'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
-  const celda = (r,bold) => `<tr${bold?' style="font-weight:600;border-top:2px solid var(--border)"':''}>
+  const celda = r => `<tr>
     <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
     GRUPOS.map(([lbl,kS,kH,esPct]) => esPct
       ? `<td class="num sep" style="color:${colorPct(r[kS])};font-weight:600">${r[kS].toFixed(1)}%</td><td class="num" style="color:${colorPct(r[kH])}">${r.pH?r[kH].toFixed(1)+'%':'s/d'}</td>`
@@ -1386,7 +1387,7 @@ function renderSesiones(base){
     GRUPOS.map(([lbl]) => `<th class="grp sep" colspan="2">${lbl}</th>`).join('') + `</tr>
     <tr>` + GRUPOS.map(([lbl,kS,kH]) =>
       `<th class="num sep" data-k="${kS}">Sesiones${flecha(kS)}</th><th class="num" data-k="${kH}">Horas${flecha(kH)}</th>`).join('') + `</tr>
-  </thead><tbody>` + celda(totRow, true) + arr.map(r=>celda(r)).join('') + '</tbody>';
+  </thead><tbody>` + arr.map(r=>celda(r)).join('') + '</tbody><tfoot>' + celda({...totRow, k:'Total'}) + '</tfoot>';
   el.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
     const k = th.dataset.k, prev = SORT['tSesiones'];
     SORT['tSesiones'] = { k, dir: prev && prev.k===k && prev.dir==='desc' ? 'asc' : 'desc' };
