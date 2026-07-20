@@ -1460,13 +1460,14 @@ function renderReprog(base){
   document.getElementById('reprogDetN').textContent = det.length ? `${nf.format(det.length)} sesiones reprogramadas` : '';
   const resultado = r => esDictada(r) ? 'Recuperada' : esCancelada(r) ? 'Cancelada de nuevo' : esFutura(r) ? 'Programada' : '—';
   EXPORTS.reprogDet = { nombre:'detalle_recuperaciones',
-    cols:['Fecha','Resultado','Proyecto','IE','Salón','Grado','Motivo (si cancelada)','Profesor','Horas académicas'],
-    rows: det.map(r=>[r.fecha, resultado(r), r.proyecto, r.ie, r.salon, r.grado, r.motivo||'', r.profesor||'', r.academic_hours??'']) };
+    cols:['Fecha y hora','Resultado','Cancelada el (Bogotá)','Proyecto','IE','Salón','Grado','Motivo (si cancelada)','Profesor','Horas académicas'],
+    rows: det.map(r=>[r.fecha + (r.hora_inicio?` ${String(r.hora_inicio).slice(0,5)}`:''), resultado(r), esCancelada(r)?fmtCancEl(r.cancellation_at):'', r.proyecto, r.ie, r.salon, r.grado, r.motivo||'', r.profesor||'', r.academic_hours??'']) };
   renderTable('tReprogDet', [
-    { k:'fecha', label:'Fecha' },
+    { k:'fecha', label:'Fecha y hora', fmt:r=>`<span style="white-space:nowrap">${r.fecha}${r.hora_inicio?` · ${String(r.hora_inicio).slice(0,5)}`:''}</span>` },
     { k:'res', label:'Resultado', fmt:r=>{
         const col = r.res==='Recuperada'?'--teal':r.res==='Cancelada de nuevo'?'--coral':'--ink3';
         return `<span style="color:var(${col});font-weight:600">${r.res}</span>`; } },
+    { k:'cancEl', label:'Cancelada el', fmt:r=>r.cancEl?`<span title="hora de Bogotá" style="white-space:nowrap">${r.cancEl}</span>`:'—' },
     { k:'proyecto', label:'Proyecto', tip:'proyecto' },
     { k:'ie', label:'IE', tip:'ie' },
     { k:'salon', label:'Salón', tip:'salon' },
@@ -1474,7 +1475,7 @@ function renderReprog(base){
     { k:'motivo', label:'Motivo (si cancelada)', tip:'motivo' },
     { k:'profesor', label:'Profesor' },
     { k:'academic_hours', label:'Horas académicas', num:true },
-  ], det.map(r=>({...r, res:resultado(r)})));
+  ], det.map(r=>({...r, res:resultado(r), cancEl: esCancelada(r)?fmtCancEl(r.cancellation_at):''})));
 }
 
 /* ============ modales / detalle / csv ============ */
