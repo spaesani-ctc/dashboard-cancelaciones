@@ -304,8 +304,8 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
         <div class="p-tabs">
           <button class="p-tab active" data-r="proyecto">Proyectos</button>
           <button class="p-tab" data-r="ie">IEs</button>
-          <button class="p-tab" data-r="salon">Salones</button>
           <button class="p-tab" data-r="grado">Grados</button>
+          <button class="p-tab" data-r="salon">Salones</button>
           <button class="p-tab" data-r="profesor">Profesores</button>
         </div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'ranking','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
@@ -346,8 +346,8 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
         <div class="p-tabs" id="dimTabs" style="margin-left:12px; margin-right:auto;">
           <button class="p-tab active" data-d="proyecto">Proyectos</button>
           <button class="p-tab" data-d="ie">IEs</button>
-          <button class="p-tab" data-d="salon">Salones</button>
           <button class="p-tab" data-d="grado">Grados</button>
+          <button class="p-tab" data-d="salon">Salones</button>
           <button class="p-tab" data-d="profesor">Profesores</button>
         </div>
         <div class="scope" id="colTabs" title="Qué columnas muestra la tabla">
@@ -372,13 +372,14 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pReprogDim" style="flex:1; min-height:0">
       <div class="p-head"><span class="p-title" id="reprogPanelTitle">Reprogramadas por dimensión</span><span class="p-sub" id="reprogDetN"></span>
-        <div class="p-tabs" id="reprogTabs" style="margin-left:auto">
-          <button class="p-tab active" data-d="proyecto">Proyecto</button>
-          <button class="p-tab" data-d="ie">IE</button>
-          <button class="p-tab" data-d="salon">Salón</button>
-          <button class="p-tab" data-d="grado">Grado</button>
+        <div class="p-tabs" id="reprogTabs" style="margin-left:12px">
+          <button class="p-tab active" data-d="proyecto">Proyectos</button>
+          <button class="p-tab" data-d="ie">IEs</button>
+          <button class="p-tab" data-d="grado">Grados</button>
+          <button class="p-tab" data-d="salon">Salones</button>
+          <button class="p-tab" data-d="profesor">Profesores</button>
         </div>
-        <span style="width:1px;height:16px;background:var(--border);margin:0 12px;flex:none"></span>
+        <span style="width:1px;height:16px;background:var(--border);margin:0 12px 0 auto;flex:none"></span>
         <div class="p-tabs" id="reprogVistaTabs">
           <button class="p-tab active" data-rv="dim">Por dimensión</button>
           <button class="p-tab" data-rv="det">Detalle</button>
@@ -1445,7 +1446,7 @@ function renderReprog(base){
       tR: x.co?100*x.int/x.co:0, tRec: x.co?100*x.d/x.co:0}))
     .filter(x=>x.int>0).sort((a,b)=>b.int-a.int || b.co-a.co);
   document.getElementById('pReprogDim').style.display = mk.length ? 'flex' : 'none';
-  const et = {proyecto:'Proyecto', ie:'Institución Educativa', salon:'Salón', grado:'Grado'}[dimReprog];
+  const et = {proyecto:'Proyecto', ie:'Institución Educativa', salon:'Salón', grado:'Grado', profesor:'Profesor'}[dimReprog];
   EXPORTS.reprogDim = { nombre:'recuperaciones_por_'+dimReprog,
     cols:[et,'Reprogramadas','Recuperadas (dictadas)','Canceladas de nuevo','Aún programadas','Canceladas originales','Tasa reprogramación %','Tasa recuperación %'],
     rows: arr.map(x=>[x.k, x.int, x.d, x.c, x.f, x.co, x.tR.toFixed(1), x.tRec.toFixed(1)]) };
