@@ -1484,7 +1484,16 @@ function renderSesiones(base){
     renderSesiones(window._base||[]);
   });
   renderSesGraficos(g, et);
-  document.getElementById('notaCobertura').textContent =
+  const leyendaSegs = colMode==='antic'
+    ? [['Aviso ≥24 h', hexA(css('--ink3'),0.7)], ['Aviso <24 h', hexA(css('--coral'),0.85)], ['Posterior al inicio', hexA(css('--burdeos'),0.85)]]
+    : colMode==='pagadas'
+    ? [['Pagadas', hexA(css('--coral'),0.9)], ['No pagadas', hexA(css('--coral-l'),0.55)]]
+    : null;
+  const leyendaHtml = leyendaSegs
+    ? '<span style="display:inline-flex;gap:14px;margin-right:18px;flex-wrap:wrap">' +
+      leyendaSegs.map(([n,c])=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:2px;background:${c};display:inline-block"></span>${n}</span>`).join('') + '</span>'
+    : '';
+  document.getElementById('notaCobertura').innerHTML = leyendaHtml +
     `Las columnas "Horas" son horas académicas. El dato está cargado en el ${tot?Math.round(100*(tot-sinHoras)/tot):0}% de las sesiones de este alcance — donde falta, la sesión suma 0 horas.`;
 }
 
