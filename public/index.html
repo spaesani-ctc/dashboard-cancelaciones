@@ -541,20 +541,28 @@ async function cargar(force=false){
   else showToast(force?'Refrescando datos…':'Actualizando período…');
   try {
     const tramos = tramosMensuales(fDesde.value, fHasta.value);
-    const rows = []; let updated = null;
-    for(let i=0; i<tramos.length; i++){
-      const [a,b] = tramos[i];
-      if(tramos.length > 6){
-        const prog = `Cargando datos… ${Math.round(100*i/tramos.length)}%`;
-        if(primeraCarga || overlay.classList.contains('show')) showLoad('Cargando datos…', `${Math.round(100*i/tramos.length)}% completado`);
-        else showToast(prog);
-      }
+    let listos = 0, updated = null;
+    const avance = () => {
+      if(tramos.length <= 6) return;
+      const prog = `Cargando datos… ${Math.round(100*listos/tramos.length)}%`;
+      if(primeraCarga || overlay.classList.contains('show')) showLoad('Cargando datos…', `${Math.round(100*listos/tramos.length)}% completado`);
+      else showToast(prog);
+    };
+    avance();
+    const pedir = async ([a,b]) => {
       const r = await fetch(`/api/data?from=${a}&to=${b}${force?'&t='+Date.now():''}`, { headers: { 'x-dash-key': localStorage.getItem('dashKey')||'' } });
       let j; try { j = await r.json(); } catch(_){ throw new Error(`El servidor no respondió correctamente (HTTP ${r.status})`); }
       if(!j.ok) throw new Error(j.error || `HTTP ${r.status}`);
-      rows.push(...j.rows); updated = j.updated_at;
+      listos++; avance(); updated = j.updated_at;
+      return j.rows;
+    };
+    // hasta 4 meses en paralelo, preservando el orden
+    const CONC = 4, porTramo = new Array(tramos.length);
+    for(let i=0; i<tramos.length; i+=CONC){
+      const lote = await Promise.all(tramos.slice(i, i+CONC).map(pedir));
+      lote.forEach((rws,j)=>porTramo[i+j]=rws);
     }
-    ROWS = rows;
+    ROWS = porTramo.flat();
     document.getElementById('metaUpdated').textContent = `Actualizado ${new Date(updated).toLocaleString('es-AR')}`;
     if(MOTIVOS_EXCL===null) MOTIVOS_EXCL = defaultExcl();
     document.body.classList.remove('cargando');
