@@ -920,18 +920,6 @@ function renderSemanal(base){
   const fmt = s => { const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); };
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
   const pcts = labels.map(s=>pctDe(sem[s]));
-  // si la etiqueta de % (línea) cae cerca del tope de la barra, la cantidad va DENTRO de la barra
-  // nominal DENTRO de la barra solo si el % está apenas por encima del tope;
-  // si el % cae dentro de la barra, el nominal va arriba (no se pisan)
-  const choca = ctx => {
-    try {
-      if(!ctx.chart.isDatasetVisible(1)) return false;   // línea de % oculta → no hay colisión posible
-      const i = ctx.dataIndex;
-      const yBar = ctx.chart.scales.y.getPixelForValue(ctx.dataset.data[i]);
-      const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
-      return yPct < yBar && (yBar - yPct) < 30;   // % por encima del tope → nominal adentro
-    } catch(e){ return false; }
-  };
   EXPORTS.semanal = semVista==='cat'
     ? { nombre:'evolucion_semanal_por_categoria'+sufPago(),
         cols:['Semana', ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]), 'Total', '% De cancelación'],
@@ -987,10 +975,16 @@ function renderSemanal(base){
   const datasets = semVista==='cat'
     ? [...barrasCat, lineaDS]
     : [ { type:'bar', order:2, label:enHoras()?'Horas canceladas':'Sesiones canceladas', data:labels.map(s=>sem[s].c), backgroundColor:css('--coral-l'), borderRadius:3, minBarLength:3, yAxisID:'y',
-        datalabels:{ display:pocas, anchor:'end',
-          align: ctx => choca(ctx) ? 'start' : 'end',
-          offset: ctx => choca(ctx) ? 2 : -2,
-          color: ctx => choca(ctx) ? '#fff' : css('--ink2'),
+        datalabels:{ display: ctx => {
+            if(!pocas) return false;
+            try {
+              if(!ctx.chart.isDatasetVisible(ctx.chart.data.datasets.length-1)) return true;
+              const i = ctx.dataIndex;
+              const yBar = ctx.chart.scales.y.getPixelForValue(cTotArr[i]);
+              const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
+              return Math.abs(yBar - yPct) >= 30;
+            } catch(e){ return true; }
+          }, anchor:'end', align:'end', offset:-2, color:css('--ink2'),
           font:{family:'Mulish',size:8.5,weight:600}, formatter:v=>v?fmtN(v):'' } }, lineaDS ];
   mkChart('chSemanal', { data:{ labels:labels.map(fmt), datasets },
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
