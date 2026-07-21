@@ -1049,9 +1049,26 @@ function renderMotivosTree(canc){
           const maxCh = Math.floor((w-8)/6.2);
           if(maxCh < 5 || h < 18) return '';
           const mo = ctx.raw._data.motivo || '';
-          const nom = mo.length>maxCh ? mo.slice(0,Math.max(1,maxCh-1))+'…' : mo;
-          const linea2 = fmtU(ctx.raw.v)+' · '+(100*ctx.raw.v/total).toFixed(1)+'%';
-          return (h>34 && linea2.length<=maxCh) ? [nom, linea2] : [nom];
+          // nombre en varias líneas si no entra en una
+          const lineas = [];
+          let cur = '';
+          for(const pal of mo.split(' ')){
+            if(!cur) cur = pal;
+            else if((cur+' '+pal).length <= maxCh) cur += ' '+pal;
+            else { lineas.push(cur); cur = pal; }
+          }
+          if(cur) lineas.push(cur);
+          const lineaVal = fmtU(ctx.raw.v)+' · '+(100*ctx.raw.v/total).toFixed(1)+'%';
+          const maxLineas = Math.max(1, Math.floor((h-8)/12));
+          const conVal = h>34 && lineaVal.length<=maxCh && lineas.length < maxLineas;
+          const budget = Math.max(1, conVal ? maxLineas-1 : maxLineas);
+          let nom = lineas.slice(0, budget);
+          if(lineas.length > budget){
+            const u = nom[budget-1];
+            nom[budget-1] = (u.length>maxCh-1 ? u.slice(0,Math.max(1,maxCh-1)) : u)+'…';
+          }
+          nom = nom.map(l => l.length>maxCh ? l.slice(0,Math.max(1,maxCh-1))+'…' : l);
+          return conVal ? [...nom, lineaVal] : nom;
         } } }]},
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, datalabels:{display:false},
