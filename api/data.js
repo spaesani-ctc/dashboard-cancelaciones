@@ -112,7 +112,12 @@ export default async function handler(req, res) {
       const resultados = await Promise.all(lote.map(([a, b]) => runQuery(apiKey, SQL_SESIONES(a, b))));
       for (const r of resultados) rows.push(...r);
     }
-    res.setHeader('Cache-Control', 'public, max-age=300');
+    // meses cerrados (rango enteramente en el pasado): caché de edge de 1 día;
+    // período corriente: 5 minutos. "Actualizar" (param t=) saltea ambos cachés.
+    const cerrado = to < hoy;
+    res.setHeader('Cache-Control', cerrado
+      ? 'public, max-age=300, s-maxage=86400, stale-while-revalidate=43200'
+      : 'public, max-age=300, s-maxage=300, stale-while-revalidate=600');
     res.status(200).json({ ok: true, updated_at: new Date().toISOString(), from, to, n: rows.length, rows });
   } catch (err) {
     console.error(err);
