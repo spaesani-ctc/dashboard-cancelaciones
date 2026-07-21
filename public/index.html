@@ -1347,7 +1347,7 @@ function renderMotivosMes(base){
 
 function renderSesGraficos(g, et){
   const panel = document.getElementById('pSesViz');
-  if(colMode==='resumen' || colMode==='motmes'){ panel.style.display='none'; return; }
+  panel.style.display='none'; return;   // la composición ahora está embebida en la tabla
   panel.style.display='flex';
   const filasG = Object.entries(g).map(([k,v])=>({k,...v}));
   const trunca = k => String(k).length>24 ? String(k).slice(0,23)+'…' : k;
@@ -1439,11 +1439,24 @@ function renderSesiones(base){
   const GRUPOS = colMode==='resumen'
     ? [['Programadas','pS','pH'],['Dictadas','dS','dH'],['Futuras','fS','fH'],['Canceladas','cS','cH'],['% Cancelación','pctS','pctH','pct']]
     : colMode==='antic'
-    ? [['Canceladas','cS','cH'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% Cancelación','pctS','pctH','pct']]
-    : [['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['Pag. posterior al inicio','ppoS','ppoH'],['Pag. aviso <24 h','pu24S','pu24H'],['Pag. aviso ≥24 h','po24S','po24H'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
+    ? [['Canceladas','cS','cH'],['Distribución del aviso','','','strip'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% Cancelación','pctS','pctH','pct']]
+    : [['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['Distribución','','','strip'],['Pag. posterior al inicio','ppoS','ppoH'],['Pag. aviso <24 h','pu24S','pu24H'],['Pag. aviso ≥24 h','po24S','po24H'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
+  const segsDe = r => colMode==='antic'
+    ? [['Aviso ≥24 h', r.o24S, hexA(css('--ink3'),0.7)], ['Aviso <24 h', r.u24S, hexA(css('--coral'),0.85)], ['Posterior al inicio', r.poS, hexA(css('--burdeos'),0.85)]]
+    : [['Pagadas', r.pgS, hexA(css('--coral'),0.9)], ['No pagadas', r.npS, hexA(css('--coral-l'),0.55)]];
+  const stripCell = r => {
+    const segs = segsDe(r).filter(x=>x[1]>0);
+    const t = segs.reduce((a,x)=>a+x[1],0);
+    if(!t) return '<td class="sep num dim">—</td>';
+    const tip = segs.map(([n,v])=>`${n}: ${nf.format(v)} (${(100*v/t).toFixed(1)}%)`).join(' · ');
+    return `<td class="sep" style="min-width:120px;padding:3px 9px"><div title="${tip}" style="display:flex;height:11px;border-radius:3px;overflow:hidden;gap:1px">` +
+      segs.map(([n,v,c])=>`<div style="width:${(100*v/t)}%;background:${c}"></div>`).join('') + '</div></td>';
+  };
   const celda = r => `<tr>
     <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
-    GRUPOS.map(([lbl,kS,kH,esPct]) => esPct
+    GRUPOS.map(([lbl,kS,kH,esPct]) => esPct==='strip'
+      ? stripCell(r)
+      : esPct
       ? `<td class="num sep" style="color:${colorPct(r[kS])};font-weight:600">${r[kS].toFixed(1)}%</td><td class="num" style="color:${colorPct(r[kH])}">${r.pH?r[kH].toFixed(1)+'%':'s/d'}</td>`
       : `<td class="num sep">${nf.format(r[kS])}</td><td class="num dim">${nf.format(Math.round(r[kH]))}</td>`
     ).join('') + '</tr>';
@@ -1454,8 +1467,10 @@ function renderSesiones(base){
   const el = document.getElementById('tSesiones');
   el.innerHTML = `<thead>
     <tr><th rowspan="2" data-k="k">${et}${flecha('k')}</th>` +
-    GRUPOS.map(([lbl]) => `<th class="grp sep" colspan="2">${lbl}</th>`).join('') + `</tr>
-    <tr>` + GRUPOS.map(([lbl,kS,kH]) =>
+    GRUPOS.map(([lbl,,,f]) => f==='strip'
+      ? `<th class="grp sep" rowspan="2" style="vertical-align:middle;text-align:center">${lbl}</th>`
+      : `<th class="grp sep" colspan="2">${lbl}</th>`).join('') + `</tr>
+    <tr>` + GRUPOS.filter(g=>g[3]!=='strip').map(([lbl,kS,kH]) =>
       `<th class="num sep" data-k="${kS}">Sesiones${flecha(kS)}</th><th class="num" data-k="${kH}">Horas${flecha(kH)}</th>`).join('') + `</tr>
   </thead><tbody>` + arr.map(r=>celda(r)).join('') + '</tbody><tfoot>' + celda({...totRow, k:'Total'}) + '</tfoot>';
   el.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => {
