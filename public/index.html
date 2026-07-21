@@ -1508,7 +1508,9 @@ function renderReprog(base){
         const pct = 100*x/tot;
         const txt = pct>=18 ? `${n} · ${fmtU(x)} (${pct.toFixed(0)}%)` : (pct>=8 ? `${fmtU(x)}` : '');
         return `<div title="${n}: ${fmtU(x)} (${pct.toFixed(1)}%)" style="width:${pct}%;min-width:${x?'26px':'0'};background:${col};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden">${txt}</div>`;
-      }).join('') + '</div>';
+      }).join('') + '</div>' +
+      '<div style="display:flex;gap:16px;margin-top:7px;font-size:10px;color:var(--ink2);flex-wrap:wrap">' +
+      CATS_R.map(([n,x,col])=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:2px;background:${col};display:inline-block"></span>${n} · ${fmtU(x)} (${(100*x/tot).toFixed(1)}%)</span>`).join('') + '</div>';
   }
   // por dimensión (solo filas con actividad de recuperación o canceladas)
   const g = {};
