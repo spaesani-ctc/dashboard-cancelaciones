@@ -331,7 +331,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <div class="p-body"><canvas id="chAntic"></canvas></div>
     </div>
     <div class="panel" id="pHeatmap">
-      <div class="p-head"><span class="p-title" id="hmTitle">Sesiones canceladas por día y hora</span><div class="p-tabs" id="hmTabs"><button class="p-tab active" data-h="pct">%</button><button class="p-tab" data-h="nom">Nº</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'heatmap','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
+      <div class="p-head"><span class="p-title" id="hmTitle">Sesiones canceladas por día y hora</span><div class="p-tabs" id="hmTabs"><button class="p-tab active" data-h="pct">%</button><button class="p-tab" data-h="nom">Nº</button></div><div class="p-tabs" id="hmBaseTabs" style="margin-left:6px"><button class="p-tab active" data-b="total">del total</button><button class="p-tab" data-b="dia">del día</button><button class="p-tab" data-b="hora">de la hora</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'heatmap','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
       <div class="p-body scroll"><div class="hm" id="heatmap"></div></div>
     </div>
   </div>
@@ -1258,11 +1258,18 @@ document.querySelectorAll('#semVistaTabs .p-tab').forEach(b => b.onclick = () =>
   b.classList.add('active'); semVista = b.dataset.s2; renderSemanal(window._base||[]);
 });
 
-let hmMode = 'pct';
+let hmMode = 'pct', hmBase = 'total';
 document.getElementById('hmTabs').addEventListener('click', e => {
   if(!e.target.dataset.h) return;
   document.querySelectorAll('#hmTabs .p-tab').forEach(x=>x.classList.remove('active'));
-  e.target.classList.add('active'); hmMode = e.target.dataset.h; renderHeatmap(window._canc||[]);
+  e.target.classList.add('active'); hmMode = e.target.dataset.h;
+  document.getElementById('hmBaseTabs').style.display = hmMode==='pct' ? 'flex' : 'none';
+  renderHeatmap(window._canc||[]);
+});
+document.getElementById('hmBaseTabs').addEventListener('click', e => {
+  if(!e.target.dataset.b) return;
+  document.querySelectorAll('#hmBaseTabs .p-tab').forEach(x=>x.classList.remove('active'));
+  e.target.classList.add('active'); hmBase = e.target.dataset.b; renderHeatmap(window._canc||[]);
 });
 function renderHeatmap(canc){
   document.getElementById('hmTitle').textContent = (enHoras()?'Horas canceladas':'Sesiones canceladas')+' por día y hora';
@@ -1273,6 +1280,11 @@ function renderHeatmap(canc){
   const totalHm = Object.values(m).reduce((a,b)=>a+b,0);
   const el = document.getElementById('heatmap');
   const dias = DIAS.filter(d => horas.some(h => m[d+'|'+h]));
+  const colTot = {}, rowTot = {};
+  for(const d of dias) colTot[d] = horas.reduce((a,h)=>a+(m[d+'|'+h]||0),0);
+  for(const h of horas) rowTot[h] = dias.reduce((a,d)=>a+(m[d+'|'+h]||0),0);
+  const denDe = (d,h) => hmBase==='dia' ? colTot[d] : hmBase==='hora' ? rowTot[h] : totalHm;
+  const sufBase = hmBase==='dia' ? 'del día' : hmBase==='hora' ? 'de la hora' : 'del total';
   el.style.gridTemplateColumns = `38px repeat(${dias.length||1},minmax(28px,48px))`;
   el.style.gridTemplateRows = `18px repeat(${horas.length||1},21px)`;
   let html = `<div class="hm-corner"></div>` + dias.map(d=>`<div class="hm-head">${DIAS_ES[d]}</div>`).join('');
@@ -1280,14 +1292,15 @@ function renderHeatmap(canc){
     html += `<div class="hm-lab">${h}:00</div>`;
     for(const d of dias){
       const v = m[d+'|'+h]||0, a = v/max;
-      const pct = totalHm ? 100*v/totalHm : 0;
+      const den = denDe(d,h);
+      const pct = den ? 100*v/den : 0;
       const vTxt = v ? (hmMode==='pct' ? pct.toFixed(1)+'%' : (enHoras() ? nf.format(Math.round(v)) : nf.format(v))) : '';
       const bg = v===0?'var(--surface2)':`rgba(216,90,48,${(0.12+0.75*a).toFixed(2)})`;
-      html += `<div class="hm-cell" style="background:${bg};color:${a>0.55?'#fff':'var(--ink)'}" title="${DIAS_ES[d]} ${h}:00: ${fmtU(v)} (${pct.toFixed(1)}%)">${vTxt}</div>`;
+      html += `<div class="hm-cell" style="background:${bg};color:${a>0.55?'#fff':'var(--ink)'}" title="${DIAS_ES[d]} ${h}:00: ${fmtU(v)} (${pct.toFixed(1)}% ${sufBase})">${vTxt}</div>`;
     }
   }
-  EXPORTS.heatmap = { nombre:'cancelaciones_dia_hora', cols:['Hora', ...dias.map(d=>DIAS_ES[d]), ...dias.map(d=>'% '+DIAS_ES[d])],
-    rows: horas.map(h=>[h+':00', ...dias.map(d=>Math.round((m[d+'|'+h]||0)*100)/100), ...dias.map(d=>totalHm?(100*(m[d+'|'+h]||0)/totalHm).toFixed(1):0)]) };
+  EXPORTS.heatmap = { nombre:'cancelaciones_dia_hora', cols:['Hora', ...dias.map(d=>DIAS_ES[d]), ...dias.map(d=>`% ${DIAS_ES[d]} (${sufBase})`)],
+    rows: horas.map(h=>[h+':00', ...dias.map(d=>Math.round((m[d+'|'+h]||0)*100)/100), ...dias.map(d=>denDe(d,h)?(100*(m[d+'|'+h]||0)/denDe(d,h)).toFixed(1):0)]) };
   el.innerHTML = html;
 }
 
