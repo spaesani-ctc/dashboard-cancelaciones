@@ -946,16 +946,8 @@ function renderSemanal(base){
   const pasoLbl = Math.max(1, Math.ceil(labels.length/16));
   const lineaDS = { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius: pasoLbl>1?2:2.5, borderWidth:2, yAxisID:'y2',
         datalabels: { display: ctx => ctx.dataIndex % pasoLbl === 0 || ctx.dataIndex === labels.length-1,
-          align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5,
-          color: ctx => {
-            try {
-              const i = ctx.dataIndex;
-              const yBar = ctx.chart.scales.y.getPixelForValue(cTotArr[i]);
-              const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
-              const yLbl = flip(ctx) ? yPct + 12 : yPct - 12;
-              return yLbl > yBar + 2 ? '#fff' : css('--burdeos');   // dentro de la barra → blanco
-            } catch(e){ return css('--burdeos'); }
-          },
+          align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5, clamp:true,
+          color: css('--burdeos'),
           font:{family:'Mulish',size:9,weight:600}, formatter:v=>v.toFixed(1)+'%' } };
   const totCat = labels.map(s=>sem[s].c);
   const barrasCat = [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
