@@ -317,11 +317,11 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     </div>
     <div class="panel" id="pMotivos">
       <div class="p-head"><span class="p-title">Motivos de Cancelación</span>
-        <div class="p-tabs"><button class="p-tab active" data-t="chart">Motivos</button><button class="p-tab" data-t="tabla">Tabla</button><button class="p-tab" data-t="cat">Categorías</button><button class="p-tab" data-t="tree">Treemap</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,motivosExportActivo(),motivosCanvasActivo(),motivosExportActivo()+'_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
+        <div class="p-tabs"><button class="p-tab active" data-t="tree">Treemap</button><button class="p-tab" data-t="tabla">Tabla</button><button class="p-tab" data-t="cat">Categorías</button><button class="p-tab" data-t="chart">Motivos</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,motivosExportActivo(),motivosCanvasActivo(),motivosExportActivo()+'_cancelacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div>
       </div>
-      <div class="p-body scroll" id="motivosChart"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
+      <div class="p-body scroll" id="motivosChart" style="display:none"><div id="motivosInner" style="position:relative"><canvas id="chMotivos"></canvas></div></div>
       <div class="p-body" id="motivosCat" style="display:none"><canvas id="chCategorias"></canvas></div>
-      <div class="p-body" id="motivosTree" style="display:none"><canvas id="chTreeMotivos"></canvas></div>
+      <div class="p-body" id="motivosTree"><canvas id="chTreeMotivos"></canvas></div>
       <div class="p-body scroll" id="motivosTabla" style="display:none"><table class="t" id="tMotivos"></table></div>
     </div>
     <div class="panel" id="pAntic">
@@ -1187,7 +1187,7 @@ document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#pRanking .p-tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); rankMode = b.dataset.r; renderRanking(window._base||[]);
 });
-let motivosTab = 'chart';
+let motivosTab = 'tree';
 const motivosCanvasActivo = () => motivosTab==='chart' ? 'chMotivos' : motivosTab==='cat' ? 'chCategorias' : motivosTab==='tree' ? 'chTreeMotivos' : '';
 const motivosExportActivo = () => motivosTab==='cat' ? 'categorias' : 'motivos';
 document.querySelectorAll('#pMotivos .p-tab').forEach(b => b.onclick = () => {
