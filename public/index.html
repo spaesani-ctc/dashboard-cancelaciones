@@ -543,7 +543,7 @@ async function cargar(force=false){
     const rows = []; let updated = null;
     for(let i=0; i<tramos.length; i++){
       const [a,b] = tramos[i];
-      if(tramos.length > 3){
+      if(tramos.length > 6){
         const prog = `Cargando datos… ${Math.round(100*i/tramos.length)}%`;
         if(primeraCarga || overlay.classList.contains('show')) showLoad('Cargando datos…', `${Math.round(100*i/tramos.length)}% completado`);
         else showToast(prog);
@@ -1208,22 +1208,30 @@ function bucketAntic(r){
 function renderAnticipacion(canc){
   const filas = canc;
   const TODAS_CATS = ['Posterior al inicio de la sesión','Con menos de 24 h','Con 24 h o más','Sin dato'];
-  const agg = {}; for(const c of TODAS_CATS) agg[c] = {s:0,h:0};
-  for(const r of filas){ const b = bucketAntic(r); agg[b].s++; agg[b].h += r.academic_hours||0; }
+  const agg = {}; for(const c of TODAS_CATS) agg[c] = {s:0,h:0,ps:0,ph:0};
+  for(const r of filas){
+    const b = bucketAntic(r); const h = r.academic_hours||0;
+    agg[b].s++; agg[b].h += h;
+    if(PAGADA(r.is_paid_session)){ agg[b].ps++; agg[b].ph += h; }
+  }
   const CATS = TODAS_CATS.filter(c => c!=='Sin dato' || agg[c].s > 0);
-  const vals = CATS.map(c => enHoras() ? agg[c].h : agg[c].s);
-  const tot = vals.reduce((a,b)=>a+b,0)||1;
-  const COLOR_CAT = {'Posterior al inicio de la sesión':css('--coral'),'Con menos de 24 h':css('--amber'),'Con 24 h o más':css('--ink3'),'Sin dato':css('--ink4')};
-  const colores = CATS.map(c=>COLOR_CAT[c]);
+  const v = c => enHoras() ? agg[c].h : agg[c].s;
+  const vPag = c => enHoras() ? agg[c].ph : agg[c].ps;
+  const tot = CATS.reduce((a,c)=>a+v(c),0)||1;
   EXPORTS.antic = { nombre:'anticipacion_cancelacion'+sufPago(),
-    cols:['Anticipación','Sesiones','Horas académicas','% ('+(enHoras()?'horas':'sesiones')+')'],
-    rows: CATS.map(c=>[c, agg[c].s, Math.round(agg[c].h*100)/100, (100*(enHoras()?agg[c].h:agg[c].s)/tot).toFixed(1)]) };
-  mkChart('chAntic', { type:'bar', data:{ labels:CATS, datasets:[{ data:vals, backgroundColor:colores, borderRadius:3, maxBarThickness:26,
-      datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'Mulish',size:9.5,weight:600},
-        formatter:v => v ? `${enHoras()?nf.format(Math.round(v)):nf.format(v)} · ${(100*v/tot).toFixed(1)}%` : '' } }]},
+    cols:['Anticipación','Sesiones','Pagadas','No pagadas','Horas académicas','% ('+(enHoras()?'horas':'sesiones')+')'],
+    rows: CATS.map(c=>[c, agg[c].s, agg[c].ps, agg[c].s-agg[c].ps, Math.round(agg[c].h*100)/100, (100*v(c)/tot).toFixed(1)]) };
+  mkChart('chAntic', { type:'bar', data:{ labels:CATS, datasets:[
+      { label:'Pagadas', data:CATS.map(c=>vPag(c)), backgroundColor:hexA(css('--coral'),0.9), stack:'a', borderRadius:3, maxBarThickness:26, datalabels:{display:false} },
+      { label:'No pagadas', data:CATS.map(c=>v(c)-vPag(c)), backgroundColor:hexA(css('--coral-l'),0.55), stack:'a', borderRadius:3, maxBarThickness:26,
+        datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'Mulish',size:9.5,weight:600},
+          formatter:(x,ctx)=>{ const c = CATS[ctx.dataIndex]; return v(c) ? `${enHoras()?nf.format(Math.round(v(c))):nf.format(v(c))} · ${(100*v(c)/tot).toFixed(1)}%` : ''; } } },
+    ]},
     options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:74}},
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{ label:c=>` ${fmtU(c.parsed.x)} (${(100*c.parsed.x/tot).toFixed(1)}%)` }} },
-      scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
+      plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:11}},
+        tooltip:{callbacks:{ label:c=>{ const cat = CATS[c.dataIndex]; const den = v(cat)||1;
+          return ` ${c.dataset.label}: ${fmtU(c.parsed.x)} (${(100*c.parsed.x/den).toFixed(1)}% del tramo)`; } }} },
+      scales:{ x:{display:false, stacked:true}, y:{stacked:true, ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
 }
 document.querySelectorAll('#semVistaTabs .p-tab').forEach(b => b.onclick = () => {
