@@ -1166,7 +1166,7 @@ function tablaRank(id, arr, etiqueta){
     { k:'p', label:'Programadas', num:true, fmt:r=>fmtU(r.p) },
     { k:'c', label:'Canceladas', num:true, fmt:r=>fmtU(r.c) },
     { k:'pct', label:'% De cancelación', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
-    { k:'pctR', label:'% De reprogramación', num:true, fmt:r=>r.co?r.pctR.toFixed(1)+'%':'\u2014' },
+    { k:'pctR', label:'% De reprogramación', num:true, fmt:r=>r.pctR.toFixed(1)+'%' },
   ], arr);
 }
 const CFG_RANK = {
@@ -1182,7 +1182,7 @@ function renderRanking(base){
   const filas = rankMode==='profesor' ? base.filter(r=>r.profesor && r.profesor!==', ') : base;
   const arr = filaAgg(filas, rankMode, cfg.min);
   EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', 'Canceladas originales', 'Reprogramadas', 'Recuperaciones dictadas', '% De cancelación', '% De reprogramación'],
-    rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, Math.round(r.co*100)/100, Math.round(r.mk*100)/100, Math.round(r.rd*100)/100, r.pct.toFixed(1), r.co?r.pctR.toFixed(1):'']) };
+    rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, Math.round(r.co*100)/100, Math.round(r.mk*100)/100, Math.round(r.rd*100)/100, r.pct.toFixed(1), r.pctR.toFixed(1)]) };
   tablaRank('tRanking', arr, cfg.et);
 }
 document.querySelectorAll('#pRanking .p-tab').forEach(b => b.onclick = () => {
