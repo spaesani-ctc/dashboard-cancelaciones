@@ -543,9 +543,9 @@ async function cargar(force=false){
     const rows = []; let updated = null;
     for(let i=0; i<tramos.length; i++){
       const [a,b] = tramos[i];
-      if(tramos.length > 1){
-        const prog = `Cargando período ${i+1} de ${tramos.length}…`;
-        if(primeraCarga || overlay.classList.contains('show')) showLoad('Cargando datos…', prog);
+      if(tramos.length > 3){
+        const prog = `Cargando datos… ${Math.round(100*i/tramos.length)}%`;
+        if(primeraCarga || overlay.classList.contains('show')) showLoad('Cargando datos…', `${Math.round(100*i/tramos.length)}% completado`);
         else showToast(prog);
       }
       const r = await fetch(`/api/data?from=${a}&to=${b}${force?'&t='+Date.now():''}`, { headers: { 'x-dash-key': localStorage.getItem('dashKey')||'' } });
@@ -954,8 +954,10 @@ function renderSemanal(base){
   const catsAll = Object.entries(catTot).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(t=>t!=='Sin categoría');
   const cats = catsAll.slice(0, 5);
   const catsResto = [...catsAll.slice(5), ...(catTot['Sin categoría'] ? ['Sin categoría'] : [])];
-  const lineaDS = { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius:2.5, borderWidth:2, yAxisID:'y2',
-        datalabels: { align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5,
+  const pasoLbl = Math.max(1, Math.ceil(labels.length/16));
+  const lineaDS = { type:'line', order:1, label:'% De cancelación', data:labels.map(s=>pctDe(sem[s])), borderColor:css('--burdeos'), backgroundColor:css('--burdeos'), tension:.3, pointRadius: pasoLbl>1?2:2.5, borderWidth:2, yAxisID:'y2',
+        datalabels: { display: ctx => ctx.dataIndex % pasoLbl === 0 || ctx.dataIndex === labels.length-1,
+          align: ctx => flip(ctx) ? 'bottom' : 'top', offset:5,
           color: ctx => {
             try {
               const i = ctx.dataIndex;
