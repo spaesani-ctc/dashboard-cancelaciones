@@ -972,7 +972,17 @@ function renderSemanal(base){
   const totCat = labels.map(s=>sem[s].c);
   const barrasCat = [...cats.map(t=>({ type:'bar', order:2, label:t, stack:'c', data:labels.map(s=>sem[s].cats[t]||0), backgroundColor:hexA(tcS(t),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} })),
        ...(catsResto.length ? [{ type:'bar', order:2, label:'Resto', stack:'c', data:labels.map(s=>catsResto.reduce((a,t)=>a+(sem[s].cats[t]||0),0)), backgroundColor:hexA(css('--ink4'),0.85), borderRadius:2, yAxisID:'y', datalabels:{display:false} }] : [])];
-  const etiquetaTotal = { display:pocas, anchor:'end', align:'end', offset:-2, color:css('--ink2'), font:{family:'Mulish',size:8.5,weight:600}, formatter:(v,ctx)=> totCat[ctx.dataIndex] ? fmtN(totCat[ctx.dataIndex]) : '' };
+  // si la etiqueta del total quedaría pegada a la del %, se muestra solo el %
+  const etiquetaTotal = { display: ctx => {
+      if(!pocas) return false;
+      try {
+        if(!ctx.chart.isDatasetVisible(ctx.chart.data.datasets.length-1)) return true;
+        const i = ctx.dataIndex;
+        const yBar = ctx.chart.scales.y.getPixelForValue(totCat[i]);
+        const yPct = ctx.chart.scales.y2.getPixelForValue(pcts[i]);
+        return Math.abs(yBar - yPct) >= 30;
+      } catch(e){ return true; }
+    }, anchor:'end', align:'end', offset:-2, color:css('--ink2'), font:{family:'Mulish',size:8.5,weight:600}, formatter:(v,ctx)=> totCat[ctx.dataIndex] ? fmtN(totCat[ctx.dataIndex]) : '' };
   if(barrasCat.length) barrasCat[barrasCat.length-1].datalabels = etiquetaTotal;
   const datasets = semVista==='cat'
     ? [...barrasCat, lineaDS]
