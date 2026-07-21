@@ -1250,7 +1250,7 @@ function renderAnticipacion(canc){
     options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:74}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:11}},
         tooltip:{callbacks:{ label:c=>{ const cat = CATS[c.dataIndex]; const den = v(cat)||1;
-          return ` ${c.dataset.label}: ${fmtU(c.parsed.x)} (${(100*c.parsed.x/den).toFixed(1)}% del tramo)`; } }} },
+          return ` ${c.dataset.label}: ${fmtU(c.parsed.x)} de ${fmtU(den)} (${(100*c.parsed.x/den).toFixed(1)}%)`; } }} },
       scales:{ x:{display:false, stacked:true}, y:{stacked:true, ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
 }
