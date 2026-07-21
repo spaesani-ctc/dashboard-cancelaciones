@@ -332,7 +332,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <div class="p-body"><canvas id="chAntic"></canvas></div>
     </div>
     <div class="panel" id="pHeatmap">
-      <div class="p-head"><span class="p-title" id="hmTitle">Sesiones canceladas por día y hora</span><div class="p-tabs" id="hmTabs"><button class="p-tab active" data-h="pct">%</button><button class="p-tab" data-h="nom">Nº</button></div><select id="hmBaseSel" title="Base del porcentaje"><option value="total">% del total</option><option value="dia">% del día</option><option value="hora">% de la hora</option></select><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'heatmap','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
+      <div class="p-head"><span class="p-title" id="hmTitle">Canceladas por día y hora</span><div class="p-tabs" id="hmTabs"><button class="p-tab active" data-h="pct">%</button><button class="p-tab" data-h="nom">Nº</button></div><select id="hmBaseSel" title="Base del porcentaje"><option value="total">% del total</option><option value="dia">% del día</option><option value="hora">% de la hora</option></select><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'heatmap','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
       <div class="p-body scroll"><div class="hm" id="heatmap"></div></div>
     </div>
   </div>
@@ -1166,7 +1166,7 @@ function tablaRank(id, arr, etiqueta){
     { k:'k', label:etiqueta, tip:'k' },
     { k:'p', label:'Programadas', num:true, fmt:r=>fmtU(r.p) },
     { k:'c', label:'Canceladas', num:true, fmt:r=>fmtU(r.c) },
-    { k:'pct', label:'% De cancelación', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
+    { k:'pct', label:'% Cancelación', num:true, fmt:r=>r.pct.toFixed(1)+'%', style:r=>`color:${colorPct(r.pct)};font-weight:600` },
     { k:'pctR', label:'% Reprogramación', num:true, fmt:r=>r.pctR.toFixed(1)+'%' },
   ], arr);
 }
@@ -1182,7 +1182,7 @@ function renderRanking(base){
   document.getElementById('rankTitle').textContent = cfg.titulo;
   const filas = rankMode==='profesor' ? base.filter(r=>r.profesor && r.profesor!==', ') : base;
   const arr = filaAgg(filas, rankMode, cfg.min);
-  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', 'Canceladas originales', 'Reprogramadas', 'Recuperaciones dictadas', '% De cancelación', '% Reprogramación'],
+  EXPORTS.ranking = { nombre:'cancelaciones_por_'+rankMode, cols:[cfg.et, (enHoras()?'Horas':'Sesiones')+' programadas', (enHoras()?'Horas':'Sesiones')+' canceladas', 'Canceladas originales', 'Reprogramadas', 'Recuperaciones dictadas', '% Cancelación', '% Reprogramación'],
     rows: arr.map(r=>[r.k, Math.round(r.p*100)/100, Math.round(r.c*100)/100, Math.round(r.co*100)/100, Math.round(r.mk*100)/100, Math.round(r.rd*100)/100, r.pct.toFixed(1), r.pctR.toFixed(1)]) };
   tablaRank('tRanking', arr, cfg.et);
 }
@@ -1269,7 +1269,7 @@ document.getElementById('hmTabs').addEventListener('click', e => {
 });
 document.getElementById('hmBaseSel').onchange = e => { hmBase = e.target.value; renderHeatmap(window._canc||[]); };
 function renderHeatmap(canc){
-  document.getElementById('hmTitle').textContent = (enHoras()?'Horas canceladas':'Sesiones canceladas')+' por día y hora';
+  document.getElementById('hmTitle').textContent = 'Canceladas por día y hora';
   const horas = [...new Set(canc.map(r=>r.hora).filter(h=>h && h>='05' && h<='22'))].sort();
   const m = {};
   for(const r of canc){ m[r.dia+'|'+r.hora]=(m[r.dia+'|'+r.hora]||0)+val(r); }
@@ -1434,9 +1434,9 @@ function renderSesiones(base){
   if(s) arr.sort((a,b)=>{ const cmp = cmpVal(a[s.k], b[s.k]); return s.dir==='asc'?cmp:-cmp; });
   const flecha = k => s&&s.k===k ? (s.dir==='asc'?' ▲':' ▼') : '';
   const GRUPOS = colMode==='resumen'
-    ? [['Programadas','pS','pH'],['Dictadas','dS','dH'],['Futuras','fS','fH'],['Canceladas','cS','cH'],['% De cancelación','pctS','pctH','pct']]
+    ? [['Programadas','pS','pH'],['Dictadas','dS','dH'],['Futuras','fS','fH'],['Canceladas','cS','cH'],['% Cancelación','pctS','pctH','pct']]
     : colMode==='antic'
-    ? [['Canceladas','cS','cH'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% De cancelación','pctS','pctH','pct']]
+    ? [['Canceladas','cS','cH'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% Cancelación','pctS','pctH','pct']]
     : [['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['Pag. posterior al inicio','ppoS','ppoH'],['Pag. aviso <24 h','pu24S','pu24H'],['Pag. aviso ≥24 h','po24S','po24H'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
   const celda = r => `<tr>
     <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
