@@ -1449,8 +1449,12 @@ function renderSesiones(base){
     const t = segs.reduce((a,x)=>a+x[1],0);
     if(!t) return '<td class="sep num dim">—</td>';
     const tip = segs.map(([n,v])=>`${n}: ${nf.format(v)} (${(100*v/t).toFixed(1)}%)`).join(' · ');
-    return `<td class="sep" style="min-width:120px;padding:3px 9px"><div title="${tip}" style="display:flex;height:11px;border-radius:3px;overflow:hidden;gap:1px">` +
-      segs.map(([n,v,c])=>`<div style="width:${(100*v/t)}%;background:${c}"></div>`).join('') + '</div></td>';
+    return `<td class="sep" style="min-width:130px;padding:3px 9px"><div title="${tip}" style="display:flex;height:13px;border-radius:3px;overflow:hidden;gap:1px">` +
+      segs.map(([n,v,c])=>{
+        const pct = 100*v/t;
+        const txt = pct>=18 ? pct.toFixed(0)+'%' : '';
+        return `<div style="width:${pct}%;background:${c};display:flex;align-items:center;justify-content:center;color:#fff;font-size:8.5px;font-weight:600;line-height:1;overflow:hidden;white-space:nowrap">${txt}</div>`;
+      }).join('') + '</div></td>';
   };
   const celda = r => `<tr>
     <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
