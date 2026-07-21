@@ -1347,7 +1347,7 @@ function renderMotivosMes(base){
 
 function renderSesGraficos(g, et){
   const panel = document.getElementById('pSesViz');
-  panel.style.display='none'; return;   // la composición ahora está embebida en la tabla
+  if(colMode==='resumen' || colMode==='motmes'){ panel.style.display='none'; return; }
   panel.style.display='flex';
   const filasG = Object.entries(g).map(([k,v])=>({k,...v}));
   const trunca = k => String(k).length>24 ? String(k).slice(0,23)+'…' : k;
