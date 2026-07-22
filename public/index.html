@@ -1585,9 +1585,9 @@ function renderSesiones(base){
       }).join('') + '</div></td>';
   };
   const conIE = dimSesiones==='salon';
-  const celda = r => `<tr>
-    <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
+  const celda = r => `<tr>` +
     (conIE ? `<td title="${String(r.ie||'').replace(/"/g,'&quot;')}">${r.ie||''}</td>` : '') +
+    `<td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
     GRUPOS.map(([lbl,kS,kH,esPct]) => esPct==='strip'
       ? stripCell(r)
       : esPct
@@ -1597,8 +1597,8 @@ function renderSesiones(base){
   const totRow = {k:'TOTAL',...T,pctS:T.pS?100*Math.max(0,T.coS-T.rdS)/T.pS:0,pctH:T.pH?100*Math.max(0,T.coH-T.rdH)/T.pH:0,npS:T.cS-T.pgS,npH:T.cH-T.pgH,pctPgS:T.cS?100*T.pgS/T.cS:0,pctPgH:T.cH?100*T.pgH/T.cH:0};
   // export = espejo de la lente visible (más originales/recuperaciones en General, para auditar el %)
   {
-    const colsExp = [et], acc = [];
-    if(dimSesiones==='salon') colsExp.push('Institución Educativa');
+    const colsExp = dimSesiones==='salon' ? ['Institución Educativa', et] : [et];
+    const acc = [];
     for(const [lbl,kS,kH,f] of GRUPOS){
       if(f==='strip') continue;
       colsExp.push(`${lbl} (sesiones)`, `${lbl} (horas)`);
@@ -1607,8 +1607,7 @@ function renderSesiones(base){
     if(colMode==='resumen') colsExp.push('Canceladas originales (sesiones)','Canceladas originales (horas)','Recuperaciones dictadas (sesiones)','Recuperaciones dictadas (horas)');
     EXPORTS.sesiones = { nombre:'sesiones_y_horas_por_'+dimSesiones+(colMode!=='resumen'?'_'+colMode:''), cols: colsExp,
       rows: [...arr, totRow].map(r=>{
-        const fila = [r.k];
-        if(dimSesiones==='salon') fila.push(r.ie||'');
+        const fila = dimSesiones==='salon' ? [r.ie||'', r.k] : [r.k];
         for(const [kS,kH,f] of acc){
           if(f==='pct'){ fila.push(r[kS].toFixed(1), r.pH?r[kH].toFixed(1):'s/d'); }
           else { fila.push(r[kS], Math.round(r[kH])); }
@@ -1619,8 +1618,9 @@ function renderSesiones(base){
   }
   const el = document.getElementById('tSesiones');
   el.innerHTML = `<thead>
-    <tr><th rowspan="2" data-k="k">${et}${flecha('k')}</th>` +
+    <tr>` +
     (conIE ? `<th rowspan="2" data-k="ie">Institución Educativa${flecha('ie')}</th>` : '') +
+    `<th rowspan="2" data-k="k">${et}${flecha('k')}</th>` +
     GRUPOS.map(([lbl,,,f]) => f==='strip'
       ? `<th class="grp sep" rowspan="2" data-k="stripK" title="${colMode==='antic'?'Ordenar por % de aviso posterior al inicio':'Ordenar por % de canceladas pagadas'}" style="vertical-align:middle;text-align:center">${lbl}${flecha('stripK')}</th>`
       : `<th class="grp sep" colspan="2">${lbl}</th>`).join('') + `</tr>
