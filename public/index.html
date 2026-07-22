@@ -1338,9 +1338,9 @@ function renderHeatmap(base){
     const vTxt = p ? (esRatio ? r.toFixed(1)+'%' : (enHoras()?nf.format(Math.round(c)):nf.format(c))) : '';
     let bg, a;
     if(esRatio){
-      const d = r - mediaR;                                  // divergente centrada en el promedio
-      a = Math.min(1, Math.abs(d)/SPAN);
-      bg = !p ? 'var(--surface2)' : hexA(css(d >= 0 ? '--coral' : '--teal'), 0.08 + 0.72*a);
+      const d = r - mediaR;                                  // anclada al promedio: solo lo peor se pinta
+      a = Math.min(1, Math.max(0, d)/SPAN);
+      bg = !p ? 'var(--surface2)' : (d > 0 ? hexA(css('--coral'), 0.10 + 0.70*a) : hexA(css('--coral'), 0.05));
     } else {
       a = c/maxC;
       bg = !p ? 'var(--surface2)' : hexA(css('--coral'), 0.10 + 0.72*Math.min(1,a));
@@ -1365,7 +1365,7 @@ function renderHeatmap(base){
   html += celdaTot(totC, totP, tip('Total general', totC, totP));
   el.innerHTML = html;
   document.getElementById('hmNota').textContent = esRatio
-    ? `Cada celda: % de las sesiones programadas en ese día y hora de inicio que terminaron canceladas. Rojo = peor que el promedio del alcance (${ratio(totC,totP).toFixed(1)}%), verde = mejor. Las celdas atenuadas tienen menos de 20 sesiones programadas: leer con cautela.`
+    ? `Cada celda: % de las sesiones programadas en ese día y hora de inicio que terminaron canceladas. Cuanto más rojo, más por encima del promedio del alcance (${ratio(totC,totP).toFixed(1)}%); las claras están en el promedio o mejor. Las celdas atenuadas tienen menos de 20 sesiones programadas: leer con cautela.`
     : 'Cada celda muestra la cantidad de sesiones canceladas según su día y hora de inicio.';
   EXPORTS.heatmap = { nombre: esRatio ? 'ratio_cancelacion_dia_hora' : 'cancelaciones_dia_hora',
     cols:['Hora', ...dias.flatMap(d=>[`Canceladas ${DIAS_ES[d]}`,`Programadas ${DIAS_ES[d]}`,`% ${DIAS_ES[d]}`]), 'Canceladas Total','Programadas Total','% Total'],
