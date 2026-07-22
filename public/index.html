@@ -1465,9 +1465,26 @@ function renderSesiones(base){
       : `<td class="num sep">${nf.format(r[kS])}</td><td class="num dim">${nf.format(Math.round(r[kH]))}</td>`
     ).join('') + '</tr>';
   const totRow = {k:'TOTAL',...T,pctS:T.pS?100*Math.max(0,T.coS-T.rdS)/T.pS:0,pctH:T.pH?100*Math.max(0,T.coH-T.rdH)/T.pH:0,npS:T.cS-T.pgS,npH:T.cH-T.pgH,pctPgS:T.cS?100*T.pgS/T.cS:0,pctPgH:T.cH?100*T.pgH/T.cH:0};
-  EXPORTS.sesiones = { nombre:'sesiones_y_horas_por_'+dimSesiones,
-    cols:[et,'Programadas (sesiones)','Programadas (horas)','Dictadas (sesiones)','Dictadas (horas)','Futuras (sesiones)','Futuras (horas)','Canceladas (sesiones)','Canceladas (horas)','Canc. posterior al inicio (sesiones)','Canc. posterior al inicio (horas)','Canc. aviso <24 h (sesiones)','Canc. aviso <24 h (horas)','Canc. aviso >=24 h (sesiones)','Canc. aviso >=24 h (horas)','Canc. pagadas (sesiones)','Canc. pagadas (horas)','Canc. no pagadas (sesiones)','Canc. no pagadas (horas)','Pag. posterior al inicio (sesiones)','Pag. posterior al inicio (horas)','Pag. aviso <24 h (sesiones)','Pag. aviso <24 h (horas)','Pag. aviso >=24 h (sesiones)','Pag. aviso >=24 h (horas)','% canc. pagadas (sesiones)','% canc. pagadas (horas)','% canc. (sesiones)','% canc. (horas)'],
-    rows: [...arr, totRow].map(r=>[r.k, r.pS, Math.round(r.pH), r.dS, Math.round(r.dH), r.fS, Math.round(r.fH), r.cS, Math.round(r.cH), r.poS, Math.round(r.poH), r.u24S, Math.round(r.u24H), r.o24S, Math.round(r.o24H), r.pgS, Math.round(r.pgH), r.npS, Math.round(r.npH), r.ppoS, Math.round(r.ppoH), r.pu24S, Math.round(r.pu24H), r.po24S, Math.round(r.po24H), r.pctPgS.toFixed(1), r.pctPgH.toFixed(1), r.pctS.toFixed(1), r.pH?r.pctH.toFixed(1):'s/d']) };
+  // export = espejo de la lente visible (más originales/recuperaciones en General, para auditar el %)
+  {
+    const colsExp = [et], acc = [];
+    for(const [lbl,kS,kH,f] of GRUPOS){
+      if(f==='strip') continue;
+      colsExp.push(`${lbl} (sesiones)`, `${lbl} (horas)`);
+      acc.push([kS,kH,f]);
+    }
+    if(colMode==='resumen') colsExp.push('Canceladas originales (sesiones)','Canceladas originales (horas)','Recuperaciones dictadas (sesiones)','Recuperaciones dictadas (horas)');
+    EXPORTS.sesiones = { nombre:'sesiones_y_horas_por_'+dimSesiones+(colMode!=='resumen'?'_'+colMode:''), cols: colsExp,
+      rows: [...arr, totRow].map(r=>{
+        const fila = [r.k];
+        for(const [kS,kH,f] of acc){
+          if(f==='pct'){ fila.push(r[kS].toFixed(1), r.pH?r[kH].toFixed(1):'s/d'); }
+          else { fila.push(r[kS], Math.round(r[kH])); }
+        }
+        if(colMode==='resumen') fila.push(r.coS, Math.round(r.coH), r.rdS, Math.round(r.rdH));
+        return fila;
+      }) };
+  }
   const el = document.getElementById('tSesiones');
   el.innerHTML = `<thead>
     <tr><th rowspan="2" data-k="k">${et}${flecha('k')}</th>` +
