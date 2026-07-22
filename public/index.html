@@ -1325,7 +1325,8 @@ function renderHeatmap(base){
   for(const h of horas){ rowP[h]=0; rowC[h]=0; for(const d of dias){ rowP[h]+=P[d+'|'+h]||0; rowC[h]+=C[d+'|'+h]||0; } }
   const totP = dias.reduce((a,d)=>a+colP[d],0), totC = dias.reduce((a,d)=>a+colC[d],0);
   const ratio = (c,p) => p ? 100*c/p : 0;
-  const maxR = Math.max(0.0001, ...horas.flatMap(h=>dias.map(d=>ratio(C[d+'|'+h]||0, P[d+'|'+h]||0))));
+  const mediaR = ratio(totC, totP);          // centro de la escala divergente
+  const SPAN = 15;                            // ±15 pp respecto del promedio = intensidad máxima
   const maxC = Math.max(1, ...horas.flatMap(h=>dias.map(d=>C[d+'|'+h]||0)));
   el.style.gridTemplateColumns = `38px repeat(${dias.length||1},minmax(28px,48px)) minmax(36px,54px)`;
   el.style.gridTemplateRows = `18px repeat(${horas.length||1},21px) 21px`;
@@ -1333,12 +1334,20 @@ function renderHeatmap(base){
   const MIN_N = 20;   // con menos de 20 sesiones programadas, la celda se atenúa
   const celda = (c,p,t,n) => {
     const r = ratio(c,p);
-    const a = esRatio ? r/maxR : c/maxC;
     const pocas = p && n < MIN_N;
     const vTxt = p ? (esRatio ? r.toFixed(1)+'%' : (enHoras()?nf.format(Math.round(c)):nf.format(c))) : '';
-    const bg = !p ? 'var(--surface2)' : `rgba(216,90,48,${(0.10+0.72*Math.min(1,a)).toFixed(2)})`;
+    let bg, a;
+    if(esRatio){
+      const d = r - mediaR;                                  // divergente centrada en el promedio
+      a = Math.min(1, Math.abs(d)/SPAN);
+      bg = !p ? 'var(--surface2)' : hexA(css(d >= 0 ? '--coral' : '--teal'), 0.08 + 0.72*a);
+    } else {
+      a = c/maxC;
+      bg = !p ? 'var(--surface2)' : hexA(css('--coral'), 0.10 + 0.72*Math.min(1,a));
+    }
     const extra = pocas ? ';opacity:.4' : '';
-    const tFull = pocas ? `${t} — pocos datos (${n} ${n===1?'sesión programada':'sesiones programadas'})` : t;
+    const tFull = (pocas ? `${t} — pocos datos (${n} ${n===1?'sesión programada':'sesiones programadas'})` : t) +
+      (esRatio && p ? ` · promedio del alcance: ${mediaR.toFixed(1)}%` : '');
     return `<div class="hm-cell" style="background:${bg};color:${a>0.58?'#fff':'var(--ink)'}${extra}" title="${tFull}">${vTxt}</div>`;
   };
   const celdaTot = (c,p,t) => {
@@ -1356,7 +1365,7 @@ function renderHeatmap(base){
   html += celdaTot(totC, totP, tip('Total general', totC, totP));
   el.innerHTML = html;
   document.getElementById('hmNota').textContent = esRatio
-    ? 'Cada celda muestra el % de las sesiones programadas en ese día y hora de inicio que terminaron canceladas. Las celdas atenuadas tienen menos de 20 sesiones programadas: leer con cautela.'
+    ? `Cada celda: % de las sesiones programadas en ese día y hora de inicio que terminaron canceladas. Rojo = peor que el promedio del alcance (${ratio(totC,totP).toFixed(1)}%), verde = mejor. Las celdas atenuadas tienen menos de 20 sesiones programadas: leer con cautela.`
     : 'Cada celda muestra la cantidad de sesiones canceladas según su día y hora de inicio.';
   EXPORTS.heatmap = { nombre: esRatio ? 'ratio_cancelacion_dia_hora' : 'cancelaciones_dia_hora',
     cols:['Hora', ...dias.flatMap(d=>[`Canceladas ${DIAS_ES[d]}`,`Programadas ${DIAS_ES[d]}`,`% ${DIAS_ES[d]}`]), 'Canceladas Total','Programadas Total','% Total'],
