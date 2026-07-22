@@ -1303,21 +1303,34 @@ function renderAnticipacion(canc){
     ]},
     options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:74}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:11}},
-        tooltip:{callbacks:{ label:c=>{ const cat = CATS[c.dataIndex]; const den = v(cat)||1;
-          return ` ${c.dataset.label}: ${fmtU(c.parsed.x)} de ${fmtU(den)} (${(100*c.parsed.x/den).toFixed(1)}%)`; },
-          afterBody:items=>{
-            const c = items[0]; if(!c) return [];
-            const cat = CATS[c.dataIndex];
-            const seg = c.dataset.label==='Pagadas' ? 'pag' : 'nop';
-            const m = (MOT[cat]||{})[seg]||{};
-            const top = Object.entries(m).sort((a,b)=>b[1]-a[1]);
-            if(!top.length) return [];
-            const lineas = ['', 'Motivos principales:'];
-            for(const [k,x] of top.slice(0,4)) lineas.push(` • ${k.length>40?k.slice(0,39)+'…':k}: ${fmtU(x)}`);
-            const resto = top.slice(4).reduce((a,x)=>a+x[1],0);
-            if(resto) lineas.push(` • Otros (${top.length-4}): ${fmtU(resto)}`);
-            return lineas;
-          } }} },
+        tooltip:{ enabled:false, external: ctx => {
+          const tip = anticTipEl();
+          const tt = ctx.tooltip;
+          if(!tt || tt.opacity === 0){ anticTipHide(); return; }
+          const dp = tt.dataPoints && tt.dataPoints[0]; if(!dp) return;
+          const cat = CATS[dp.dataIndex];
+          const segLabel = dp.dataset.label;
+          const seg = segLabel==='Pagadas' ? 'pag' : 'nop';
+          const den = v(cat)||1;
+          const segTot = dp.parsed.x || 0;
+          const m = (MOT[cat]||{})[seg]||{};
+          const lista = Object.entries(m).sort((a,b)=>b[1]-a[1]);
+          tip.innerHTML =
+            `<div style="font-weight:700;margin-bottom:2px">${cat}</div>` +
+            `<div style="color:var(--ink2);margin-bottom:${lista.length?'6px':'0'}">${segLabel}: ${fmtU(segTot)} de ${fmtU(den)} (${(100*segTot/den).toFixed(1)}%)</div>` +
+            (lista.length ? `<div style="font-weight:600;margin-bottom:3px">Motivos</div>` +
+              `<div style="max-height:190px;overflow:auto;padding-right:4px">` +
+              lista.map(([k,x])=>`<div style="display:flex;gap:12px;justify-content:space-between;padding:1px 0"><span style="max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${k.replace(/"/g,'&quot;')}">${k}</span><span style="white-space:nowrap;color:var(--ink2)">${fmtU(x)} · ${segTot?(100*x/segTot).toFixed(1):0}%</span></div>`).join('') +
+              `</div>` : '');
+          const rect = ctx.chart.canvas.getBoundingClientRect();
+          tip.style.display = 'block';
+          const w = tip.offsetWidth, h = tip.offsetHeight;
+          let x = rect.left + tt.caretX + 14, y = rect.top + tt.caretY - 12;
+          if(x + w > window.innerWidth - 8) x = rect.left + tt.caretX - w - 14;
+          if(y + h > window.innerHeight - 8) y = window.innerHeight - h - 8;
+          if(y < 8) y = 8;
+          tip.style.left = x + 'px'; tip.style.top = y + 'px';
+        } } },
       scales:{ x:{display:false, stacked:true}, y:{stacked:true, ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
 }
@@ -1394,6 +1407,24 @@ function renderHeatmap(base){
         ...dias.flatMap(d=>[Math.round((C[d+'|'+h]||0)*100)/100, Math.round((P[d+'|'+h]||0)*100)/100, ratio(C[d+'|'+h]||0,P[d+'|'+h]||0).toFixed(1)]),
         Math.round(rowC[h]*100)/100, Math.round(rowP[h]*100)/100, ratio(rowC[h],rowP[h]).toFixed(1)]),
       ['Total', ...dias.flatMap(d=>[Math.round(colC[d]*100)/100, Math.round(colP[d]*100)/100, ratio(colC[d],colP[d]).toFixed(1)]), Math.round(totC*100)/100, Math.round(totP*100)/100, ratio(totC,totP).toFixed(1)]] };
+}
+
+/* tooltip externo del gráfico de anticipación (scrolleable) */
+let _anticTip = null, _anticTipTimer = null;
+function anticTipEl(){
+  if(_anticTip) { clearTimeout(_anticTipTimer); return _anticTip; }
+  const d = document.createElement('div');
+  d.id = 'anticTip';
+  d.style.cssText = 'position:fixed;z-index:800;display:none;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,0.18);padding:9px 11px;font-size:11px;line-height:1.5;min-width:220px;max-width:330px;';
+  d.addEventListener('mouseenter', ()=>clearTimeout(_anticTipTimer));
+  d.addEventListener('mouseleave', ()=>{ d.style.display='none'; });
+  document.body.appendChild(d);
+  _anticTip = d;
+  return d;
+}
+function anticTipHide(){
+  clearTimeout(_anticTipTimer);
+  _anticTipTimer = setTimeout(()=>{ if(_anticTip && !_anticTip.matches(':hover')) _anticTip.style.display='none'; }, 250);
 }
 
 /* ============ vista sesiones y horas ============ */
