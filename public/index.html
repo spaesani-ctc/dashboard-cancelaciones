@@ -1538,6 +1538,7 @@ function renderSesiones(base){
     let k = r[dimSesiones] ?? '—';
     if(dimSesiones==='profesor' && (!k || k===', ')) k = '—';
     (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0,pgS:0,pgH:0,ppoS:0,ppoH:0,pu24S:0,pu24H:0,po24S:0,po24H:0});
+    if(dimSesiones==='salon' && r.ie && !g[k].ie) g[k].ie = r.ie;
     const h = r.academic_hours||0; tot++; if(r.academic_hours==null) sinHoras++;
     g[k].pS++; g[k].pH+=h;
     if(esDictada(r)){ g[k].dS++; g[k].dH+=h; if(esMakeUp(r)){ g[k].rdS++; g[k].rdH+=h; } }
@@ -1583,8 +1584,10 @@ function renderSesiones(base){
         return `<div style="width:${pct}%;background:${c};display:flex;align-items:center;justify-content:center;color:#fff;font-size:8.5px;font-weight:600;line-height:1;overflow:hidden;white-space:nowrap">${txt}</div>`;
       }).join('') + '</div></td>';
   };
+  const conIE = dimSesiones==='salon';
   const celda = r => `<tr>
     <td title="${String(r.k).replace(/"/g,'&quot;')}">${r.k}</td>` +
+    (conIE ? `<td title="${String(r.ie||'').replace(/"/g,'&quot;')}">${r.ie||''}</td>` : '') +
     GRUPOS.map(([lbl,kS,kH,esPct]) => esPct==='strip'
       ? stripCell(r)
       : esPct
@@ -1595,6 +1598,7 @@ function renderSesiones(base){
   // export = espejo de la lente visible (más originales/recuperaciones en General, para auditar el %)
   {
     const colsExp = [et], acc = [];
+    if(dimSesiones==='salon') colsExp.push('Institución Educativa');
     for(const [lbl,kS,kH,f] of GRUPOS){
       if(f==='strip') continue;
       colsExp.push(`${lbl} (sesiones)`, `${lbl} (horas)`);
@@ -1604,6 +1608,7 @@ function renderSesiones(base){
     EXPORTS.sesiones = { nombre:'sesiones_y_horas_por_'+dimSesiones+(colMode!=='resumen'?'_'+colMode:''), cols: colsExp,
       rows: [...arr, totRow].map(r=>{
         const fila = [r.k];
+        if(dimSesiones==='salon') fila.push(r.ie||'');
         for(const [kS,kH,f] of acc){
           if(f==='pct'){ fila.push(r[kS].toFixed(1), r.pH?r[kH].toFixed(1):'s/d'); }
           else { fila.push(r[kS], Math.round(r[kH])); }
@@ -1615,6 +1620,7 @@ function renderSesiones(base){
   const el = document.getElementById('tSesiones');
   el.innerHTML = `<thead>
     <tr><th rowspan="2" data-k="k">${et}${flecha('k')}</th>` +
+    (conIE ? `<th rowspan="2" data-k="ie">Institución Educativa${flecha('ie')}</th>` : '') +
     GRUPOS.map(([lbl,,,f]) => f==='strip'
       ? `<th class="grp sep" rowspan="2" data-k="stripK" title="${colMode==='antic'?'Ordenar por % de aviso posterior al inicio':'Ordenar por % de canceladas pagadas'}" style="vertical-align:middle;text-align:center">${lbl}${flecha('stripK')}</th>`
       : `<th class="grp sep" colspan="2">${lbl}</th>`).join('') + `</tr>
