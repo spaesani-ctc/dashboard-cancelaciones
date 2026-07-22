@@ -1695,6 +1695,7 @@ function renderReprog(base){
   for(const r of base){
     const k = r[dimReprog] ?? '—';
     (g[k] ??= {int:0, d:0, c:0, f:0, co:0});
+    if(dimReprog==='salon' && r.ie && !g[k].ie) g[k].ie = r.ie;
     if(esMakeUp(r)){
       g[k].int += val(r);
       if(esDictada(r)) g[k].d += val(r);
@@ -1707,10 +1708,12 @@ function renderReprog(base){
     .filter(x=>x.int>0).sort((a,b)=>b.int-a.int || b.co-a.co);
   document.getElementById('pReprogDim').style.display = mk.length ? 'flex' : 'none';
   const et = {proyecto:'Proyecto', ie:'Institución Educativa', salon:'Salón', grado:'Grado', profesor:'Profesor'}[dimReprog];
+  const conIE = dimReprog==='salon';
   EXPORTS.reprogDim = { nombre:'recuperaciones_por_'+dimReprog,
-    cols:[et,'Reprogramadas','Recuperadas (dictadas)','Canceladas de nuevo','Aún programadas','Canceladas originales','Tasa reprogramación %','Tasa recuperación %'],
-    rows: arr.map(x=>[x.k, x.int, x.d, x.c, x.f, x.co, x.tR.toFixed(1), x.tRec.toFixed(1)]) };
+    cols:[...(conIE?['Institución Educativa']:[]), et,'Reprogramadas','Recuperadas (dictadas)','Canceladas de nuevo','Aún programadas','Canceladas originales','Tasa reprogramación %','Tasa recuperación %'],
+    rows: arr.map(x=>[...(conIE?[x.ie||'']:[]), x.k, x.int, x.d, x.c, x.f, x.co, x.tR.toFixed(1), x.tRec.toFixed(1)]) };
   renderTable('tReprogDim', [
+    ...(conIE ? [{ k:'ie', label:'Institución Educativa', tip:'ie' }] : []),
     { k:'k', label:et, tip:'k' },
     { k:'int', label:'Reprogramadas', num:true, fmt:r=>fmtU(r.int) },
     { k:'d', label:'Recuperadas', num:true, fmt:r=>fmtU(r.d), style:()=>`color:${css('--teal')}` },
