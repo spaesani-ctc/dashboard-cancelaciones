@@ -1347,7 +1347,7 @@ function renderMotivosMes(base){
 
 function renderSesGraficos(g, et){
   const panel = document.getElementById('pSesViz');
-  if(colMode==='resumen' || colMode==='motmes'){ panel.style.display='none'; return; }
+  panel.style.display='none'; return;   // la composición vive en las mini barras de la tabla
   panel.style.display='flex';
   const filasG = Object.entries(g).map(([k,v])=>({k,...v}));
   const trunca = k => String(k).length>24 ? String(k).slice(0,23)+'…' : k;
@@ -1439,8 +1439,8 @@ function renderSesiones(base){
   const GRUPOS = colMode==='resumen'
     ? [['Programadas','pS','pH'],['Dictadas','dS','dH'],['Futuras','fS','fH'],['Canceladas','cS','cH'],['% Cancelación','pctS','pctH','pct']]
     : colMode==='antic'
-    ? [['Canceladas','cS','cH'],['Distribución del aviso','','','strip'],['Posterior al inicio','poS','poH'],['Aviso <24 h','u24S','u24H'],['Aviso ≥24 h','o24S','o24H'],['% Cancelación','pctS','pctH','pct']]
-    : [['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['Distribución','','','strip'],['Pag. posterior al inicio','ppoS','ppoH'],['Pag. aviso <24 h','pu24S','pu24H'],['Pag. aviso ≥24 h','po24S','po24H'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
+    ? [['Canceladas','cS','cH'],['Distribución del aviso','','','strip'],['Aviso ≥24 h','o24S','o24H'],['Aviso <24 h','u24S','u24H'],['Posterior al inicio','poS','poH'],['% Cancelación','pctS','pctH','pct']]
+    : [['Canc. pagadas','pgS','pgH'],['Canc. no pagadas','npS','npH'],['Distribución','','','strip'],['Pag. aviso ≥24 h','po24S','po24H'],['Pag. aviso <24 h','pu24S','pu24H'],['Pag. posterior al inicio','ppoS','ppoH'],['% canceladas pagadas','pctPgS','pctPgH','pct']];
   const segsDe = r => colMode==='antic'
     ? [['Aviso ≥24 h', r.o24S, hexA(css('--ink3'),0.7)], ['Aviso <24 h', r.u24S, hexA(css('--coral'),0.85)], ['Posterior al inicio', r.poS, hexA(css('--burdeos'),0.85)]]
     : [['Pagadas', r.pgS, hexA(css('--coral'),0.9)], ['No pagadas', r.npS, hexA(css('--coral-l'),0.55)]];
