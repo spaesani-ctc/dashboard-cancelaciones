@@ -1280,6 +1280,15 @@ function renderAnticipacion(canc){
     if(PAGADA(r.is_paid_session)){ agg[b].ps++; agg[b].ph += h; }
   }
   const CATS = TODAS_CATS.filter(c => c!=='Sin dato' || agg[c].s > 0);
+  // motivos por tramo y por segmento (pagada / no pagada), para el tooltip
+  const MOT = {};
+  for(const r of filas){
+    const b = bucketAntic(r);
+    const g = (MOT[b] ??= {pag:{}, nop:{}});
+    const seg = PAGADA(r.is_paid_session) ? 'pag' : 'nop';
+    const mo = r.motivo||'Sin especificar';
+    g[seg][mo] = (g[seg][mo]||0) + val(r);
+  }
   const v = c => enHoras() ? agg[c].h : agg[c].s;
   const vPag = c => enHoras() ? agg[c].ph : agg[c].ps;
   const tot = CATS.reduce((a,c)=>a+v(c),0)||1;
@@ -1295,7 +1304,20 @@ function renderAnticipacion(canc){
     options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:74}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:11}},
         tooltip:{callbacks:{ label:c=>{ const cat = CATS[c.dataIndex]; const den = v(cat)||1;
-          return ` ${c.dataset.label}: ${fmtU(c.parsed.x)} de ${fmtU(den)} (${(100*c.parsed.x/den).toFixed(1)}%)`; } }} },
+          return ` ${c.dataset.label}: ${fmtU(c.parsed.x)} de ${fmtU(den)} (${(100*c.parsed.x/den).toFixed(1)}%)`; },
+          afterBody:items=>{
+            const c = items[0]; if(!c) return [];
+            const cat = CATS[c.dataIndex];
+            const seg = c.dataset.label==='Pagadas' ? 'pag' : 'nop';
+            const m = (MOT[cat]||{})[seg]||{};
+            const top = Object.entries(m).sort((a,b)=>b[1]-a[1]);
+            if(!top.length) return [];
+            const lineas = ['', 'Motivos principales:'];
+            for(const [k,x] of top.slice(0,4)) lineas.push(` • ${k.length>40?k.slice(0,39)+'…':k}: ${fmtU(x)}`);
+            const resto = top.slice(4).reduce((a,x)=>a+x[1],0);
+            if(resto) lineas.push(` • Otros (${top.length-4}): ${fmtU(resto)}`);
+            return lineas;
+          } }} },
       scales:{ x:{display:false, stacked:true}, y:{stacked:true, ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
 }
