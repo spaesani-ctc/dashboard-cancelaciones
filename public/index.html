@@ -222,9 +222,29 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
 
 @media (max-width:1100px) {
   body { overflow:auto; }
-  .kpis { grid-template-columns:repeat(2,1fr); }
+  .kpis { grid-template-columns:repeat(3,1fr); }
   .grid { display:flex; flex-direction:column; }
   .panel { min-height:320px; }
+  #vistaSesiones .panel, #vistaReprog .panel { min-height:0; }
+}
+/* móvil */
+@media (max-width:720px) {
+  .topbar { flex-wrap:wrap; row-gap:4px; padding:7px 10px; gap:10px; }
+  .brand h1 { font-size:1.05rem; }
+  .tabs { order:3; width:100%; margin-left:0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .tab { white-space:nowrap; }
+  .wrap { padding:8px 8px 6px; gap:8px; }
+  .filterbar { padding:6px 8px; }
+  .kpis { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .kpi { padding:8px 11px; }
+  .kpi-value { font-size:1.2rem; }
+  .panel { padding:8px 9px; min-height:260px; }
+  .p-head { flex-wrap:wrap; row-gap:4px; }
+  .p-tabs { margin-left:0; flex-wrap:wrap; }
+  .p-dl, .p-dl.solo { margin-left:auto; }
+  .combo-pop { max-width:92vw; min-width:210px; }
+  .statusbar { flex-wrap:wrap; row-gap:2px; padding:6px 10px 8px; }
+  .modal-box { width:94vw !important; }
 }
 </style>
 </head>
