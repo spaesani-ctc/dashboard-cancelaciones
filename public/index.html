@@ -1012,10 +1012,10 @@ function renderMotivos(canc){
   inner.style.height = Math.max(cont.clientHeight - 6, orden.length * 26 + 24) + 'px';
   mkChart('chMotivos', { type:'bar', data:{ labels:orden.map(x=>x[0].length>34?x[0].slice(0,32)+'…':x[0]),
     datasets:[{ data:orden.map(x=>x[1]), backgroundColor:css('--coral-l'), borderRadius:3, maxBarThickness:18,
-      datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>fmtN(v) } }] },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:38}},
+      datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'Mulish',size:9,weight:600}, formatter:v=>`${fmtN(v)} · ${(100*v/total).toFixed(1)}%` } }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{right:76}},
       plugins:{ legend:{display:false},
-        tooltip:{ callbacks:{ title:(items)=>orden[items[0].dataIndex][0], label:c=>` ${tagDe(orden[c.dataIndex][0])} — ${fmtU(c.parsed.x)}` } } },
+        tooltip:{ callbacks:{ title:(items)=>orden[items[0].dataIndex][0], label:c=>` ${tagDe(orden[c.dataIndex][0])} — ${fmtU(c.parsed.x)} (${(100*c.parsed.x/total).toFixed(1)}%)` } } },
       scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
   EXPORTS.motivos = { nombre:'motivos_cancelacion', cols:['Motivo', 'Categoría', enHoras()?'Horas':'Sesiones', '% del total'],
