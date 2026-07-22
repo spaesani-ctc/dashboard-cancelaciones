@@ -372,8 +372,8 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <div class="p-body"><canvas id="chAntic"></canvas></div>
     </div>
     <div class="panel" id="pHeatmap">
-      <div class="p-head"><span class="p-title" id="hmTitle">Canceladas por día y hora</span><select id="hmSel" title="Qué muestra cada celda" style="margin-left:auto"><option value="total">% del total</option><option value="dia">% del día</option><option value="hora">% de la hora</option><option value="nom">Nº</option></select><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'heatmap','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
-      <div class="p-body scroll"><div class="hm" id="heatmap"></div></div>
+      <div class="p-head"><span class="p-title" id="hmTitle">Canceladas por día y hora</span><select id="hmSel" title="Qué muestra cada celda" style="margin-left:auto"><option value="pct">% de cancelación</option><option value="nom">Nº canceladas</option></select><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'heatmap','','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
+      <div class="p-body scroll"><div class="hm" id="heatmap"></div><div class="dim" id="hmNota" style="margin-top:7px;font-size:10px"></div></div>
     </div>
   </div>
 
@@ -824,7 +824,7 @@ function render(){
   window._base = base; window._canc = canc;
   renderKPIs(base, canc);
   if(VISTA==='resumen'){
-    renderSemanal(base); renderMotivos(canc); renderAnticipacion(canc); renderRanking(base); renderHeatmap(canc);
+    renderSemanal(base); renderMotivos(canc); renderAnticipacion(canc); renderRanking(base); renderHeatmap(base);
   } else if(VISTA==='sesiones'){
     renderSesiones(base);
   } else {
@@ -1304,44 +1304,61 @@ document.querySelectorAll('#semVistaTabs .p-tab').forEach(b => b.onclick = () =>
   b.classList.add('active'); semVista = b.dataset.s2; renderSemanal(window._base||[]);
 });
 
-let hmMode = 'pct', hmBase = 'total';
-document.getElementById('hmSel').onchange = e => {
-  const v = e.target.value;
-  hmMode = v==='nom' ? 'nom' : 'pct';
-  if(v!=='nom') hmBase = v;
-  renderHeatmap(window._canc||[]);
-};
-function renderHeatmap(canc){
-  document.getElementById('hmTitle').textContent = 'Canceladas por día y hora';
-  const horas = [...new Set(canc.map(r=>r.hora).filter(h=>h && h>='05' && h<='22'))].sort();
-  const m = {};
-  for(const r of canc){ m[r.dia+'|'+r.hora]=(m[r.dia+'|'+r.hora]||0)+val(r); }
-  const max = Math.max(1,...Object.values(m));
-  const totalHm = Object.values(m).reduce((a,b)=>a+b,0);
+let hmMode = 'pct';
+document.getElementById('hmSel').onchange = e => { hmMode = e.target.value; renderHeatmap(window._base||[]); };
+function renderHeatmap(base){
+  const esRatio = hmMode==='pct';
+  document.getElementById('hmTitle').textContent = esRatio ? 'Ratio de cancelación por día y hora de inicio' : 'Canceladas por día y hora de inicio';
+  const horas = [...new Set(base.map(r=>r.hora).filter(h=>h && h>='05' && h<='22'))].sort();
+  const P = {}, C = {};
+  for(const r of base){
+    if(!r.hora) continue;
+    const k = r.dia+'|'+r.hora;
+    P[k] = (P[k]||0) + val(r);
+    if(esCancelada(r)) C[k] = (C[k]||0) + val(r);
+  }
   const el = document.getElementById('heatmap');
-  const dias = DIAS.filter(d => horas.some(h => m[d+'|'+h]));
-  const colTot = {}, rowTot = {};
-  for(const d of dias) colTot[d] = horas.reduce((a,h)=>a+(m[d+'|'+h]||0),0);
-  for(const h of horas) rowTot[h] = dias.reduce((a,d)=>a+(m[d+'|'+h]||0),0);
-  const denDe = (d,h) => hmBase==='dia' ? colTot[d] : hmBase==='hora' ? rowTot[h] : totalHm;
-  const sufBase = hmBase==='dia' ? 'del día' : hmBase==='hora' ? 'de la hora' : 'del total';
-  el.style.gridTemplateColumns = `38px repeat(${dias.length||1},minmax(28px,48px))`;
-  el.style.gridTemplateRows = `18px repeat(${horas.length||1},21px)`;
-  let html = `<div class="hm-corner"></div>` + dias.map(d=>`<div class="hm-head">${DIAS_ES[d]}</div>`).join('');
+  const dias = DIAS.filter(d => horas.some(h => P[d+'|'+h]));
+  const colP={}, colC={}, rowP={}, rowC={};
+  for(const d of dias){ colP[d]=0; colC[d]=0; for(const h of horas){ colP[d]+=P[d+'|'+h]||0; colC[d]+=C[d+'|'+h]||0; } }
+  for(const h of horas){ rowP[h]=0; rowC[h]=0; for(const d of dias){ rowP[h]+=P[d+'|'+h]||0; rowC[h]+=C[d+'|'+h]||0; } }
+  const totP = dias.reduce((a,d)=>a+colP[d],0), totC = dias.reduce((a,d)=>a+colC[d],0);
+  const ratio = (c,p) => p ? 100*c/p : 0;
+  const maxR = Math.max(0.0001, ...horas.flatMap(h=>dias.map(d=>ratio(C[d+'|'+h]||0, P[d+'|'+h]||0))));
+  const maxC = Math.max(1, ...horas.flatMap(h=>dias.map(d=>C[d+'|'+h]||0)));
+  el.style.gridTemplateColumns = `38px repeat(${dias.length||1},minmax(28px,48px)) minmax(36px,54px)`;
+  el.style.gridTemplateRows = `18px repeat(${horas.length||1},21px) 21px`;
+  const tip = (nombre,c,p) => `${nombre}: canceladas ${fmtU(c)} de ${fmtU(p)} programadas (${ratio(c,p).toFixed(1)}%)`;
+  const celda = (c,p,t) => {
+    const r = ratio(c,p);
+    const a = esRatio ? r/maxR : c/maxC;
+    const vTxt = p ? (esRatio ? r.toFixed(1)+'%' : (enHoras()?nf.format(Math.round(c)):nf.format(c))) : '';
+    const bg = !p ? 'var(--surface2)' : `rgba(216,90,48,${(0.10+0.72*Math.min(1,a)).toFixed(2)})`;
+    return `<div class="hm-cell" style="background:${bg};color:${a>0.58?'#fff':'var(--ink)'}" title="${t}">${vTxt}</div>`;
+  };
+  const celdaTot = (c,p,t) => {
+    const vTxt = p ? (esRatio ? ratio(c,p).toFixed(1)+'%' : (enHoras()?nf.format(Math.round(c)):nf.format(c))) : '';
+    return `<div class="hm-cell" style="background:var(--surface2);font-weight:700" title="${t}">${vTxt}</div>`;
+  };
+  let html = `<div class="hm-corner"></div>` + dias.map(d=>`<div class="hm-head">${DIAS_ES[d]}</div>`).join('') + `<div class="hm-head">Total</div>`;
   for(const h of horas){
     html += `<div class="hm-lab">${h}:00</div>`;
-    for(const d of dias){
-      const v = m[d+'|'+h]||0, a = v/max;
-      const den = denDe(d,h);
-      const pct = den ? 100*v/den : 0;
-      const vTxt = v ? (hmMode==='pct' ? pct.toFixed(1)+'%' : (enHoras() ? nf.format(Math.round(v)) : nf.format(v))) : '';
-      const bg = v===0?'var(--surface2)':`rgba(216,90,48,${(0.12+0.75*a).toFixed(2)})`;
-      html += `<div class="hm-cell" style="background:${bg};color:${a>0.55?'#fff':'var(--ink)'}" title="${DIAS_ES[d]} ${h}:00: ${fmtU(v)} (${pct.toFixed(1)}% ${sufBase})">${vTxt}</div>`;
-    }
+    for(const d of dias) html += celda(C[d+'|'+h]||0, P[d+'|'+h]||0, tip(`${DIAS_ES[d]} ${h}:00`, C[d+'|'+h]||0, P[d+'|'+h]||0));
+    html += celdaTot(rowC[h], rowP[h], tip(`Total ${h}:00`, rowC[h], rowP[h]));
   }
-  EXPORTS.heatmap = { nombre:'cancelaciones_dia_hora', cols:['Hora', ...dias.map(d=>DIAS_ES[d]), ...dias.map(d=>`% ${DIAS_ES[d]} (${sufBase})`)],
-    rows: horas.map(h=>[h+':00', ...dias.map(d=>Math.round((m[d+'|'+h]||0)*100)/100), ...dias.map(d=>denDe(d,h)?(100*(m[d+'|'+h]||0)/denDe(d,h)).toFixed(1):0)]) };
+  html += `<div class="hm-lab" style="font-weight:700">Total</div>`;
+  for(const d of dias) html += celdaTot(colC[d], colP[d], tip(`Total ${DIAS_ES[d]}`, colC[d], colP[d]));
+  html += celdaTot(totC, totP, tip('Total general', totC, totP));
   el.innerHTML = html;
+  document.getElementById('hmNota').textContent = esRatio
+    ? 'Cada celda muestra el % de las sesiones programadas en ese día y hora de inicio que terminaron canceladas.'
+    : 'Cada celda muestra la cantidad de sesiones canceladas según su día y hora de inicio.';
+  EXPORTS.heatmap = { nombre: esRatio ? 'ratio_cancelacion_dia_hora' : 'cancelaciones_dia_hora',
+    cols:['Hora', ...dias.flatMap(d=>[`Canceladas ${DIAS_ES[d]}`,`Programadas ${DIAS_ES[d]}`,`% ${DIAS_ES[d]}`]), 'Canceladas Total','Programadas Total','% Total'],
+    rows: [...horas.map(h=>[h+':00',
+        ...dias.flatMap(d=>[Math.round((C[d+'|'+h]||0)*100)/100, Math.round((P[d+'|'+h]||0)*100)/100, ratio(C[d+'|'+h]||0,P[d+'|'+h]||0).toFixed(1)]),
+        Math.round(rowC[h]*100)/100, Math.round(rowP[h]*100)/100, ratio(rowC[h],rowP[h]).toFixed(1)]),
+      ['Total', ...dias.flatMap(d=>[Math.round(colC[d]*100)/100, Math.round(colP[d]*100)/100, ratio(colC[d],colP[d]).toFixed(1)]), Math.round(totC*100)/100, Math.round(totP*100)/100, ratio(totC,totP).toFixed(1)]] };
 }
 
 /* ============ vista sesiones y horas ============ */
