@@ -1310,11 +1310,12 @@ function renderHeatmap(base){
   const esRatio = hmMode==='pct';
   document.getElementById('hmTitle').textContent = esRatio ? 'Ratio de cancelación por día y hora de inicio' : 'Canceladas por día y hora de inicio';
   const horas = [...new Set(base.map(r=>r.hora).filter(h=>h && h>='05' && h<='22'))].sort();
-  const P = {}, C = {};
+  const P = {}, C = {}, N = {};   // N: nº de sesiones programadas (para saber si la celda es confiable)
   for(const r of base){
     if(!r.hora) continue;
     const k = r.dia+'|'+r.hora;
     P[k] = (P[k]||0) + val(r);
+    N[k] = (N[k]||0) + 1;
     if(esCancelada(r)) C[k] = (C[k]||0) + val(r);
   }
   const el = document.getElementById('heatmap');
@@ -1329,12 +1330,16 @@ function renderHeatmap(base){
   el.style.gridTemplateColumns = `38px repeat(${dias.length||1},minmax(28px,48px)) minmax(36px,54px)`;
   el.style.gridTemplateRows = `18px repeat(${horas.length||1},21px) 21px`;
   const tip = (nombre,c,p) => `${nombre}: canceladas ${fmtU(c)} de ${fmtU(p)} programadas (${ratio(c,p).toFixed(1)}%)`;
-  const celda = (c,p,t) => {
+  const MIN_N = 20;   // con menos de 20 sesiones programadas, la celda se atenúa
+  const celda = (c,p,t,n) => {
     const r = ratio(c,p);
     const a = esRatio ? r/maxR : c/maxC;
+    const pocas = p && n < MIN_N;
     const vTxt = p ? (esRatio ? r.toFixed(1)+'%' : (enHoras()?nf.format(Math.round(c)):nf.format(c))) : '';
     const bg = !p ? 'var(--surface2)' : `rgba(216,90,48,${(0.10+0.72*Math.min(1,a)).toFixed(2)})`;
-    return `<div class="hm-cell" style="background:${bg};color:${a>0.58?'#fff':'var(--ink)'}" title="${t}">${vTxt}</div>`;
+    const extra = pocas ? ';opacity:.4' : '';
+    const tFull = pocas ? `${t} — pocos datos (${n} ${n===1?'sesión programada':'sesiones programadas'})` : t;
+    return `<div class="hm-cell" style="background:${bg};color:${a>0.58?'#fff':'var(--ink)'}${extra}" title="${tFull}">${vTxt}</div>`;
   };
   const celdaTot = (c,p,t) => {
     const vTxt = p ? (esRatio ? ratio(c,p).toFixed(1)+'%' : (enHoras()?nf.format(Math.round(c)):nf.format(c))) : '';
@@ -1343,7 +1348,7 @@ function renderHeatmap(base){
   let html = `<div class="hm-corner"></div>` + dias.map(d=>`<div class="hm-head">${DIAS_ES[d]}</div>`).join('') + `<div class="hm-head">Total</div>`;
   for(const h of horas){
     html += `<div class="hm-lab">${h}:00</div>`;
-    for(const d of dias) html += celda(C[d+'|'+h]||0, P[d+'|'+h]||0, tip(`${DIAS_ES[d]} ${h}:00`, C[d+'|'+h]||0, P[d+'|'+h]||0));
+    for(const d of dias) html += celda(C[d+'|'+h]||0, P[d+'|'+h]||0, tip(`${DIAS_ES[d]} ${h}:00`, C[d+'|'+h]||0, P[d+'|'+h]||0), N[d+'|'+h]||0);
     html += celdaTot(rowC[h], rowP[h], tip(`Total ${h}:00`, rowC[h], rowP[h]));
   }
   html += `<div class="hm-lab" style="font-weight:700">Total</div>`;
@@ -1351,7 +1356,7 @@ function renderHeatmap(base){
   html += celdaTot(totC, totP, tip('Total general', totC, totP));
   el.innerHTML = html;
   document.getElementById('hmNota').textContent = esRatio
-    ? 'Cada celda muestra el % de las sesiones programadas en ese día y hora de inicio que terminaron canceladas.'
+    ? 'Cada celda muestra el % de las sesiones programadas en ese día y hora de inicio que terminaron canceladas. Las celdas atenuadas tienen menos de 20 sesiones programadas: leer con cautela.'
     : 'Cada celda muestra la cantidad de sesiones canceladas según su día y hora de inicio.';
   EXPORTS.heatmap = { nombre: esRatio ? 'ratio_cancelacion_dia_hora' : 'cancelaciones_dia_hora',
     cols:['Hora', ...dias.flatMap(d=>[`Canceladas ${DIAS_ES[d]}`,`Programadas ${DIAS_ES[d]}`,`% ${DIAS_ES[d]}`]), 'Canceladas Total','Programadas Total','% Total'],
