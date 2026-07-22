@@ -1556,6 +1556,10 @@ function renderSesiones(base){
   const arr = Object.entries(g).map(([k,v])=>({k,...v,pctS:v.pS?100*Math.max(0,v.coS-v.rdS)/v.pS:0,pctH:v.pH?100*Math.max(0,v.coH-v.rdH)/v.pH:0,npS:v.cS-v.pgS,npH:v.cH-v.pgH,pctPgS:v.cS?100*v.pgS/v.cS:0,pctPgH:v.cH?100*v.pgH/v.cH:0})).sort((a,b)=>b.pS-a.pS);
   const T = arr.reduce((a,x)=>({pS:a.pS+x.pS,pH:a.pH+x.pH,dS:a.dS+x.dS,dH:a.dH+x.dH,fS:a.fS+x.fS,fH:a.fH+x.fH,cS:a.cS+x.cS,cH:a.cH+x.cH,rdS:a.rdS+x.rdS,rdH:a.rdH+x.rdH,coS:a.coS+x.coS,coH:a.coH+x.coH,poS:a.poS+x.poS,poH:a.poH+x.poH,u24S:a.u24S+x.u24S,u24H:a.u24H+x.u24H,o24S:a.o24S+x.o24S,o24H:a.o24H+x.o24H,pgS:a.pgS+x.pgS,pgH:a.pgH+x.pgH,ppoS:a.ppoS+x.ppoS,ppoH:a.ppoH+x.ppoH,pu24S:a.pu24S+x.pu24S,pu24H:a.pu24H+x.pu24H,po24S:a.po24S+x.po24S,po24H:a.po24H+x.po24H}),{pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0,pgS:0,pgH:0,ppoS:0,ppoH:0,pu24S:0,pu24H:0,po24S:0,po24H:0});
   const et = {proyecto:'Proyecto', ie:'Institución Educativa', grado:'Grado', salon:'Salón', profesor:'Profesor (sesión)'}[dimSesiones];
+  for(const r of arr){
+    const denA = (r.poS + r.u24S + r.o24S) || 0;
+    r.stripK = colMode==='antic' ? (denA ? 100*r.poS/denA : 0) : (r.cS ? 100*r.pgS/r.cS : 0);
+  }
   const s = SORT['tSesiones'];
   if(s) arr.sort((a,b)=>{ const cmp = cmpVal(a[s.k], b[s.k]); return s.dir==='asc'?cmp:-cmp; });
   const flecha = k => s&&s.k===k ? (s.dir==='asc'?' ▲':' ▼') : '';
@@ -1612,7 +1616,7 @@ function renderSesiones(base){
   el.innerHTML = `<thead>
     <tr><th rowspan="2" data-k="k">${et}${flecha('k')}</th>` +
     GRUPOS.map(([lbl,,,f]) => f==='strip'
-      ? `<th class="grp sep" rowspan="2" style="vertical-align:middle;text-align:center">${lbl}</th>`
+      ? `<th class="grp sep" rowspan="2" data-k="stripK" title="${colMode==='antic'?'Ordenar por % de aviso posterior al inicio':'Ordenar por % de canceladas pagadas'}" style="vertical-align:middle;text-align:center">${lbl}${flecha('stripK')}</th>`
       : `<th class="grp sep" colspan="2">${lbl}</th>`).join('') + `</tr>
     <tr>` + GRUPOS.filter(g=>g[3]!=='strip').map(([lbl,kS,kH]) =>
       `<th class="num sep" data-k="${kS}">Sesiones${flecha(kS)}</th><th class="num" data-k="${kH}">Horas${flecha(kH)}</th>`).join('') + `</tr>
