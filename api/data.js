@@ -26,8 +26,8 @@ SELECT
   SUBSTR(rs.start_time, 1, 2) AS hora,
   rs.start_time AS hora_inicio,
   COALESCE(p.id, 0) AS project_id,
-  COALESCE(p.internal_name, p.name, 'B2C') AS proyecto,
-  COALESCE(p.type, 'B2C') AS canal,
+  COALESCE(p.internal_name, p.name, CASE WHEN rr.id = 7280 THEN '—' ELSE 'B2C' END) AS proyecto,  -- 7280 = Pixie Piloto: no es B2C
+  CASE WHEN rr.id = 7280 THEN '—' ELSE COALESCE(p.type, 'B2C') END AS canal,
   COALESCE(NULLIF(TRIM(ei.name), ''), 'Sin IE') AS ie,
   CASE ei.autonomy_level_id
     WHEN 1 THEN '1. Co-Enseñanza' WHEN 2 THEN '2. Autonomía Moderada'
