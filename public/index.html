@@ -466,10 +466,10 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
     <div class="modal-body nota">
       <p><strong>¿Qué muestra este dashboard?</strong> Las clases canceladas: cuántas fueron, por qué motivo, en qué proyectos, instituciones y salones, y cuándo. Todo se puede ver en cantidad de sesiones o en horas académicas (el switch de arriba a la izquierda).</p>
       <p><strong>¿Cómo se calcula el % de cancelación?</strong></p>
-      <p style="text-align:center; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; margin:6px 0;">(canceladas&nbsp;−&nbsp;recuperadas)&nbsp;÷&nbsp;programadas</p>
-      <p><strong>Canceladas</strong>: clases que se cancelaron en el período. <strong>Recuperadas</strong>: de esas canceladas, las que ya tuvieron su clase de recuperación dictada. <strong>Programadas</strong>: todas las clases del período — dictadas, canceladas y las que aún no ocurrieron.</p>
-      <p>Ejemplo: de 100 clases programadas se cancelaron 20, y 5 de ellas ya se recuperaron → (20&nbsp;−&nbsp;5)&nbsp;÷&nbsp;100 = <strong>15%</strong>.</p>
-      <p>Si una recuperación vuelve a cancelarse, la clase perdida sigue contando una sola vez. Si se recuperó más de lo que se canceló, se muestra 0%.</p>
+      <p style="text-align:center; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; margin:6px 0;">(sesiones canceladas&nbsp;−&nbsp;reprogramadas dictadas)&nbsp;÷&nbsp;sesiones programadas</p>
+      <p><strong>Canceladas</strong>: sesiones originales que se cancelaron en el período (una reprogramación que vuelve a cancelarse no suma una pérdida nueva). <strong>Reprogramadas dictadas</strong>: canceladas que ya se recuperaron con su clase de reprogramación dictada. <strong>Programadas</strong>: todas las sesiones del período — dictadas, canceladas, futuras y también las reprogramaciones.</p>
+      <p>Ejemplo: de 100 sesiones programadas se cancelaron 20, y 5 ya se recuperaron con reprogramación dictada → (20&nbsp;−&nbsp;5)&nbsp;÷&nbsp;100 = <strong>15%</strong>.</p>
+      <p>Si se recuperó más de lo que se canceló, se muestra 0%.</p>
       <p><strong>Motivos que no se cuentan por defecto:</strong> Feriado, Vacaciones, Cambio operativo e Inicio de proyecto atrasado. Si querés incluirlos, están en el filtro de Motivos.</p>
       <p><strong>Horas académicas:</strong> se muestran solo donde el dato está cargado en el sistema; siempre te indicamos qué porcentaje de cobertura tiene.</p>
       <p>Cualquier duda, puedes contactar a <strong>@Data</strong>.</p>
