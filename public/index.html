@@ -947,11 +947,18 @@ function dlPNG(canvasId, nombre){
   ctx.drawImage(src,0,0);
   const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = `${nombre}_${fDesde.value}_${fHasta.value}.png`; a.click();
 }
+const legendGap = { id:'legendGap', beforeInit(chart){
+  if(chart.options.plugins?.legend?.display === false) return;
+  const fitOrig = chart.legend.fit;
+  chart.legend.fit = function(){ fitOrig.bind(chart.legend)(); this.height += 8; };   // aire entre leyenda y gráfico
+} };
 function mkChart(id, cfg){
   if(charts[id]) charts[id].destroy();
   cfg.options = cfg.options || {};
   cfg.options.plugins = cfg.options.plugins || {};
   (cfg.options.plugins.legend ??= {}).onClick = () => {};   // la leyenda es informativa: no oculta series
+  cfg.plugins = cfg.plugins || [];
+  cfg.plugins.push(legendGap);
   charts[id] = new Chart(document.getElementById(id), cfg);
 }
 
