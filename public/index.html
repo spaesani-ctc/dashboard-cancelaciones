@@ -340,8 +340,14 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
   <!-- VISTA RESUMEN -->
   <div class="grid" id="vistaResumen">
     <div class="panel" id="pSemanal">
-      <div class="p-head"><span class="p-title">Evolución semanal</span>
-        <div class="p-tabs" id="semVistaTabs" style="margin-left:auto"><button class="p-tab active" data-s2="total">Total</button><button class="p-tab" data-s2="cat">Por categoría</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'semanal','chSemanal','evolucion_semanal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
+      <div class="p-head"><span class="p-title" id="semTitle">Evolución semanal</span>
+        <div class="p-tabs" id="granTabs" style="margin-left:auto">
+          <button class="p-tab active" data-g="sem">Semana</button>
+          <button class="p-tab" data-g="mes">Mes</button>
+          <button class="p-tab" data-g="tri">Trimestre</button>
+        </div>
+        <span style="width:1px;height:16px;background:var(--border);margin:0 8px;flex:none"></span>
+        <div class="p-tabs" id="semVistaTabs" style="margin-left:0"><button class="p-tab active" data-s2="total">Total</button><button class="p-tab" data-s2="cat">Por categoría</button></div><div class="p-dl"><button class="dl-btn" title="Descargar" onclick="dlMenu(event,'semanal','chSemanal','evolucion_semanal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button></div></div>
       <div class="p-body"><canvas id="chSemanal"></canvas></div>
     </div>
     <div class="panel" id="pRanking">
@@ -949,30 +955,40 @@ function renderSemanal(base){
   const sem = {};
   const cuenta = esCancelada;
   const catTot = {};
+  const clave = r => granEvol==='mes' ? String(r.fecha).slice(0,7)
+    : granEvol==='tri' ? `${String(r.fecha).slice(0,4)}-T${Math.ceil(parseInt(String(r.fecha).slice(5,7),10)/3)}`
+    : r.semana;
   for(const r of base){
-    (sem[r.semana] ??= {c:0, cAll:0, p:0, rd:0, cats:{}});
-    sem[r.semana].p += val(r);
+    const k = clave(r);
+    (sem[k] ??= {c:0, cAll:0, p:0, rd:0, cats:{}});
+    sem[k].p += val(r);
     if(cuenta(r)){
-      sem[r.semana].c += val(r);
+      sem[k].c += val(r);
       const t = r.tag||'Sin categoría';
-      sem[r.semana].cats[t] = (sem[r.semana].cats[t]||0) + val(r);
+      sem[k].cats[t] = (sem[k].cats[t]||0) + val(r);
       catTot[t] = (catTot[t]||0) + val(r);
     }
-    if(esCancOriginal(r)) sem[r.semana].cAll += val(r);
-    else if(esDictada(r) && esMakeUp(r)) sem[r.semana].rd += val(r);
+    if(esCancOriginal(r)) sem[k].cAll += val(r);
+    else if(esDictada(r) && esMakeUp(r)) sem[k].rd += val(r);
   }
-  // % neto semanal: max(0, canceladas orig. − recuperaciones dictadas) / programadas de la semana
+  // % neto por período: max(0, canceladas orig. − recuperaciones dictadas) / programadas del período
   const pctDe = o => o.p ? 100*Math.max(0,o.cAll-o.rd)/o.p : 0;
   const labels = Object.keys(sem).sort();
   const pocas = labels.length <= 15;
-  const fmt = s => { const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); };
+  const NOMG = granEvol==='mes' ? 'mensual' : granEvol==='tri' ? 'trimestral' : 'semanal';
+  const ETG = granEvol==='mes' ? 'Mes' : granEvol==='tri' ? 'Trimestre' : 'Semana';
+  document.getElementById('semTitle').textContent = 'Evolución ' + NOMG;
+  const MESES_C = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const fmt = s => granEvol==='mes' ? `${MESES_C[parseInt(s.slice(5,7),10)-1]} ${s.slice(2,4)}`
+    : granEvol==='tri' ? `${s.slice(5)} ${s.slice(2,4)}`
+    : (d => d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}))(new Date(s+'T00:00:00'));
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
   const pcts = labels.map(s=>pctDe(sem[s]));
   EXPORTS.semanal = semVista==='cat'
-    ? { nombre:'evolucion_semanal_por_categoria'+sufPago(),
-        cols:['Semana', ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]), 'Total', '% De cancelación'],
+    ? { nombre:'evolucion_'+NOMG+'_por_categoria'+sufPago(),
+        cols:[ETG, ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]), 'Total', '% De cancelación'],
         rows: labels.map((s,i)=>[s, ...Object.keys(catTot).sort((a,b)=>catTot[b]-catTot[a]).map(t=>Math.round((sem[s].cats[t]||0)*100)/100), Math.round(sem[s].c*100)/100, pcts[i].toFixed(1)]) }
-    : { nombre:'evolucion_semanal'+sufPago(), cols:['Semana', (enHoras()?'Horas':'Sesiones')+' canceladas', 'Canceladas originales', 'Recuperaciones dictadas', (enHoras()?'Horas':'Sesiones')+' programadas', '% De cancelación'],
+    : { nombre:'evolucion_'+NOMG+sufPago(), cols:[ETG, (enHoras()?'Horas':'Sesiones')+' canceladas', 'Canceladas originales', 'Recuperaciones dictadas', (enHoras()?'Horas':'Sesiones')+' programadas', '% De cancelación'],
         rows: labels.map((s,i)=>[s, Math.round(sem[s].c*100)/100, Math.round(sem[s].cAll*100)/100, Math.round(sem[s].rd*100)/100, Math.round(sem[s].p*100)/100, pcts[i].toFixed(1)]) };
   const cTotArr = labels.map(s=>sem[s].c);
   const flip = ctx => {
@@ -1031,7 +1047,10 @@ function renderSemanal(base){
     options:{ responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
       plugins:{ legend:{labels:{color:css('--ink2'),font:{family:'Mulish',size:10},boxWidth:12, sort:(a,b)=>((a.text.startsWith('%')?1:0)-(b.text.startsWith('%')?1:0)) || (a.datasetIndex-b.datasetIndex)}},
                 tooltip:{callbacks:{
-                  title: items => { const s = labels[items[0].dataIndex]; const d1 = new Date(s+'T00:00:00'); const d2 = new Date(d1.getTime()+6*86400000); const f = d => d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); return `Semana del ${f(d1)} al ${f(d2)}`; },
+                  title: items => { const s = labels[items[0].dataIndex];
+                    if(granEvol==='mes'){ const M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']; return `${M[parseInt(s.slice(5,7),10)-1]} ${s.slice(0,4)}`; }
+                    if(granEvol==='tri'){ const R=['ene–mar','abr–jun','jul–sep','oct–dic']; return `${s.slice(5)} ${s.slice(0,4)} (${R[parseInt(s.slice(6),10)-1]})`; }
+                    const d1 = new Date(s+'T00:00:00'); const d2 = new Date(d1.getTime()+6*86400000); const f = d => d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); return `Semana del ${f(d1)} al ${f(d2)}`; },
                   label:c=>c.dataset.yAxisID==='y2'?` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`:` ${c.dataset.label}: ${fmtN(c.parsed.y)}`}} },
       scales:{ x:{stacked:semVista!=='total',ticks:{color:css('--ink3'),font:{size:9.5},maxRotation:0},grid:{display:false}},
                y:{stacked:semVista!=='total',position:'left',ticks:{color:css('--ink3'),font:{size:9.5}},grid:{color:css('--border2')}},
@@ -1334,6 +1353,11 @@ function renderAnticipacion(canc){
       scales:{ x:{display:false, stacked:true}, y:{stacked:true, ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
 }
+let granEvol = 'sem';
+document.querySelectorAll('#granTabs .p-tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#granTabs .p-tab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); granEvol = b.dataset.g; renderSemanal(window._base||[]);
+});
 document.querySelectorAll('#semVistaTabs .p-tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('#semVistaTabs .p-tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); semVista = b.dataset.s2; renderSemanal(window._base||[]);
