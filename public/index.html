@@ -467,7 +467,7 @@ a.lk { color:var(--accent); text-decoration:none; border-bottom:1px dotted var(-
       <p><strong>¿Qué muestra este dashboard?</strong> Las clases canceladas: cuántas fueron, por qué motivo, en qué proyectos, instituciones y salones, y cuándo. Todo se puede ver en cantidad de sesiones o en horas académicas (el switch de arriba a la izquierda).</p>
       <p><strong>¿Cómo se calcula el % de cancelación?</strong></p>
       <p style="text-align:center; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; margin:6px 0;">(sesiones canceladas&nbsp;−&nbsp;reprogramadas dictadas)&nbsp;÷&nbsp;sesiones programadas</p>
-      <p><strong>Canceladas</strong>: sesiones originales que se cancelaron en el período (una reprogramación que vuelve a cancelarse no suma una pérdida nueva). <strong>Reprogramadas dictadas</strong>: canceladas que ya se recuperaron con su clase de reprogramación dictada. <strong>Programadas</strong>: todas las sesiones del período — dictadas, canceladas, futuras y también las reprogramaciones.</p>
+      <p><strong>Canceladas</strong>: sesiones originales que se cancelaron en el período (una reprogramación que vuelve a cancelarse no suma una pérdida nueva). <strong>Reprogramadas dictadas</strong>: canceladas que ya se recuperaron con su clase de reprogramación dictada. <strong>Programadas</strong>: todas las sesiones del período — dictadas, canceladas y futuras; de las reprogramaciones, solo cuentan las ya dictadas.</p>
       <p>Ejemplo: de 100 sesiones programadas se cancelaron 20, y 5 ya se recuperaron con reprogramación dictada → (20&nbsp;−&nbsp;5)&nbsp;÷&nbsp;100 = <strong>15%</strong>.</p>
       <p>Si se recuperó más de lo que se canceló, se muestra 0%.</p>
       <p><strong>Motivos que no se cuentan por defecto:</strong> Feriado, Vacaciones, Cambio operativo e Inicio de proyecto atrasado. Si querés incluirlos, están en el filtro de Motivos.</p>
@@ -820,6 +820,9 @@ function esValida(r){
 const esDictada = r => r.state==='true' && r.fecha < HOY && r.reason_id==null;
 const esFutura  = r => r.state==='true' && r.fecha >= HOY;
 const esMakeUp  = r => String(r.make_up_class)==='true';
+// programada (denominador oficial): sesiones originales en cualquier estado + reprogramaciones YA dictadas
+// (una reprogramación cancelada o futura no suma al denominador — criterio del sheet)
+const esProgramada = r => !(esMakeUp(r) && !esDictada(r));
 // cancelada ORIGINAL: las recuperaciones canceladas NO entran al % neto
 // (cuentan como intento de reprogramación fallido, no como clase perdida adicional)
 const esCancOriginal = r => esCancelada(r) && !esMakeUp(r);
@@ -829,7 +832,7 @@ function netoPct(filas){
   let cS=0,cH=0,pS=0,pH=0,rdS=0,rdH=0;
   for(const r of filas){
     const h = r.academic_hours||0;
-    pS++; pH+=h;
+    if(esProgramada(r)){ pS++; pH+=h; }
     if(esCancOriginal(r)){ cS++; cH+=h; }
     else if(esDictada(r) && esMakeUp(r)){ rdS++; rdH+=h; }
   }
@@ -858,7 +861,7 @@ function sumas(filas){
 }
 function renderKPIs(base, canc){
   const dict = base.filter(esDictada);
-  const sProg = sumas(base), sDict = sumas(dict), sCanc = sumas(canc);
+  const sProg = sumas(base.filter(esProgramada)), sDict = sumas(dict), sCanc = sumas(canc);
   const principal = s => enHoras() ? nf.format(Math.round(s.hrs))+' h' : nf.format(s.ses);
   const secundario = s => enHoras() ? `${nf.format(s.ses)} sesiones` : `${nf.format(Math.round(s.hrs))} horas académicas`;
   const u = enHoras() ? 'Horas' : 'Sesiones';
@@ -987,7 +990,7 @@ function renderSemanal(base){
   for(const r of base){
     const k = clave(r);
     (sem[k] ??= {c:0, cAll:0, p:0, rd:0, cats:{}});
-    sem[k].p += val(r);
+    if(esProgramada(r)) sem[k].p += val(r);
     if(cuenta(r)){
       sem[k].c += val(r);
       const t = r.tag||'Sin categoría';
@@ -1208,7 +1211,7 @@ const TAG_COLOR = () => ({
 function filaAgg(filas, clave, minProg){
   const g = {};
   for(const r of filas){
-    const k=r[clave] ?? '\u2014'; (g[k] ??= {p:0,c:0,co:0,rd:0,mk:0,pSes:0}); g[k].pSes++; g[k].p += val(r);
+    const k=r[clave] ?? '\u2014'; (g[k] ??= {p:0,c:0,co:0,rd:0,mk:0,pSes:0}); if(esProgramada(r)){ g[k].pSes++; g[k].p += val(r); }
     if(esCancelada(r)){
       g[k].c += val(r);                       // brutas (lo que se muestra)
       if(!esMakeUp(r)) g[k].co += val(r);     // originales (para el % neto)
@@ -1593,7 +1596,7 @@ function renderSesiones(base){
     (g[k] ??= {pS:0,pH:0,dS:0,dH:0,fS:0,fH:0,cS:0,cH:0,rdS:0,rdH:0,coS:0,coH:0,poS:0,poH:0,u24S:0,u24H:0,o24S:0,o24H:0,pgS:0,pgH:0,ppoS:0,ppoH:0,pu24S:0,pu24H:0,po24S:0,po24H:0});
     if(dimSesiones==='salon' && r.ie && !g[k].ie) g[k].ie = r.ie;
     const h = r.academic_hours||0; tot++; if(r.academic_hours==null) sinHoras++;
-    g[k].pS++; g[k].pH+=h;
+    if(esProgramada(r)){ g[k].pS++; g[k].pH+=h; }
     if(esDictada(r)){ g[k].dS++; g[k].dH+=h; if(esMakeUp(r)){ g[k].rdS++; g[k].rdH+=h; } }
     if(esFutura(r)){ g[k].fS++; g[k].fH+=h; if(esMakeUp(r)){ g[k].mkFS=(g[k].mkFS||0)+1; } }
     if(esCancelada(r)){
