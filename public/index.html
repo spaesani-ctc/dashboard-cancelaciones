@@ -947,7 +947,13 @@ function dlPNG(canvasId, nombre){
   ctx.drawImage(src,0,0);
   const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = `${nombre}_${fDesde.value}_${fHasta.value}.png`; a.click();
 }
-function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
+function mkChart(id, cfg){
+  if(charts[id]) charts[id].destroy();
+  cfg.options = cfg.options || {};
+  cfg.options.plugins = cfg.options.plugins || {};
+  (cfg.options.plugins.legend ??= {}).onClick = () => {};   // la leyenda es informativa: no oculta series
+  charts[id] = new Chart(document.getElementById(id), cfg);
+}
 
 const showProg = true;
 let semVista = 'total';
@@ -956,7 +962,7 @@ function renderSemanal(base){
   const cuenta = esCancelada;
   const catTot = {};
   const clave = r => granEvol==='mes' ? String(r.fecha).slice(0,7)
-    : granEvol==='tri' ? `${String(r.fecha).slice(0,4)}-T${Math.ceil(parseInt(String(r.fecha).slice(5,7),10)/3)}`
+    : granEvol==='tri' ? `${String(r.fecha).slice(0,4)}-Q${Math.ceil(parseInt(String(r.fecha).slice(5,7),10)/3)}`
     : r.semana;
   for(const r of base){
     const k = clave(r);
