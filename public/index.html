@@ -648,6 +648,17 @@ document.getElementById('unidad').addEventListener('click', e => {
 const enHoras = () => UNIDAD==='hrs';
 const val = r => enHoras() ? (r.academic_hours||0) : 1;
 const fmtU = v => enHoras() ? nf.format(Math.round(v))+' h' : nf.format(v);
+// composiciones exportadas: % a 1 decimal ajustados para sumar exactamente 100,0
+function pctCien(vals){
+  const tot = vals.reduce((a,b)=>a+b,0);
+  if(!tot) return vals.map(()=>'0.0');
+  const raw = vals.map(v=>1000*v/tot);
+  const base = raw.map(Math.floor);
+  let falta = 1000 - base.reduce((a,b)=>a+b,0);
+  const orden = raw.map((r,i)=>[r-base[i],i]).sort((a,b)=>b[0]-a[0]);
+  for(let j=0; j<falta; j++) base[orden[j % orden.length][1]]++;
+  return base.map(d=>(d/10).toFixed(1));
+}
 // pagada = is_paid_session 'paid_automatic' / 'paid_manual' (+ legacy 'True')
 const PAGADA = v => /^paid/.test(String(v)) || String(v)==='True';
 
@@ -1090,8 +1101,9 @@ function renderMotivos(canc){
         tooltip:{ callbacks:{ title:(items)=>orden[items[0].dataIndex][0], label:c=>` ${tagDe(orden[c.dataIndex][0])} — ${fmtU(c.parsed.x)} (${(100*c.parsed.x/total).toFixed(1)}%)` } } },
       scales:{ x:{display:false}, y:{ticks:{color:css('--ink2'),font:{size:10}},grid:{display:false}} } },
     plugins:[ChartDataLabels] });
+  const pctsMot = pctCien(orden.map(x=>x[1]));
   EXPORTS.motivos = { nombre:'motivos_cancelacion', cols:['Motivo', 'Categoría', enHoras()?'Horas':'Sesiones', '% del total'],
-    rows: orden.map(([k,v])=>[k, mTag[k]||'Sin categoría', Math.round(v*100)/100, (100*v/total).toFixed(1)]) };
+    rows: orden.map(([k,v],i)=>[k, mTag[k]||'Sin categoría', Math.round(v*100)/100, pctsMot[i]]) };
   renderTable('tMotivos', [
     { k:'motivo', label:'Motivo', tip:'motivo' },
     { k:'tag', label:'Categoría' },
@@ -1167,8 +1179,9 @@ function renderCategorias(canc){
   let fi = 0; const colorTag = {};
   const tc = t => colorTag[t] ??= (TC[t] || fallback[fi++ % fallback.length]);
   const fmtN = v => enHoras() ? nf.format(Math.round(v)) : nf.format(v);
+  const pctsCat = pctCien(orden.map(x=>x[1]));
   EXPORTS.categorias = { nombre:'categorias_cancelacion', cols:['Categoría', enHoras()?'Horas':'Sesiones', '% del total'],
-    rows: orden.map(([k,v])=>[k, Math.round(v*100)/100, (100*v/total).toFixed(1)]) };
+    rows: orden.map(([k,v],i)=>[k, Math.round(v*100)/100, pctsCat[i]]) };
   mkChart('chCategorias', { type:'bar', data:{ labels:orden.map(x=>x[0]),
     datasets:[{ data:orden.map(x=>x[1]), backgroundColor:orden.map(([k])=>hexA(tc(k),0.88)), borderRadius:3, maxBarThickness:26,
       datalabels:{ anchor:'end', align:'end', offset:2, color:css('--ink2'), font:{family:'Mulish',size:9.5,weight:600},
@@ -1326,7 +1339,8 @@ function renderAnticipacion(canc){
   const tot = CATS.reduce((a,c)=>a+v(c),0)||1;
   EXPORTS.antic = { nombre:'anticipacion_cancelacion'+sufPago(),
     cols:['Anticipación','Sesiones','Pagadas','No pagadas','Horas académicas','% ('+(enHoras()?'horas':'sesiones')+')'],
-    rows: CATS.map(c=>[c, agg[c].s, agg[c].ps, agg[c].s-agg[c].ps, Math.round(agg[c].h*100)/100, (100*v(c)/tot).toFixed(1)]) };
+    rows: (()=>{ const pcts = pctCien(CATS.map(c=>v(c)));
+      return CATS.map((c,i)=>[c, agg[c].s, agg[c].ps, agg[c].s-agg[c].ps, Math.round(agg[c].h*100)/100, pcts[i]]); })() };
   mkChart('chAntic', { type:'bar', data:{ labels:CATS, datasets:[
       { label:'Pagadas', data:CATS.map(c=>vPag(c)), backgroundColor:hexA(css('--coral'),0.9), stack:'a', borderRadius:3, maxBarThickness:26, datalabels:{display:false} },
       { label:'No pagadas', data:CATS.map(c=>v(c)-vPag(c)), backgroundColor:hexA(css('--coral-l'),0.55), stack:'a', borderRadius:3, maxBarThickness:26,
@@ -1716,7 +1730,8 @@ function renderReprog(base){
     const tot = v(mk)||1;
     const CATS_R = [['Recuperadas (dictadas)', v(mkD), css('--teal')], ['Canceladas de nuevo', v(mkC), css('--coral')], ['Aún programadas', v(mkF), css('--ink4')]].filter(x=>x[1]>0);
     EXPORTS.reprogRes = { nombre:'sesiones_reprogramadas', cols:['Resultado', enHoras()?'Horas':'Sesiones', '% de las reprogramadas'],
-      rows: CATS_R.map(([n,x])=>[n, Math.round(x*100)/100, (100*x/tot).toFixed(1)]) };
+      rows: (()=>{ const pcts = pctCien(CATS_R.map(x=>x[1]));
+        return CATS_R.map(([n,x],i)=>[n, Math.round(x*100)/100, pcts[i]]); })() };
     document.getElementById('reprogStrip').innerHTML =
       '<div style="display:flex;height:26px;border-radius:6px;overflow:hidden;gap:1px;max-width:560px">' +
       CATS_R.map(([n,x,col])=>{
